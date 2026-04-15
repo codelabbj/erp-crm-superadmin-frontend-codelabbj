@@ -1,27 +1,6 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  BarChart3,
-  Boxes,
-  Building2,
-  ChevronDown,
-  ChevronUp,
-  Flag,
-  FileSearch,
-  Globe,
-  LayoutDashboard,
-  Moon,
-  ReceiptText,
-  Rocket,
-  ServerCog,
-  ShieldBan,
-  Puzzle,
-  SlidersHorizontal,
-  Sun,
-  Upload,
-  Users2,
-  WalletCards,
-} from "lucide-react";
+import { Moon, Sun } from "lucide-react";
 import { Dashboard } from "../features/dashboard/Dashboard";
 import { Modules } from "../features/modules/Modules";
 import { Subscriptions } from "../features/subscriptions/Subscriptions";
@@ -33,6 +12,7 @@ import { DataOps } from "../features/dataOps/DataOps";
 import type { Tab } from "../lib/ui";
 import { authApi } from "../lib/api";
 import { applyTheme, getInitialTheme, type ThemeMode } from "../lib/theme";
+import { Sidebar } from "./Sidebar";
 
 function ComingSoonPanel({ title, description }: { title: string; description: string }) {
   return (
@@ -51,33 +31,6 @@ export function AppShell() {
   const [theme, setTheme] = useState<ThemeMode>(getInitialTheme);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [refreshToast, setRefreshToast] = useState("");
-  type MenuSection =
-    | "overview"
-    | "tenants"
-    | "revenue"
-    | "platformOps"
-    | "security";
-
-  const sectionByTab: Record<Tab, MenuSection> = {
-    overview: "overview",
-    platformHealth: "overview",
-    businessMetrics: "overview",
-    organizations: "tenants",
-    onboarding: "tenants",
-    domainsSsl: "tenants",
-    subscriptions: "revenue",
-    plansFeatures: "revenue",
-    invoices: "revenue",
-    featureFlags: "platformOps",
-    modules: "platformOps",
-    backgroundJobs: "platformOps",
-    staffUsers: "platformOps",
-    auditLogs: "security",
-    bannedIpsWaf: "security",
-    billingOps: "revenue",
-    dataOps: "platformOps",
-  };
-  const [expandedSection, setExpandedSection] = useState<MenuSection | null>(null);
   const queryClient = useQueryClient();
   const { data: me } = useQuery({
     queryKey: ["me"],
@@ -127,162 +80,9 @@ export function AppShell() {
     }
   };
 
-  const navBtn = (isActive: boolean) =>
-    `mb-1 flex w-full items-center gap-2 rounded-xl border px-3 py-2 text-left text-sm font-medium transition ${
-      isActive
-        ? "border-brand-purple-200 bg-white text-brand-purple-700 shadow-sm dark:border-brand-purple-700 dark:bg-slate-800 dark:text-brand-magenta-500"
-        : "border-transparent bg-transparent text-slate-500 hover:bg-white hover:text-brand-purple-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
-    }`;
-  const sectionTriggerBtn = (isOpen: boolean) =>
-    `mb-2 flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wide transition ${
-      isOpen
-        ? "bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
-        : "text-slate-400 hover:bg-slate-200 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-300"
-    }`;
-  const sectionContent = (isOpen: boolean) =>
-    `overflow-hidden transition-[max-height,opacity] duration-300 ease-in-out ${
-      isOpen ? "visible max-h-96 opacity-100" : "invisible max-h-0 opacity-0 pointer-events-none"
-    }`;
-
-  const activeSection = sectionByTab[tab];
-  const isSectionOpen = (section: MenuSection) => section === activeSection || section === expandedSection;
-
-  const toggleSection = (section: MenuSection) => {
-    if (section === activeSection) return;
-    setExpandedSection((current) => (current === section ? null : section));
-  };
-
-  useEffect(() => {
-    setExpandedSection((current) => (current === activeSection ? null : current));
-  }, [activeSection]);
-
   return (
     <div className="min-h-screen">
-      <aside className="fixed top-0 left-0 bottom-0 w-72 overflow-y-auto border-r border-slate-200 bg-slate-100 p-4 dark:border-slate-800 dark:bg-slate-950">
-        <h2 className="mb-4 px-2 text-lg font-semibold text-slate-900 dark:text-slate-100">Super Admin</h2>
-        <div className="mb-4">
-          <button type="button" className={sectionTriggerBtn(isSectionOpen("overview"))} onClick={() => toggleSection("overview")}>
-            <span>Vue d&apos;ensemble</span>
-            {isSectionOpen("overview") ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-          </button>
-          <div className={sectionContent(isSectionOpen("overview"))}>
-            <div className="ml-3 border-l border-slate-300 pl-3 dark:border-slate-700">
-              <button className={navBtn(tab === "overview")} onClick={() => setTab("overview")}>
-                <LayoutDashboard size={16} />
-                Vue d&apos;ensemble
-              </button>
-              <button className={navBtn(tab === "platformHealth")} onClick={() => setTab("platformHealth")}>
-                <ServerCog size={16} />
-                Sante de la plateforme
-              </button>
-              <button className={navBtn(tab === "businessMetrics")} onClick={() => setTab("businessMetrics")}>
-                <BarChart3 size={16} />
-                Metriques business
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="mb-4">
-          <button type="button" className={sectionTriggerBtn(isSectionOpen("tenants"))} onClick={() => toggleSection("tenants")}>
-            <span>Gestion des tenants</span>
-            {isSectionOpen("tenants") ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-          </button>
-          <div className={sectionContent(isSectionOpen("tenants"))}>
-            <div className="ml-3 border-l border-slate-300 pl-3 dark:border-slate-700">
-              <button className={navBtn(tab === "organizations")} onClick={() => setTab("organizations")}>
-                <Building2 size={16} />
-                Organisations
-              </button>
-              <button className={navBtn(tab === "onboarding")} onClick={() => setTab("onboarding")}>
-                <Rocket size={16} />
-                Onboarding
-              </button>
-              <button className={navBtn(tab === "domainsSsl")} onClick={() => setTab("domainsSsl")}>
-                <Globe size={16} />
-                Domaines & SSL
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="mb-4">
-          <button type="button" className={sectionTriggerBtn(isSectionOpen("revenue"))} onClick={() => toggleSection("revenue")}>
-            <span>Revenus & plans</span>
-            {isSectionOpen("revenue") ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-          </button>
-          <div className={sectionContent(isSectionOpen("revenue"))}>
-            <div className="ml-3 border-l border-slate-300 pl-3 dark:border-slate-700">
-              <button className={navBtn(tab === "subscriptions")} onClick={() => setTab("subscriptions")}>
-                <WalletCards size={16} />
-                Abonnements
-              </button>
-              <button className={navBtn(tab === "plansFeatures")} onClick={() => setTab("plansFeatures")}>
-                <SlidersHorizontal size={16} />
-                Plans & fonctionnalites
-              </button>
-              <button className={navBtn(tab === "invoices")} onClick={() => setTab("invoices")}>
-                <ReceiptText size={16} />
-                Factures
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="mb-4">
-          <button type="button" className={sectionTriggerBtn(isSectionOpen("platformOps"))} onClick={() => toggleSection("platformOps")}>
-            <span>Operations plateforme</span>
-            {isSectionOpen("platformOps") ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-          </button>
-          <div className={sectionContent(isSectionOpen("platformOps"))}>
-            <div className="ml-3 border-l border-slate-300 pl-3 dark:border-slate-700">
-              <button className={navBtn(tab === "featureFlags")} onClick={() => setTab("featureFlags")}>
-                <Flag size={16} />
-                Feature flags
-              </button>
-              <button className={navBtn(tab === "modules")} onClick={() => setTab("modules")}>
-                <Puzzle size={16} />
-                Modules
-              </button>
-              <button className={navBtn(tab === "backgroundJobs")} onClick={() => setTab("backgroundJobs")}>
-                <Upload size={16} />
-                Jobs en arriere-plan
-              </button>
-              <button className={navBtn(tab === "staffUsers")} onClick={() => setTab("staffUsers")}>
-                <Users2 size={16} />
-                Utilisateurs staff
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="mb-4">
-          <button type="button" className={sectionTriggerBtn(isSectionOpen("security"))} onClick={() => toggleSection("security")}>
-            <span>Securite & conformite</span>
-            {isSectionOpen("security") ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-          </button>
-          <div className={sectionContent(isSectionOpen("security"))}>
-            <div className="ml-3 border-l border-slate-300 pl-3 dark:border-slate-700">
-              <button className={navBtn(tab === "auditLogs")} onClick={() => setTab("auditLogs")}>
-                <FileSearch size={16} />
-                Journaux d&apos;audit
-              </button>
-              <button className={navBtn(tab === "bannedIpsWaf")} onClick={() => setTab("bannedIpsWaf")}>
-                <ShieldBan size={16} />
-                IP bannies / WAF
-              </button>
-            </div>
-          </div>
-        </div>
-        <button
-          className="mt-2 inline-flex w-full items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-left text-sm font-medium text-slate-600 transition hover:border-brand-purple-300 hover:text-brand-purple-700 disabled:cursor-not-allowed disabled:opacity-70 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
-          onClick={refreshAllData}
-          disabled={isRefreshing}
-        >
-          <Boxes size={16} />
-          {isRefreshing ? "Rafraichissement..." : "Rafraichir"}
-        </button>
-      </aside>
+      <Sidebar tab={tab} onTabChange={setTab} isRefreshing={isRefreshing} onRefresh={refreshAllData} />
       <main className="ml-72 min-h-screen bg-surface-bg dark:bg-slate-950">
         <header className="sticky top-0 z-10 flex min-h-16 items-center justify-between border-b border-border-soft bg-white px-5 dark:border-slate-800 dark:bg-slate-900">
           <h1 className="text-lg font-semibold text-brand-purple-900 dark:text-slate-100">Console Super Admin</h1>
