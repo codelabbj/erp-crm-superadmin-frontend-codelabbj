@@ -150,6 +150,10 @@ export type AdminModuleUpdate = {
   >
 >;
 
+export type AdminUserUpdate = {
+  id: string;
+} & Partial<Pick<AdminUser, "is_active" | "is_staff" | "is_superuser">>;
+
 export const adminApi = {
   overview: async () => (await api.get<AdminOverview>("/api/admin/overview/")).data,
 
@@ -162,7 +166,7 @@ export const adminApi = {
   users: async (params?: { q?: string; limit?: number; offset?: number; sort?: string }) =>
     (await api.get<PaginatedResponse<AdminUser>>("/api/admin/users/", { params })).data,
 
-  updateUser: async (payload: { id: string; is_active: boolean }) =>
+  updateUser: async (payload: AdminUserUpdate) =>
     (await api.patch("/api/admin/users/", payload)).data,
 
   modules: async (params?: { sort?: string }) =>

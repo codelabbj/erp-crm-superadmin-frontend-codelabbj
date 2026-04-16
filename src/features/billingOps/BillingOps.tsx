@@ -51,10 +51,6 @@ export function BillingOps() {
   return (
     <section className="rounded-2xl border border-border-soft bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
       <h2 className="m-0 text-xl font-semibold text-slate-900 dark:text-slate-100">Billing Ops</h2>
-      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-        Vue globale facturation via <code>/api/billing/clients</code>, <code>/invoices</code>, <code>/payments</code>.
-      </p>
-
       <div className="mt-4 flex flex-wrap items-end gap-3">
         <div className="inline-flex rounded-xl border border-slate-200 p-1 dark:border-slate-700">
           <button
