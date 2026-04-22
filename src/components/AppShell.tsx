@@ -9,6 +9,9 @@ import { Users } from "../features/users/Users";
 import { AuditLogs } from "../features/auditLogs/AuditLogs";
 import { BillingOps } from "../features/billingOps/BillingOps";
 import { DataOps } from "../features/dataOps/DataOps";
+import { Plans } from "../features/plans/Plans";
+import { SubscriptionsStats } from "../features/subscriptions/SubscriptionsStats";
+import { SubscriptionsAlerts } from "../features/subscriptions/SubscriptionsAlerts";
 import type { Tab } from "../lib/ui";
 import { authApi } from "../lib/api";
 import { applyTheme, getInitialTheme, type ThemeMode } from "../lib/theme";
@@ -32,7 +35,7 @@ export function AppShell() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [refreshToast, setRefreshToast] = useState("");
   const queryClient = useQueryClient();
-  const { data: me } = useQuery({
+  const { data: me, isLoading: isMeLoading } = useQuery({
     queryKey: ["me"],
     queryFn: async () => (await authApi.me()).data,
   });
@@ -49,6 +52,36 @@ export function AppShell() {
     applyTheme(next);
   };
 
+  const isSuperuser = Boolean(me?.user?.is_superuser);
+
+  if (isMeLoading) {
+    return (
+      <div className="grid min-h-screen place-items-center bg-surface-bg dark:bg-slate-950">
+        <p className="text-sm text-slate-600 dark:text-slate-300">Verification des droits...</p>
+      </div>
+    );
+  }
+
+  if (me && !isSuperuser) {
+    return (
+      <div className="grid min-h-screen place-items-center bg-surface-bg p-4 dark:bg-slate-950">
+        <section className="w-[min(92vw,520px)] rounded-xl border border-border-soft bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <h2 className="m-0 text-lg font-semibold text-brand-purple-900 dark:text-slate-100">Acces refuse</h2>
+          <p className="mt-2 mb-4 text-sm text-slate-600 dark:text-slate-300">
+            Cette interface est reservee aux utilisateurs super admin.
+          </p>
+          <button
+            type="button"
+            className="cursor-pointer rounded-md border border-brand-magenta-500 bg-brand-magenta-600 px-3 py-2 text-sm text-white"
+            onClick={logout}
+          >
+            Se deconnecter
+          </button>
+        </section>
+      </div>
+    );
+  }
+
   const refreshAllData = async () => {
     if (isRefreshing) return;
     setIsRefreshing(true);
@@ -64,6 +97,9 @@ export function AppShell() {
         ["users"],
         ["modules"],
         ["subs"],
+        ["subscription-stats"],
+        ["subscription-expiring-soon"],
+        ["subscription-alerts"],
         ["me"],
         ["audit-logs"],
         ["billing-clients"],
@@ -125,6 +161,8 @@ export function AppShell() {
           {tab === "overview" && <Dashboard />}
           {tab === "modules" && <Modules />}
           {tab === "subscriptions" && <Subscriptions />}
+          {tab === "subscriptionsStats" && <SubscriptionsStats />}
+          {tab === "subscriptionsAlerts" && <SubscriptionsAlerts />}
           {tab === "organizations" && <Organizations />}
           {tab === "staffUsers" && <Users />}
           {tab === "auditLogs" && <AuditLogs />}
@@ -154,12 +192,7 @@ export function AppShell() {
               description="Gestion CNAME et certificats en attente d'endpoints backend dedies."
             />
           )}
-          {tab === "plansFeatures" && (
-            <ComingSoonPanel
-              title="Plans & Features"
-              description="Moteur quotas/entitlements et edition des plans: en attente de modeles backend."
-            />
-          )}
+          {tab === "plansFeatures" && <Plans />}
           {tab === "featureFlags" && (
             <ComingSoonPanel
               title="Feature Flags"

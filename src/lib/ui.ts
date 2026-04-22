@@ -6,6 +6,8 @@ export type Tab =
   | "onboarding"
   | "domainsSsl"
   | "subscriptions"
+  | "subscriptionsStats"
+  | "subscriptionsAlerts"
   | "plansFeatures"
   | "invoices"
   | "featureFlags"

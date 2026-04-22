@@ -38,6 +38,8 @@ const sectionByTab: Record<Tab, MenuSection> = {
   onboarding: "tenants",
   domainsSsl: "tenants",
   subscriptions: "revenue",
+  subscriptionsStats: "revenue",
+  subscriptionsAlerts: "revenue",
   plansFeatures: "revenue",
   invoices: "revenue",
   featureFlags: "platformOps",
@@ -142,6 +144,14 @@ export function Sidebar({ tab, onTabChange, isRefreshing, onRefresh }: SidebarPr
             <button className={navBtn(tab === "subscriptions")} onClick={() => onTabChange("subscriptions")}>
               <WalletCards size={16} />
               Abonnements
+            </button>
+            <button className={navBtn(tab === "subscriptionsStats")} onClick={() => onTabChange("subscriptionsStats")}>
+              <BarChart3 size={16} />
+              Stats abonnements
+            </button>
+            <button className={navBtn(tab === "subscriptionsAlerts")} onClick={() => onTabChange("subscriptionsAlerts")}>
+              <FileSearch size={16} />
+              Alertes abonnements
             </button>
             <button className={navBtn(tab === "plansFeatures")} onClick={() => onTabChange("plansFeatures")}>
               <SlidersHorizontal size={16} />

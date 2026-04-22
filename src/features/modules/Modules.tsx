@@ -63,6 +63,7 @@ export function Modules() {
                   <input
                     className="max-w-[72px] rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900 focus:border-brand-magenta-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
                     type="number"
+                    aria-label={`Ordre du module ${m.code}`}
                     defaultValue={m.sort_order}
                     onBlur={(e) => mut.mutate({ id: m.id, sort_order: Number(e.target.value) || 0 })}
                   />
@@ -73,6 +74,7 @@ export function Modules() {
                 <td>
                   <input
                     className="rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900 focus:border-brand-magenta-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                    aria-label={`Nom du module ${m.code}`}
                     defaultValue={m.name}
                     onBlur={(e) => mut.mutate({ id: m.id, name: e.target.value })}
                   />
@@ -81,6 +83,7 @@ export function Modules() {
                   <textarea
                     className="w-full rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900 focus:border-brand-magenta-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
                     rows={2}
+                    aria-label={`Description du module ${m.code}`}
                     defaultValue={m.description}
                     onBlur={(e) => mut.mutate({ id: m.id, description: e.target.value })}
                   />
@@ -88,6 +91,7 @@ export function Modules() {
                 <td>
                   <input
                     className="rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900 focus:border-brand-magenta-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                    aria-label={`Prix mensuel du module ${m.code}`}
                     defaultValue={m.price_monthly}
                     onBlur={(e) => mut.mutate({ id: m.id, price_monthly: e.target.value })}
                   />
@@ -95,6 +99,7 @@ export function Modules() {
                 <td>
                   <input
                     className="rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900 focus:border-brand-magenta-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                    aria-label={`Prix annuel du module ${m.code}`}
                     defaultValue={m.price_yearly}
                     onBlur={(e) => mut.mutate({ id: m.id, price_yearly: e.target.value })}
                   />
@@ -103,6 +108,7 @@ export function Modules() {
                   <input
                     className="max-w-[80px] rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900 focus:border-brand-magenta-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
                     type="number"
+                    aria-label={`Jours d'essai du module ${m.code}`}
                     defaultValue={m.trial_days}
                     onBlur={(e) => mut.mutate({ id: m.id, trial_days: Number(e.target.value) })}
                   />

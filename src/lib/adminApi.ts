@@ -53,6 +53,104 @@ export interface AdminSubscription {
   module: { id: string; code: string; name: string };
 }
 
+export interface PlatformPlanLimits {
+  included_seats: number;
+  max_users_hard: number;
+  additional_seats_allowed: boolean;
+}
+
+export interface PlatformPlan {
+  id: string;
+  name: string;
+  code: string;
+  description?: string;
+  price_monthly: string | number;
+  price_yearly: string | number;
+  limits: PlatformPlanLimits;
+  enabled_modules: string[];
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export type PlatformPlanUpsert = {
+  name: string;
+  code: string;
+  description?: string;
+  price_monthly: string | number;
+  price_yearly: string | number;
+  limits: PlatformPlanLimits;
+  enabled_modules: string[];
+  is_active?: boolean;
+};
+
+export interface OrganizationSubscriptionOverview {
+  id: string;
+  name: string;
+  slug: string;
+  created_at: string;
+  is_active?: boolean;
+  status?: "active" | "suspended" | "trial" | string;
+  plan_code?: string | null;
+  seats_used?: number;
+  seats_included?: number;
+  additional_seats?: number;
+  active_modules_count?: number;
+}
+
+export interface OrganizationDetail extends OrganizationSubscriptionOverview {
+  plan_name?: string | null;
+  seats_max_hard?: number;
+}
+
+export interface OrganizationSubscriptionItem {
+  id: string;
+  module: { id: string; code: string; name: string };
+  status: string;
+  billing_cycle?: string | null;
+  starts_at?: string | null;
+  ends_at?: string | null;
+  auto_renew?: boolean;
+}
+
+export type AssignPlanPayload = {
+  plan_id?: string;
+  plan_code?: string;
+};
+
+export type AddSeatsPayload = {
+  seats: number;
+};
+
+export type AdminSubscriptionPatchPayload = Partial<
+  Pick<OrganizationSubscriptionItem, "status" | "billing_cycle" | "ends_at" | "auto_renew">
+>;
+
+export interface SubscriptionStats {
+  total_active_organizations?: number;
+  plan_distribution?: Record<string, number>;
+  total_active_modules?: number;
+  total_trial_subscriptions?: number;
+  expiring_in_7_days?: number;
+  estimated_monthly_revenue?: number | string;
+  [key: string]: unknown;
+}
+
+export interface SubscriptionAlertItem {
+  organization_id?: string;
+  organization_name?: string;
+  plan_code?: string | null;
+  module_code?: string | null;
+  ends_at?: string | null;
+  [key: string]: unknown;
+}
+
+export interface SubscriptionAlerts {
+  expired: SubscriptionAlertItem[];
+  trial_ending_soon: SubscriptionAlertItem[];
+  no_plan: SubscriptionAlertItem[];
+}
+
 export interface PaginatedResponse<T> {
   count: number;
   results: T[];
@@ -154,8 +252,48 @@ export type AdminUserUpdate = {
   id: string;
 } & Partial<Pick<AdminUser, "is_active" | "is_staff" | "is_superuser">>;
 
+export type AdminModulePatchPayload = Partial<
+  Pick<AdminModule, "name" | "description" | "price_monthly" | "price_yearly" | "trial_days" | "is_active" | "sort_order">
+>;
+
 export const adminApi = {
   overview: async () => (await api.get<AdminOverview>("/api/admin/overview/")).data,
+
+  licensingPlans: async () => (await api.get<PlatformPlan[]>("/api/admin/licensing/plans/")).data,
+  createLicensingPlan: async (payload: PlatformPlanUpsert) =>
+    (await api.post<PlatformPlan>("/api/admin/licensing/plans/", payload)).data,
+  updateLicensingPlan: async (id: string, payload: PlatformPlanUpsert) =>
+    (await api.put<PlatformPlan>(`/api/admin/licensing/plans/${id}/`, payload)).data,
+  patchLicensingPlan: async (id: string, payload: Partial<PlatformPlanUpsert>) =>
+    (await api.patch<PlatformPlan>(`/api/admin/licensing/plans/${id}/`, payload)).data,
+  toggleLicensingPlanActive: async (id: string, is_active: boolean) =>
+    (await api.patch<PlatformPlan>(`/api/admin/licensing/plans/${id}/`, { is_active })).data,
+  deleteLicensingPlan: async (id: string) => (await api.delete(`/api/admin/licensing/plans/${id}/`)).data,
+
+  licensingModules: async () => (await api.get<AdminModule[]>("/api/admin/licensing/modules/")).data,
+  patchLicensingModule: async (id: string, payload: AdminModulePatchPayload) =>
+    (await api.patch<AdminModule>(`/api/admin/licensing/modules/${id}/`, payload)).data,
+
+  organizationsOverview: async (params?: { q?: string; plan?: string; status?: string; limit?: number; offset?: number; sort?: string }) =>
+    (await api.get<PaginatedResponse<OrganizationSubscriptionOverview>>("/api/admin/organizations/", { params })).data,
+  organizationDetail: async (id: string) => (await api.get<OrganizationDetail>(`/api/admin/organizations/${id}/`)).data,
+  organizationSubscriptions: async (id: string, params?: { limit?: number; offset?: number; sort?: string }) =>
+    (await api.get<PaginatedResponse<OrganizationSubscriptionItem>>(`/api/admin/organizations/${id}/subscriptions/`, { params })).data,
+  assignPlanToOrganization: async (id: string, payload: AssignPlanPayload) =>
+    (await api.post(`/api/admin/organizations/${id}/assign-plan/`, payload)).data,
+  addSeatsToOrganization: async (id: string, payload: AddSeatsPayload) =>
+    (await api.post(`/api/admin/organizations/${id}/add-seats/`, payload)).data,
+
+  patchSubscription: async (id: string, payload: AdminSubscriptionPatchPayload) =>
+    (await api.patch(`/api/admin/subscriptions/${id}/`, payload)).data,
+  deleteSubscription: async (id: string) => (await api.delete(`/api/admin/subscriptions/${id}/`)).data,
+  extendSubscription: async (id: string, payload: { ends_at: string }) =>
+    (await api.post(`/api/admin/subscriptions/${id}/extend/`, payload)).data,
+
+  subscriptionStats: async () => (await api.get<SubscriptionStats>("/api/admin/subscriptions/stats/")).data,
+  subscriptionExpiringSoon: async () =>
+    (await api.get<SubscriptionAlertItem[]>("/api/admin/subscriptions/expiring-soon/")).data,
+  subscriptionAlerts: async () => (await api.get<SubscriptionAlerts>("/api/admin/subscriptions/alerts/")).data,
 
   organizations: async (params?: { q?: string; limit?: number; offset?: number; sort?: string }) =>
     (await api.get<PaginatedResponse<AdminOrganization>>("/api/admin/organizations/", { params })).data,
