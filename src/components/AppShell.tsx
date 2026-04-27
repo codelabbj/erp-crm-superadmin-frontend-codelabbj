@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Moon, Sun } from "lucide-react";
 import { Dashboard } from "../features/dashboard/Dashboard";
@@ -34,6 +34,8 @@ export function AppShell() {
   const [theme, setTheme] = useState<ThemeMode>(getInitialTheme);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [refreshToast, setRefreshToast] = useState("");
+  const [subscriptionsFocusOrgId, setSubscriptionsFocusOrgId] = useState<string | null>(null);
+  const clearSubscriptionsFocus = useCallback(() => setSubscriptionsFocusOrgId(null), []);
   const queryClient = useQueryClient();
   const { data: me, isLoading: isMeLoading } = useQuery({
     queryKey: ["me"],
@@ -158,9 +160,19 @@ export function AppShell() {
           </div>
         </header>
         <section className="grid content-start gap-3 p-[18px]">
-          {tab === "overview" && <Dashboard />}
+          {tab === "overview" && (
+            <Dashboard
+              onOpenOrgSubscriptions={(orgId) => {
+                setSubscriptionsFocusOrgId(orgId);
+                setTab("subscriptions");
+              }}
+              onOpenOrganizationsList={() => setTab("organizations")}
+            />
+          )}
           {tab === "modules" && <Modules />}
-          {tab === "subscriptions" && <Subscriptions />}
+          {tab === "subscriptions" && (
+            <Subscriptions focusOrgId={subscriptionsFocusOrgId} onFocusOrgHandled={clearSubscriptionsFocus} />
+          )}
           {tab === "subscriptionsStats" && <SubscriptionsStats />}
           {tab === "subscriptionsAlerts" && <SubscriptionsAlerts />}
           {tab === "organizations" && <Organizations />}

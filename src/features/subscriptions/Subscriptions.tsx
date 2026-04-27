@@ -11,7 +11,13 @@ type PendingAction =
   | { kind: "extend"; subId: string; endsAt: string }
   | { kind: "cancel"; subId: string };
 
-export function Subscriptions() {
+type SubscriptionsProps = {
+  /** Depuis le dashboard: ouvrir directement le detail de cette org (une seule consommation). */
+  focusOrgId?: string | null;
+  onFocusOrgHandled?: () => void;
+};
+
+export function Subscriptions({ focusOrgId, onFocusOrgHandled }: SubscriptionsProps) {
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [planFilter, setPlanFilter] = useState("");
@@ -50,9 +56,14 @@ export function Subscriptions() {
 
   useEffect(() => {
     if (selectedOrgId) return;
+    if (focusOrgId) {
+      setSelectedOrgId(focusOrgId);
+      onFocusOrgHandled?.();
+      return;
+    }
     const firstOrgId = data?.results?.[0]?.id;
     if (firstOrgId) setSelectedOrgId(firstOrgId);
-  }, [data?.results, selectedOrgId]);
+  }, [data?.results, selectedOrgId, focusOrgId, onFocusOrgHandled]);
 
   useEffect(() => {
     if (!selectedOrg?.plan_code) {

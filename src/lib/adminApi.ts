@@ -268,7 +268,7 @@ export const adminApi = {
     (await api.patch<PlatformPlan>(`/api/admin/licensing/plans/${id}/`, payload)).data,
   toggleLicensingPlanActive: async (id: string, is_active: boolean) =>
     (await api.patch<PlatformPlan>(`/api/admin/licensing/plans/${id}/`, { is_active })).data,
-  deleteLicensingPlan: async (id: string) => (await api.delete(`/api/admin/licensing/plans/${id}/`)).data,
+  deleteLicensingPlan: async (id: string) => (await api.delete(`/api/admin/plans/${id}/delete/`)).data,
 
   licensingModules: async () => (await api.get<AdminModule[]>("/api/admin/licensing/modules/")).data,
   patchLicensingModule: async (id: string, payload: AdminModulePatchPayload) =>

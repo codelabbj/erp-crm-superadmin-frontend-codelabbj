@@ -1,8 +1,82 @@
+import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Banknote, Building2, Puzzle, Users } from "lucide-react";
+import { Banknote, Building2, MoreVertical, Puzzle, Users } from "lucide-react";
 import { adminApi } from "../../lib/adminApi";
 
-export function Dashboard() {
+type DashboardProps = {
+  onOpenOrgSubscriptions: (orgId: string) => void;
+  onOpenOrganizationsList: () => void;
+};
+
+function RowActionsMenu({ onViewSubscriptions, onViewInList }: { onViewSubscriptions: () => void; onViewInList: () => void }) {
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e: MouseEvent) => {
+      if (wrapRef.current?.contains(e.target as Node)) return;
+      setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  return (
+    <div className="relative flex justify-end" ref={wrapRef}>
+      <button
+        type="button"
+        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-transparent text-slate-500 transition hover:border-slate-200 hover:bg-slate-100 hover:text-slate-800 dark:hover:border-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+        aria-label="Actions sur cette organisation"
+        onClick={() => setOpen((v) => !v)}
+      >
+        <MoreVertical size={20} strokeWidth={2.25} />
+      </button>
+      {open ? (
+        <ul
+          className="absolute right-0 top-full z-20 mt-1 min-w-[min(240px,88vw)] rounded-xl border border-slate-200 bg-white p-1 text-sm shadow-lg dark:border-slate-700 dark:bg-slate-900"
+          role="menu"
+        >
+          <li role="none">
+            <button
+              type="button"
+              role="menuitem"
+              className="flex w-full cursor-pointer rounded-lg px-3 py-2 text-left text-slate-800 transition hover:bg-slate-100 dark:text-slate-100 dark:hover:bg-slate-800"
+              onClick={() => {
+                onViewSubscriptions();
+                setOpen(false);
+              }}
+            >
+              Voir l&apos;abonnement
+            </button>
+          </li>
+          <li role="none">
+            <button
+              type="button"
+              role="menuitem"
+              className="flex w-full cursor-pointer rounded-lg px-3 py-2 text-left text-slate-800 transition hover:bg-slate-100 dark:text-slate-100 dark:hover:bg-slate-800"
+              onClick={() => {
+                onViewInList();
+                setOpen(false);
+              }}
+            >
+              Liste des organisations
+            </button>
+          </li>
+        </ul>
+      ) : null}
+    </div>
+  );
+}
+
+export function Dashboard({ onOpenOrgSubscriptions, onOpenOrganizationsList }: DashboardProps) {
   const { data: overview, isLoading: isOverviewLoading } = useQuery({ queryKey: ["overview"], queryFn: adminApi.overview });
   const { data: organizationsData } = useQuery({
     queryKey: ["dashboard-orgs"],
@@ -129,14 +203,25 @@ export function Dashboard() {
                       {row.status}
                     </span>
                   </td>
-                  <td className="text-2xl text-slate-400">⋮</td>
+                  <td className="w-[52px]">
+                    <RowActionsMenu
+                      onViewSubscriptions={() => onOpenOrgSubscriptions(row.id)}
+                      onViewInList={onOpenOrganizationsList}
+                    />
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
         <div className="px-6 py-4 text-center">
-          <button className="text-base font-semibold text-brand-purple-700 hover:text-brand-magenta-600">Voir toutes les organisations</button>
+          <button
+            type="button"
+            className="cursor-pointer text-base font-semibold text-brand-purple-700 hover:text-brand-magenta-600"
+            onClick={onOpenOrganizationsList}
+          >
+            Voir toutes les organisations
+          </button>
         </div>
       </section>
     </div>

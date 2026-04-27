@@ -21,7 +21,10 @@ export function LoginPage({ onLogged }: { onLogged: () => void }) {
       if (!me.data.user.is_superuser) throw new Error("Ce compte n'est pas super admin.");
       return me;
     },
-    onSuccess: () => onLogged(),
+    onSuccess: () => {
+      window.history.replaceState(null, "", "/");
+      onLogged();
+    },
     onError: (e) => {
       const maybeAxios = e as { response?: { data?: { detail?: string } } };
       const apiMessage = maybeAxios?.response?.data?.detail;
