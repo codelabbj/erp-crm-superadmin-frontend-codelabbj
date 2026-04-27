@@ -14,7 +14,7 @@ export function SubscriptionsStats() {
   });
 
   const stats = statsQuery.data as any;
-  const planDistribution = Object.entries(stats?.plan_distribution ?? {});
+  const planDistribution = Object.entries((stats?.plan_distribution as Record<string, number>) ?? {});
   
   const rawExpiringData = expiringSoonQuery.data as any;
   const expiringData = Array.isArray(rawExpiringData) ? rawExpiringData : (rawExpiringData?.results ?? []);
