@@ -13,8 +13,11 @@ export function SubscriptionsStats() {
     queryFn: () => adminApi.subscriptionExpiringSoon(),
   });
 
-  const stats = statsQuery.data;
+  const stats = statsQuery.data as any;
   const planDistribution = Object.entries(stats?.plan_distribution ?? {});
+  
+  const rawExpiringData = expiringSoonQuery.data as any;
+  const expiringData = Array.isArray(rawExpiringData) ? rawExpiringData : (rawExpiringData?.results ?? []);
 
   return (
     <section className="rounded-xl border border-border-soft bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
@@ -66,11 +69,11 @@ export function SubscriptionsStats() {
           <p className="m-0 mb-2 text-xs font-semibold text-slate-700 dark:text-slate-300">Expirations proches</p>
           {expiringSoonQuery.isLoading ? <p className="m-0 text-xs text-slate-500 dark:text-slate-400">Chargement...</p> : null}
           {expiringSoonQuery.isError ? <p className="m-0 text-xs text-red-700">{getErrorMessage(expiringSoonQuery.error)}</p> : null}
-          {(expiringSoonQuery.data ?? []).length === 0 ? (
+          {expiringData.length === 0 ? (
             <p className="m-0 text-xs text-slate-500 dark:text-slate-400">Aucune alerte d'expiration proche.</p>
           ) : (
             <ul className="m-0 grid gap-1 p-0">
-              {(expiringSoonQuery.data ?? []).slice(0, 8).map((item, idx) => (
+              {expiringData.slice(0, 8).map((item: any, idx: number) => (
                 <li key={`${item.organization_id ?? idx}-${item.module_code ?? "module"}`} className="list-none text-sm text-slate-700 dark:text-slate-300">
                   {(item.organization_name ?? "Organisation")} {item.module_code ? `- ${item.module_code}` : ""} {item.ends_at ? `(${item.ends_at})` : ""}
                 </li>

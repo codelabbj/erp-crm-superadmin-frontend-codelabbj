@@ -8,22 +8,24 @@ export function SubscriptionsAlerts() {
     queryFn: () => adminApi.subscriptionAlerts(),
   });
 
-  const alerts = alertsQuery.data;
+  const alerts = alertsQuery.data as any;
+
+  const getArray = (val: any) => Array.isArray(val) ? val : (val?.results ?? []);
 
   const sections = [
     {
       title: "Abonnements expires",
-      items: alerts?.expired ?? [],
+      items: getArray(alerts?.expired),
       empty: "Aucun abonnement expire.",
     },
     {
       title: "Essais se terminant bientot",
-      items: alerts?.trial_ending_soon ?? [],
+      items: getArray(alerts?.trial_ending_soon),
       empty: "Aucun essai en fin proche.",
     },
     {
       title: "Organisations sans plan",
-      items: alerts?.no_plan ?? [],
+      items: getArray(alerts?.no_plan),
       empty: "Aucune organisation sans plan.",
     },
   ];
@@ -43,7 +45,7 @@ export function SubscriptionsAlerts() {
               <p className="m-0 text-xs text-slate-500 dark:text-slate-400">{section.empty}</p>
             ) : (
               <ul className="m-0 grid gap-1 p-0">
-                {section.items.map((item, idx) => (
+                {section.items.map((item: any, idx: number) => (
                   <li key={`${section.title}-${item.organization_id ?? idx}`} className="list-none text-sm text-slate-700 dark:text-slate-300">
                     <span className="font-medium">{item.organization_name ?? "Organisation"}</span>
                     {item.plan_code ? ` - plan: ${item.plan_code}` : ""}
