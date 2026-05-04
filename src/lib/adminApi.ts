@@ -233,6 +233,50 @@ export interface ExportJobItem {
   created_at?: string;
 }
 
+export interface AdminDomain {
+  id: string;
+  tenant_id: string;
+  tenant_name: string;
+  domain: string;
+  status: string;
+  cname_target: string;
+  dns_verified: boolean;
+  certificate_status: "pending" | "valid" | "expired" | "error";
+  certificate_expires_at: string;
+  created_at?: string;
+}
+
+export interface FeatureFlag {
+  flag_key: string;
+  description: string;
+  default_enabled: boolean;
+}
+
+export interface FeatureFlagOverride {
+  id: string;
+  flag_key: string;
+  scope: "global" | "tenant";
+  tenant_id?: string | null;
+  is_enabled: boolean;
+}
+
+export interface BannedIP {
+  id: string;
+  ip_address: string;
+  reason: string;
+  expires_at: string;
+  is_active: boolean;
+  created_at?: string;
+}
+
+export interface WafRule {
+  id: string;
+  key: string;
+  description: string;
+  is_enabled: boolean;
+  config: Record<string, unknown>;
+}
+
 export type AdminModuleUpdate = {
   id: string;
 } & Partial<
@@ -338,4 +382,39 @@ export const adminApi = {
     (await api.get<PaginatedResponse<ImportJobItem> | ImportJobItem[]>("/api/io/imports/", { params })).data,
   exportJobs: async (params?: { q?: string; limit?: number; offset?: number; sort?: string }) =>
     (await api.get<PaginatedResponse<ExportJobItem> | ExportJobItem[]>("/api/io/exports/", { params })).data,
+
+  // Domains & SSL
+  domains: async (params?: { q?: string; limit?: number; offset?: number; sort?: string }) =>
+    (await api.get<PaginatedResponse<AdminDomain>>("/api/admin/domains/", { params })).data,
+  createDomain: async (payload: { tenant_id: string; domain: string; cname_target: string }) =>
+    (await api.post<AdminDomain>("/api/admin/domains/", payload)).data,
+  domainDetail: async (id: string) => (await api.get<AdminDomain>(`/api/admin/domains/${id}/`)).data,
+  verifyDomain: async (id: string) => (await api.post(`/api/admin/domains/${id}/verify/`)).data,
+  renewDomainCertificate: async (id: string) => (await api.post(`/api/admin/domains/${id}/renew-certificate/`)).data,
+
+  // Feature Flags
+  featureFlags: async () => (await api.get<FeatureFlag[]>("/api/admin/feature-flags/")).data,
+  patchFeatureFlag: async (key: string, payload: { description?: string; default_enabled?: boolean }) =>
+    (await api.patch<FeatureFlag>(`/api/admin/feature-flags/${key}/`, payload)).data,
+  featureFlagOverrides: async () => (await api.get<FeatureFlagOverride[]>("/api/admin/feature-flags/overrides/")).data,
+  upsertFeatureFlagOverride: async (payload: { flag_key: string; is_enabled: boolean; tenant_id?: string }) =>
+    (await api.post<FeatureFlagOverride>("/api/admin/feature-flags/overrides/", payload)).data,
+
+  // Security (WAF & IP Banning)
+  bannedIps: async () => (await api.get<BannedIP[]>("/api/admin/security/banned-ips/")).data,
+  banIp: async (payload: { ip_address: string; reason: string; expires_at: string; is_active: boolean }) =>
+    (await api.post<BannedIP>("/api/admin/security/banned-ips/", payload)).data,
+  unbanIp: async (id: string) => (await api.delete(`/api/admin/security/banned-ips/${id}/`)).data,
+  wafRules: async () => (await api.get<WafRule[]>("/api/admin/security/waf-rules/")).data,
+  patchWafRule: async (id: string, payload: { is_enabled?: boolean; description?: string; config?: Record<string, unknown> }) =>
+    (await api.patch<WafRule>(`/api/admin/security/waf-rules/${id}/`, payload)).data,
+
+  // General
+  uploadImage: async (file: File) => {
+    const formData = new FormData();
+    formData.append("image", file);
+    return (await api.post<{ url: string }>("/api/upload/image/", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    })).data;
+  },
 };

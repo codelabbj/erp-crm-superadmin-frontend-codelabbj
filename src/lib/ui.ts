@@ -17,7 +17,13 @@ export type Tab =
   | "auditLogs"
   | "bannedIpsWaf"
   | "billingOps"
-  | "dataOps";
+  | "dataOps"
+  | "marketing"
+  | "support"
+  | "projects"
+  | "ecommerce"
+  | "fiscal"
+  | "labels";
 
 export function formatIsoDate(iso: string | undefined): string {
   if (!iso) return "—";

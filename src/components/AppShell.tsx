@@ -12,6 +12,9 @@ import { DataOps } from "../features/dataOps/DataOps";
 import { Plans } from "../features/plans/Plans";
 import { SubscriptionsStats } from "../features/subscriptions/SubscriptionsStats";
 import { SubscriptionsAlerts } from "../features/subscriptions/SubscriptionsAlerts";
+import { Domains } from "../features/domains/Domains";
+import { FeatureFlags } from "../features/featureFlags/FeatureFlags";
+import { Security } from "../features/security/Security";
 import type { Tab } from "../lib/ui";
 import { authApi } from "../lib/api";
 import { applyTheme, getInitialTheme, type ThemeMode } from "../lib/theme";
@@ -198,25 +201,16 @@ export function AppShell() {
               description="Pipeline des tenants en setup/trial a venir des que le backend expose le lifecycle complet."
             />
           )}
-          {tab === "domainsSsl" && (
-            <ComingSoonPanel
-              title="Domains & SSL"
-              description="Gestion CNAME et certificats en attente d'endpoints backend dedies."
-            />
-          )}
+          {tab === "domainsSsl" && <Domains />}
           {tab === "plansFeatures" && <Plans />}
-          {tab === "featureFlags" && (
-            <ComingSoonPanel
-              title="Feature Flags"
-              description="Deploiement progressif et toggles tenant: en attente d'une API flags globale."
-            />
-          )}
-          {tab === "bannedIpsWaf" && (
-            <ComingSoonPanel
-              title="Banned IPs / WAF"
-              description="Blocage global IP et regles WAF a venir des que le backend securite est expose."
-            />
-          )}
+          {tab === "featureFlags" && <FeatureFlags />}
+          {tab === "bannedIpsWaf" && <Security />}
+          {tab === "marketing" && <ComingSoonPanel title="Marketing" description="Gestion des campagnes et contacts marketing via API standard." />}
+          {tab === "support" && <ComingSoonPanel title="Support" description="Gestion des tickets et du support client." />}
+          {tab === "projects" && <ComingSoonPanel title="Projets" description="Suivi des projets et des tâches globales." />}
+          {tab === "ecommerce" && <ComingSoonPanel title="E-commerce" description="Commandes en ligne et catalogue produits web." />}
+          {tab === "fiscal" && <ComingSoonPanel title="Fiscalité" description="Configuration et rapports fiscaux." />}
+          {tab === "labels" && <ComingSoonPanel title="Étiquettes" description="Gestion des étiquettes et labels plateforme." />}
           {tab === "billingOps" && <BillingOps />}
           {tab === "dataOps" && <DataOps />}
         </section>

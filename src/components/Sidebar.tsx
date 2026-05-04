@@ -18,10 +18,16 @@ import {
   Upload,
   Users2,
   WalletCards,
+  Megaphone,
+  LifeBuoy,
+  Briefcase,
+  ShoppingCart,
+  Scale,
+  Tag,
 } from "lucide-react";
 import type { Tab } from "../lib/ui";
 
-type MenuSection = "overview" | "tenants" | "revenue" | "platformOps" | "security";
+type MenuSection = "overview" | "tenants" | "revenue" | "platformOps" | "security" | "businessModules";
 
 type SidebarProps = {
   tab: Tab;
@@ -50,6 +56,12 @@ const sectionByTab: Record<Tab, MenuSection> = {
   bannedIpsWaf: "security",
   billingOps: "revenue",
   dataOps: "platformOps",
+  marketing: "businessModules",
+  support: "businessModules",
+  projects: "businessModules",
+  ecommerce: "businessModules",
+  fiscal: "businessModules",
+  labels: "businessModules",
 };
 
 export function Sidebar({ tab, onTabChange, isRefreshing, onRefresh }: SidebarProps) {
@@ -206,6 +218,41 @@ export function Sidebar({ tab, onTabChange, isRefreshing, onRefresh }: SidebarPr
             <button className={navBtn(tab === "bannedIpsWaf")} onClick={() => onTabChange("bannedIpsWaf")}>
               <ShieldBan size={16} />
               IP bannies / WAF
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="mb-4">
+        <button type="button" className={sectionTriggerBtn(isSectionOpen("businessModules"))} onClick={() => toggleSection("businessModules")}>
+          <span>Modules Métier</span>
+          {isSectionOpen("businessModules") ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+        </button>
+        <div className={sectionContent(isSectionOpen("businessModules"))}>
+          <div className="ml-3 border-l border-slate-300 pl-3 dark:border-slate-700">
+            <button className={navBtn(tab === "marketing")} onClick={() => onTabChange("marketing")}>
+              <Megaphone size={16} />
+              Marketing
+            </button>
+            <button className={navBtn(tab === "support")} onClick={() => onTabChange("support")}>
+              <LifeBuoy size={16} />
+              Support / Tickets
+            </button>
+            <button className={navBtn(tab === "projects")} onClick={() => onTabChange("projects")}>
+              <Briefcase size={16} />
+              Projets
+            </button>
+            <button className={navBtn(tab === "ecommerce")} onClick={() => onTabChange("ecommerce")}>
+              <ShoppingCart size={16} />
+              E-commerce
+            </button>
+            <button className={navBtn(tab === "fiscal")} onClick={() => onTabChange("fiscal")}>
+              <Scale size={16} />
+              Fiscalité
+            </button>
+            <button className={navBtn(tab === "labels")} onClick={() => onTabChange("labels")}>
+              <Tag size={16} />
+              Étiquettes
             </button>
           </div>
         </div>
