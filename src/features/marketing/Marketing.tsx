@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Megaphone, Plus, Mail, Users, Calendar, ArrowRight } from "lucide-react";
-import { adminApi, type MarketingCampaign } from "../../lib/adminApi";
+import { adminApi } from "../../lib/adminApi";
 import { formatIsoDate, normalizeList } from "../../lib/ui";
 
 export function Marketing() {

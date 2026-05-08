@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { LifeBuoy, Plus, MessageSquare, Clock, Filter, CheckCircle2, AlertCircle } from "lucide-react";
+import { Plus, MessageSquare, Clock, CheckCircle2, AlertCircle } from "lucide-react";
 import { adminApi, type SupportTicket } from "../../lib/adminApi";
 import { formatIsoDate, normalizeList } from "../../lib/ui";
 

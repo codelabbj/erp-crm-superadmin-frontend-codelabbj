@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Scale, Plus, FileText, Settings, ShieldCheck, AlertTriangle } from "lucide-react";
+import { Plus, FileText, Settings, ShieldCheck, AlertTriangle } from "lucide-react";
 import { adminApi } from "../../lib/adminApi";
 import { normalizeList } from "../../lib/ui";
 

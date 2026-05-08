@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ShieldBan, ShieldCheck, Plus, Trash2, Clock, AlertTriangle, Shield, Settings2, ToggleLeft, ToggleRight } from "lucide-react";
+import { ShieldCheck, Plus, Clock, AlertTriangle, Shield, Settings2, ToggleLeft, ToggleRight } from "lucide-react";
 import { useState } from "react";
-import { adminApi, type BannedIP, type WafRule } from "../../lib/adminApi";
+import { adminApi } from "../../lib/adminApi";
 
 export function Security() {
   const [activeTab, setActiveTab] = useState<"banned" | "waf">("banned");

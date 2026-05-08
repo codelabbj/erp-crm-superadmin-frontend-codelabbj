@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Globe, Plus, CheckCircle2, ShieldCheck, AlertCircle, RefreshCw, Trash2, Search } from "lucide-react";
+import { Globe, Plus, CheckCircle2, ShieldCheck, AlertCircle, RefreshCw, Search } from "lucide-react";
 import { useState } from "react";
 import { adminApi, type AdminDomain } from "../../lib/adminApi";
 

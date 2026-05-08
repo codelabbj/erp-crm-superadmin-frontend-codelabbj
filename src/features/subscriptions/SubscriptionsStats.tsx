@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { adminApi, type SubscriptionStats, type SubscriptionAlerts } from "../../lib/adminApi";
-import { getErrorMessage, formatIsoDate } from "../../lib/ui";
+import { formatIsoDate } from "../../lib/ui";
 import { AlertCircle, Clock, ShieldAlert, Users } from "lucide-react";
 
 export function SubscriptionsStats() {

@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Flag, Plus, Save, Trash2, ToggleLeft, ToggleRight, Building2, Globe } from "lucide-react";
+import { Plus, Trash2, ToggleLeft, ToggleRight, Building2, Globe } from "lucide-react";
 import { useState } from "react";
-import { adminApi, type FeatureFlag, type FeatureFlagOverride } from "../../lib/adminApi";
+import { adminApi } from "../../lib/adminApi";
 
 export function FeatureFlags() {
   const [activeTab, setActiveTab] = useState<"global" | "overrides">("global");
@@ -20,12 +20,6 @@ export function FeatureFlags() {
   const patchFlagMutation = useMutation({
     mutationFn: ({ key, payload }: { key: string; payload: any }) => adminApi.patchFeatureFlag(key, payload),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-feature-flags"] }),
-  });
-
-  const upsertOverrideMutation = useMutation({
-    mutationFn: (payload: { flag_key: string; is_enabled: boolean; tenant_id?: string }) =>
-      adminApi.upsertFeatureFlagOverride(payload),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-feature-flag-overrides"] }),
   });
 
   return (
