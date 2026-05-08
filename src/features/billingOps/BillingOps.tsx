@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { CheckCircle2, XCircle, FileCheck, Loader2 } from "lucide-react";
 import {
   adminApi,
   type BillingClientItem,
@@ -37,6 +38,23 @@ export function BillingOps() {
   const clients = useMemo(() => normalizeList(clientsQuery.data), [clientsQuery.data]);
   const invoices = useMemo(() => normalizeList(invoicesQuery.data), [invoicesQuery.data]);
   const payments = useMemo(() => normalizeList(paymentsQuery.data), [paymentsQuery.data]);
+
+  const queryClient = useQueryClient();
+
+  const finalizeMutation = useMutation({
+    mutationFn: ({ id, type }: { id: string; type: string }) => adminApi.finalizeInvoice(id, { invoice_type: type }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["billing-invoices"] }),
+  });
+
+  const cancelMutation = useMutation({
+    mutationFn: (id: string) => adminApi.cancelInvoice(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["billing-invoices"] }),
+  });
+
+  const confirmPaymentMutation = useMutation({
+    mutationFn: (id: string) => adminApi.confirmPayment(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["billing-payments"] }),
+  });
 
   const loading =
     (view === "clients" && clientsQuery.isLoading) ||
@@ -115,8 +133,9 @@ export function BillingOps() {
                 <th>Client</th>
                 <th>Status</th>
                 <th>Type</th>
-                <th>Total</th>
+                 <th>Total</th>
                 <th>Issued</th>
+                <th className="text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -128,6 +147,36 @@ export function BillingOps() {
                   <td>{inv.invoice_type || "—"}</td>
                   <td>{inv.total || "—"}</td>
                   <td>{inv.issued_at ? new Date(inv.issued_at).toLocaleDateString("fr-FR") : "—"}</td>
+                  <td className="text-right">
+                    <div className="flex justify-end gap-2">
+                      {inv.status === "draft" && (
+                        <button
+                          onClick={() => finalizeMutation.mutate({ id: inv.id, type: "simple" })}
+                          className="rounded-lg p-1.5 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+                          title="Finaliser"
+                        >
+                          {finalizeMutation.isPending && finalizeMutation.variables?.id === inv.id ? (
+                            <Loader2 size={16} className="animate-spin" />
+                          ) : (
+                            <FileCheck size={16} />
+                          )}
+                        </button>
+                      )}
+                      {inv.status !== "cancelled" && (
+                        <button
+                          onClick={() => cancelMutation.mutate(inv.id)}
+                          className="rounded-lg p-1.5 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20"
+                          title="Annuler"
+                        >
+                          {cancelMutation.isPending && cancelMutation.variables === inv.id ? (
+                            <Loader2 size={16} className="animate-spin" />
+                          ) : (
+                            <XCircle size={16} />
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -144,8 +193,9 @@ export function BillingOps() {
                 <th>Flow</th>
                 <th>Method</th>
                 <th>Status</th>
-                <th>Invoice</th>
+                 <th>Invoice</th>
                 <th>Date</th>
+                <th className="text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -157,6 +207,21 @@ export function BillingOps() {
                   <td>{p.status || "—"}</td>
                   <td>{p.invoice_detail || "—"}</td>
                   <td>{p.paid_at || p.created_at ? new Date((p.paid_at || p.created_at) as string).toLocaleDateString("fr-FR") : "—"}</td>
+                  <td className="text-right">
+                    {p.status !== "confirmed" && (
+                      <button
+                        onClick={() => confirmPaymentMutation.mutate(p.id)}
+                        className="rounded-lg p-1.5 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+                        title="Confirmer"
+                      >
+                        {confirmPaymentMutation.isPending && confirmPaymentMutation.variables === p.id ? (
+                          <Loader2 size={16} className="animate-spin" />
+                        ) : (
+                          <CheckCircle2 size={16} />
+                        )}
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

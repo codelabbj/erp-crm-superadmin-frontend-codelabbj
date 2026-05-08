@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { RefreshCw, XCircle, Loader2 } from "lucide-react";
 import {
   adminApi,
   type ExportJobItem,
@@ -38,6 +39,28 @@ export function DataOps() {
 
   const importRows = useMemo(() => normalizeList(importsQuery.data), [importsQuery.data]);
   const exportRows = useMemo(() => normalizeList(exportsQuery.data), [exportsQuery.data]);
+
+  const queryClient = useQueryClient();
+
+  const retryImportMutation = useMutation({
+    mutationFn: (id: string) => adminApi.retryImport(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["data-imports"] }),
+  });
+
+  const cancelImportMutation = useMutation({
+    mutationFn: (id: string) => adminApi.cancelImport(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["data-imports"] }),
+  });
+
+  const retryExportMutation = useMutation({
+    mutationFn: (id: string) => adminApi.retryExport(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["data-exports"] }),
+  });
+
+  const cancelExportMutation = useMutation({
+    mutationFn: (id: string) => adminApi.cancelExport(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["data-exports"] }),
+  });
 
   const loading = (view === "imports" && importsQuery.isLoading) || (view === "exports" && exportsQuery.isLoading);
   const error = (view === "imports" && importsQuery.error) || (view === "exports" && exportsQuery.error);
@@ -83,6 +106,7 @@ export function DataOps() {
                 <th>Statut</th>
                 <th>Cree le</th>
                 <th>Termine le</th>
+                <th className="text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -93,6 +117,36 @@ export function DataOps() {
                   <td>{job.status || "—"}</td>
                   <td>{formatDate(job.created_at)}</td>
                   <td>{formatDate(job.completed_at)}</td>
+                  <td className="text-right">
+                    <div className="flex justify-end gap-2">
+                      {job.status === "failed" && (
+                        <button
+                          onClick={() => retryImportMutation.mutate(job.id)}
+                          className="rounded-lg p-1.5 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+                          title="Relancer"
+                        >
+                          {retryImportMutation.isPending && retryImportMutation.variables === job.id ? (
+                            <Loader2 size={16} className="animate-spin" />
+                          ) : (
+                            <RefreshCw size={16} />
+                          )}
+                        </button>
+                      )}
+                      {(job.status === "pending" || job.status === "running") && (
+                        <button
+                          onClick={() => cancelImportMutation.mutate(job.id)}
+                          className="rounded-lg p-1.5 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20"
+                          title="Annuler"
+                        >
+                          {cancelImportMutation.isPending && cancelImportMutation.variables === job.id ? (
+                            <Loader2 size={16} className="animate-spin" />
+                          ) : (
+                            <XCircle size={16} />
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -110,6 +164,7 @@ export function DataOps() {
                 <th>Statut</th>
                 <th>Fichier</th>
                 <th>Cree le</th>
+                <th className="text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -120,6 +175,36 @@ export function DataOps() {
                   <td>{job.status || "—"}</td>
                   <td>{job.file_path || "—"}</td>
                   <td>{formatDate(job.created_at)}</td>
+                  <td className="text-right">
+                    <div className="flex justify-end gap-2">
+                      {job.status === "failed" && (
+                        <button
+                          onClick={() => retryExportMutation.mutate(job.id)}
+                          className="rounded-lg p-1.5 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+                          title="Relancer"
+                        >
+                          {retryExportMutation.isPending && retryExportMutation.variables === job.id ? (
+                            <Loader2 size={16} className="animate-spin" />
+                          ) : (
+                            <RefreshCw size={16} />
+                          )}
+                        </button>
+                      )}
+                      {(job.status === "pending" || job.status === "running") && (
+                        <button
+                          onClick={() => cancelExportMutation.mutate(job.id)}
+                          className="rounded-lg p-1.5 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20"
+                          title="Annuler"
+                        >
+                          {cancelExportMutation.isPending && cancelExportMutation.variables === job.id ? (
+                            <Loader2 size={16} className="animate-spin" />
+                          ) : (
+                            <XCircle size={16} />
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>

@@ -45,30 +45,30 @@ describe("adminApi", () => {
 
   it("licensing plans CRUD", async () => {
     await adminApi.licensingPlans();
-    expect(get).toHaveBeenCalledWith("/api/admin/licensing/plans/");
+    expect(get).toHaveBeenCalledWith("/api/licensing/plans/");
 
     await adminApi.createLicensingPlan(planUpsert);
-    expect(post).toHaveBeenCalledWith("/api/admin/licensing/plans/", planUpsert);
+    expect(post).toHaveBeenCalledWith("/api/licensing/plans/", planUpsert);
 
     await adminApi.updateLicensingPlan("pid", planUpsert);
-    expect(put).toHaveBeenCalledWith("/api/admin/licensing/plans/pid/", planUpsert);
+    expect(put).toHaveBeenCalledWith("/api/licensing/plans/pid/", planUpsert);
 
     await adminApi.patchLicensingPlan("pid", { is_active: false });
-    expect(patch).toHaveBeenCalledWith("/api/admin/licensing/plans/pid/", { is_active: false });
+    expect(patch).toHaveBeenCalledWith("/api/licensing/plans/pid/", { is_active: false });
 
     await adminApi.toggleLicensingPlanActive("pid", true);
-    expect(patch).toHaveBeenCalledWith("/api/admin/licensing/plans/pid/", { is_active: true });
+    expect(patch).toHaveBeenCalledWith("/api/licensing/plans/pid/", { is_active: true });
 
     await adminApi.deleteLicensingPlan("pid");
-    expect(del).toHaveBeenCalledWith("/api/admin/plans/pid/delete/");
+    expect(del).toHaveBeenCalledWith("/api/plans/pid/delete/");
   });
 
   it("licensing modules", async () => {
     await adminApi.licensingModules();
-    expect(get).toHaveBeenCalledWith("/api/admin/licensing/modules/");
+    expect(get).toHaveBeenCalledWith("/api/licensing/modules/");
 
     await adminApi.patchLicensingModule("mid", { name: "M" });
-    expect(patch).toHaveBeenCalledWith("/api/admin/licensing/modules/mid/", { name: "M" });
+    expect(patch).toHaveBeenCalledWith("/api/licensing/modules/mid/", { name: "M" });
   });
 
   it("organizations (overview, detail, subscriptions, plan, seats)", async () => {

@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import { adminApi } from "../../lib/adminApi";
-import { getErrorMessage } from "../../lib/ui";
+import { adminApi, type SubscriptionStats, type SubscriptionAlerts } from "../../lib/adminApi";
+import { getErrorMessage, formatIsoDate } from "../../lib/ui";
+import { AlertCircle, Clock, ShieldAlert, Users } from "lucide-react";
 
 export function SubscriptionsStats() {
   const statsQuery = useQuery({
@@ -8,80 +9,130 @@ export function SubscriptionsStats() {
     queryFn: () => adminApi.subscriptionStats(),
   });
 
-  const expiringSoonQuery = useQuery({
-    queryKey: ["subscription-expiring-soon"],
-    queryFn: () => adminApi.subscriptionExpiringSoon(),
+  const alertsQuery = useQuery({
+    queryKey: ["subscription-alerts"],
+    queryFn: () => adminApi.subscriptionAlerts(),
   });
 
-  const stats = statsQuery.data as any;
-  const planDistribution = Object.entries((stats?.plan_distribution as Record<string, number>) ?? {});
-  
-  const rawExpiringData = expiringSoonQuery.data as any;
-  const expiringData = Array.isArray(rawExpiringData) ? rawExpiringData : (rawExpiringData?.results ?? []);
+  const stats = statsQuery.data as SubscriptionStats;
+  const alerts = alertsQuery.data as SubscriptionAlerts;
 
   return (
-    <section className="rounded-xl border border-border-soft bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-      <h3 className="mb-3 text-base font-semibold text-brand-purple-900 dark:text-slate-100">Statistiques abonnements</h3>
-
-      {statsQuery.isLoading ? <p className="mb-3 text-xs text-text-muted dark:text-slate-400">Chargement...</p> : null}
-      {statsQuery.isError ? <p className="mb-3 text-sm text-red-700">{getErrorMessage(statsQuery.error)}</p> : null}
-
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-        <div className="rounded-lg border border-slate-200 p-3 dark:border-slate-700">
-          <p className="m-0 text-xs text-slate-500 dark:text-slate-400">Organisations actives</p>
-          <p className="m-0 mt-1 text-lg font-semibold text-slate-800 dark:text-slate-100">{stats?.total_active_organizations ?? 0}</p>
-        </div>
-        <div className="rounded-lg border border-slate-200 p-3 dark:border-slate-700">
-          <p className="m-0 text-xs text-slate-500 dark:text-slate-400">Modules actifs (total)</p>
-          <p className="m-0 mt-1 text-lg font-semibold text-slate-800 dark:text-slate-100">{stats?.total_active_modules ?? 0}</p>
-        </div>
-        <div className="rounded-lg border border-slate-200 p-3 dark:border-slate-700">
-          <p className="m-0 text-xs text-slate-500 dark:text-slate-400">Abonnements en trial</p>
-          <p className="m-0 mt-1 text-lg font-semibold text-slate-800 dark:text-slate-100">{stats?.total_trial_subscriptions ?? 0}</p>
-        </div>
-        <div className="rounded-lg border border-slate-200 p-3 dark:border-slate-700">
-          <p className="m-0 text-xs text-slate-500 dark:text-slate-400">Expirent dans 7 jours</p>
-          <p className="m-0 mt-1 text-lg font-semibold text-slate-800 dark:text-slate-100">{stats?.expiring_in_7_days ?? 0}</p>
-        </div>
-        <div className="rounded-lg border border-slate-200 p-3 dark:border-slate-700 md:col-span-2">
-          <p className="m-0 text-xs text-slate-500 dark:text-slate-400">Revenu mensuel estime</p>
-          <p className="m-0 mt-1 text-lg font-semibold text-slate-800 dark:text-slate-100">{stats?.estimated_monthly_revenue ?? 0}</p>
-        </div>
+    <section className="grid gap-5">
+      {/* Summary Cards */}
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <StatSummaryCard
+          title="Abonnements Actifs"
+          value={stats?.summary.total_active ?? 0}
+          icon={<ShieldAlert className="text-emerald-500" size={20} />}
+        />
+        <StatSummaryCard
+          title="Expirés"
+          value={stats?.summary.total_expired ?? 0}
+          icon={<AlertCircle className="text-rose-500" size={20} />}
+        />
+        <StatSummaryCard
+          title="Annulés"
+          value={stats?.summary.total_cancelled ?? 0}
+          icon={<Clock className="text-slate-400" size={20} />}
+        />
+        <StatSummaryCard
+          title="Total Organisations"
+          value={stats?.summary.total_organizations ?? 0}
+          icon={<Users className="text-brand-purple-500" size={20} />}
+        />
       </div>
 
-      <div className="mt-4 grid gap-3 md:grid-cols-2">
-        <div className="rounded-lg border border-slate-200 p-3 dark:border-slate-700">
-          <p className="m-0 mb-2 text-xs font-semibold text-slate-700 dark:text-slate-300">Repartition par plan</p>
-          {planDistribution.length === 0 ? (
-            <p className="m-0 text-xs text-slate-500 dark:text-slate-400">Aucune donnee.</p>
-          ) : (
-            <ul className="m-0 grid gap-1 p-0">
-              {planDistribution.map(([plan, count]) => (
-                <li key={plan} className="list-none text-sm text-slate-700 dark:text-slate-300">
-                  <span className="font-medium">{plan}</span>: {count}
-                </li>
-              ))}
-            </ul>
-          )}
+      <div className="grid gap-5 lg:grid-cols-2">
+        {/* Distribution Charts */}
+        <div className="space-y-4 rounded-2xl border border-border-soft bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 uppercase tracking-widest">Distribution</h3>
+          
+          <div className="space-y-6">
+            <div>
+              <p className="mb-3 text-xs font-bold text-slate-400 uppercase">Par Plan</p>
+              <div className="flex flex-wrap gap-2">
+                {stats?.by_plan.map(p => (
+                  <div key={p.plan_code} className="rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-800">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase">{p.plan_code}</p>
+                    <p className="text-sm font-bold text-slate-900 dark:text-slate-100">{p.count}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <p className="mb-3 text-xs font-bold text-slate-400 uppercase">Par Module (Top 6)</p>
+              <div className="grid grid-cols-2 gap-3">
+                {stats?.by_module.slice(0, 6).map(m => (
+                  <div key={m.module_code} className="flex items-center justify-between rounded-lg border border-slate-100 p-2 dark:border-slate-800">
+                    <span className="text-xs text-slate-600 dark:text-slate-400 truncate pr-2">{m.module_name}</span>
+                    <span className="text-xs font-bold text-slate-900 dark:text-slate-100">{m.count}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div className="rounded-lg border border-slate-200 p-3 dark:border-slate-700">
-          <p className="m-0 mb-2 text-xs font-semibold text-slate-700 dark:text-slate-300">Expirations proches</p>
-          {expiringSoonQuery.isLoading ? <p className="m-0 text-xs text-slate-500 dark:text-slate-400">Chargement...</p> : null}
-          {expiringSoonQuery.isError ? <p className="m-0 text-xs text-red-700">{getErrorMessage(expiringSoonQuery.error)}</p> : null}
-          {expiringData.length === 0 ? (
-            <p className="m-0 text-xs text-slate-500 dark:text-slate-400">Aucune alerte d'expiration proche.</p>
-          ) : (
-            <ul className="m-0 grid gap-1 p-0">
-              {expiringData.slice(0, 8).map((item: any, idx: number) => (
-                <li key={`${item.organization_id ?? idx}-${item.module_code ?? "module"}`} className="list-none text-sm text-slate-700 dark:text-slate-300">
-                  {(item.organization_name ?? "Organisation")} {item.module_code ? `- ${item.module_code}` : ""} {item.ends_at ? `(${item.ends_at})` : ""}
-                </li>
-              ))}
-            </ul>
-          )}
+        {/* Alerts Section */}
+        <div className="rounded-2xl border border-border-soft bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <div className="border-b border-border-soft p-5 dark:border-slate-800">
+            <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 uppercase tracking-widest">Alertes & Expirations</h3>
+          </div>
+          <div className="max-h-[400px] overflow-y-auto p-5 space-y-4">
+            {alerts?.expired.items.length ? (
+              <div>
+                <p className="mb-2 text-[10px] font-bold text-rose-500 uppercase">Expirés ({alerts.expired.count})</p>
+                <div className="space-y-2">
+                  {alerts.expired.items.slice(0, 5).map(item => (
+                    <div key={item.id} className="flex items-center justify-between rounded-xl bg-rose-50 p-3 dark:bg-rose-900/10">
+                      <div>
+                        <p className="text-xs font-bold text-slate-900 dark:text-slate-100">{item.org.name}</p>
+                        <p className="text-[10px] text-rose-600 dark:text-rose-400">{item.module.name} • Expiré il y a {item.days_expired}j</p>
+                      </div>
+                      <span className="text-[10px] text-slate-400">{formatIsoDate(item.ends_at)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {alerts?.no_plan.items.length ? (
+              <div>
+                <p className="mb-2 text-[10px] font-bold text-amber-500 uppercase">Sans Plan ({alerts.no_plan.count})</p>
+                <div className="space-y-2">
+                  {alerts.no_plan.items.slice(0, 5).map(item => (
+                    <div key={item.id} className="flex items-center justify-between rounded-xl bg-amber-50 p-3 dark:bg-amber-900/10">
+                      <div>
+                        <p className="text-xs font-bold text-slate-900 dark:text-slate-100">{item.name}</p>
+                        <p className="text-[10px] text-amber-600 dark:text-amber-400">Inscrit depuis {item.days_since_creation}j</p>
+                      </div>
+                      <button className="text-[10px] font-bold text-brand-purple-600 uppercase hover:underline">Assigner</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {!alerts?.expired.count && !alerts?.no_plan.count && !alertsQuery.isLoading && (
+              <p className="py-8 text-center text-xs text-slate-400">Aucune alerte critique pour le moment.</p>
+            )}
+          </div>
         </div>
       </div>
     </section>
+  );
+}
+
+function StatSummaryCard({ title, value, icon }: { title: string; value: number | string; icon: React.ReactNode }) {
+  return (
+    <div className="rounded-2xl border border-border-soft bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <div className="mb-3 flex items-center justify-between">
+        <div className="rounded-xl bg-slate-50 p-2 dark:bg-slate-800">{icon}</div>
+      </div>
+      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{title}</p>
+      <p className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">{value}</p>
+    </div>
   );
 }

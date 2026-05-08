@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Banknote, Building2, MoreVertical, Puzzle, Users } from "lucide-react";
+import { Banknote, Building2, MoreVertical, Puzzle, Users, Rocket } from "lucide-react";
 import { adminApi } from "../../lib/adminApi";
 
 type DashboardProps = {
@@ -95,25 +95,27 @@ export function Dashboard({ onOpenOrgSubscriptions, onOpenOrganizationsList }: D
     queryFn: () => adminApi.subscriptions({ limit: 300, offset: 0, sort: "-created_at" }),
   });
 
-  const organizations = overview?.organizations ?? organizationsData?.count ?? 0;
-  const users = overview?.users ?? usersData?.count ?? 0;
-  const activeModules = overview?.active_modules ?? modulesData?.filter((m) => m.is_active).length ?? 0;
+  const organizations = overview?.organizations ?? organizationsData?.count;
+  const users = overview?.users ?? usersData?.count;
+  const activeModules = overview?.active_modules ?? modulesData?.filter((m) => m.is_active).length;
+  const activeSubscriptions = overview?.active_subscriptions ?? subscriptionsData?.count;
+  const mrr = overview?.mrr;
 
-  const modulesById = new Map((modulesData ?? []).map((m) => [m.id, m]));
-  const estimatedMonthlyRevenue = (subscriptionsData?.results ?? []).reduce((sum, sub) => {
-    if (!["active", "trial", "past_due"].includes(sub.status)) return sum;
-    const module = modulesById.get(sub.module.id);
-    const monthly = Number(module?.price_monthly ?? 0);
-    return Number.isFinite(monthly) ? sum + monthly : sum;
-  }, 0);
+  const kpis = [
+    { 
+      label: "Organisations", 
+      value: (overview?.active_orgs !== undefined && overview?.total_orgs !== undefined) 
+        ? `${overview.active_orgs} / ${overview.total_orgs}` 
+        : organizations, 
+      icon: Building2 
+    },
+    { label: "Utilisateurs", value: users, icon: Users },
+    { label: "Abonnements actifs", value: activeSubscriptions, icon: Rocket },
+    { label: "Revenus estimes", value: mrr !== undefined && mrr !== null ? `€${mrr.toLocaleString("fr-FR")}` : undefined, icon: Banknote },
+    { label: "Modules actifs", value: activeModules, icon: Puzzle },
+  ].filter(kpi => kpi.value !== undefined && kpi.value !== null);
 
   const subsResults = subscriptionsData?.results ?? [];
-  const kpis = [
-    { label: "Organisations", value: organizations, icon: Building2 },
-    { label: "Utilisateurs", value: users, icon: Users },
-    { label: "Revenus estimes", value: `€${estimatedMonthlyRevenue.toLocaleString("fr-FR")}`, icon: Banknote },
-    { label: "Modules actifs", value: activeModules, icon: Puzzle },
-  ];
 
   const recentRows = (organizationsData?.results ?? [])
     .slice()
@@ -131,8 +133,8 @@ export function Dashboard({ onOpenOrgSubscriptions, onOpenOrganizationsList }: D
       };
     });
 
-  const formatValue = (value: number | string) =>
-    typeof value === "number" ? value.toLocaleString("fr-FR") : value;
+  const formatValue = (value: number | string | undefined) =>
+    typeof value === "number" ? value.toLocaleString("fr-FR") : (value ?? "");
 
   if (isOverviewLoading && !overview) {
     return <div className="rounded-2xl border border-border-soft bg-white p-5 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">Chargement du dashboard...</div>;

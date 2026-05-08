@@ -15,20 +15,20 @@ import { SubscriptionsAlerts } from "../features/subscriptions/SubscriptionsAler
 import { Domains } from "../features/domains/Domains";
 import { FeatureFlags } from "../features/featureFlags/FeatureFlags";
 import { Security } from "../features/security/Security";
+import { PlatformHealth } from "../features/dashboard/PlatformHealth";
+import { BusinessMetrics } from "../features/dashboard/BusinessMetrics";
+import { Onboarding } from "../features/organizations/Onboarding";
+import { Marketing } from "../features/marketing/Marketing";
+import { Support } from "../features/support/Support";
+import { Projects } from "../features/projects/Projects";
+import { Ecommerce } from "../features/ecommerce/Ecommerce";
+import { Fiscal } from "../features/fiscal/Fiscal";
+import { Labels } from "../features/labels/Labels";
 import type { Tab } from "../lib/ui";
 import { authApi } from "../lib/api";
 import { applyTheme, getInitialTheme, type ThemeMode } from "../lib/theme";
 import { Sidebar } from "./Sidebar";
 
-function ComingSoonPanel({ title, description }: { title: string; description: string }) {
-  return (
-    <section className="rounded-2xl border border-border-soft bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-      <h2 className="m-0 text-xl font-semibold text-slate-900 dark:text-slate-100">{title}</h2>
-      <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">{description}</p>
-      <p className="mt-3 text-xs font-medium text-brand-purple-700 dark:text-brand-magenta-500">Coming soon</p>
-    </section>
-  );
-}
 
 export function AppShell() {
   const [tab, setTab] = useState<Tab>("overview");
@@ -183,34 +183,19 @@ export function AppShell() {
           {tab === "auditLogs" && <AuditLogs />}
           {tab === "invoices" && <BillingOps />}
           {tab === "backgroundJobs" && <DataOps />}
-          {tab === "platformHealth" && (
-            <ComingSoonPanel
-              title="Platform Health"
-              description="Latence globale, erreurs et signups du jour seront affiches ici des que les endpoints agreges seront disponibles."
-            />
-          )}
-          {tab === "businessMetrics" && (
-            <ComingSoonPanel
-              title="Business Metrics"
-              description="MRR, ARR et active tenants seront connectes des que les KPI financiers globaux seront exposes."
-            />
-          )}
-          {tab === "onboarding" && (
-            <ComingSoonPanel
-              title="Onboarding"
-              description="Pipeline des tenants en setup/trial a venir des que le backend expose le lifecycle complet."
-            />
-          )}
+          {tab === "platformHealth" && <PlatformHealth />}
+          {tab === "businessMetrics" && <BusinessMetrics />}
+          {tab === "onboarding" && <Onboarding />}
           {tab === "domainsSsl" && <Domains />}
           {tab === "plansFeatures" && <Plans />}
           {tab === "featureFlags" && <FeatureFlags />}
           {tab === "bannedIpsWaf" && <Security />}
-          {tab === "marketing" && <ComingSoonPanel title="Marketing" description="Gestion des campagnes et contacts marketing via API standard." />}
-          {tab === "support" && <ComingSoonPanel title="Support" description="Gestion des tickets et du support client." />}
-          {tab === "projects" && <ComingSoonPanel title="Projets" description="Suivi des projets et des tâches globales." />}
-          {tab === "ecommerce" && <ComingSoonPanel title="E-commerce" description="Commandes en ligne et catalogue produits web." />}
-          {tab === "fiscal" && <ComingSoonPanel title="Fiscalité" description="Configuration et rapports fiscaux." />}
-          {tab === "labels" && <ComingSoonPanel title="Étiquettes" description="Gestion des étiquettes et labels plateforme." />}
+          {tab === "marketing" && <Marketing />}
+          {tab === "support" && <Support />}
+          {tab === "projects" && <Projects />}
+          {tab === "ecommerce" && <Ecommerce />}
+          {tab === "fiscal" && <Fiscal />}
+          {tab === "labels" && <Labels />}
           {tab === "billingOps" && <BillingOps />}
           {tab === "dataOps" && <DataOps />}
         </section>

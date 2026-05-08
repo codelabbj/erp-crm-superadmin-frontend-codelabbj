@@ -5,6 +5,10 @@ export interface AdminOverview {
   users: number;
   active_modules: number;
   active_subscriptions: number;
+  mrr?: number;
+  arr?: number;
+  active_orgs?: number;
+  total_orgs?: number;
 }
 
 export interface AdminOrganization {
@@ -127,28 +131,49 @@ export type AdminSubscriptionPatchPayload = Partial<
 >;
 
 export interface SubscriptionStats {
-  total_active_organizations?: number;
-  plan_distribution?: Record<string, number>;
-  total_active_modules?: number;
-  total_trial_subscriptions?: number;
-  expiring_in_7_days?: number;
-  estimated_monthly_revenue?: number | string;
-  [key: string]: unknown;
+  generated_at: string;
+  summary: {
+    total_active: number;
+    total_expired: number;
+    total_cancelled: number;
+    total_organizations: number;
+  };
+  by_plan: Array<{ plan_code: string; count: number }>;
+  by_module: Array<{ module_code: string; module_name: string; count: number }>;
+  monthly_evolution: Array<{ month: string; active_subscriptions: number }>;
 }
 
-export interface SubscriptionAlertItem {
-  organization_id?: string;
-  organization_name?: string;
-  plan_code?: string | null;
-  module_code?: string | null;
-  ends_at?: string | null;
-  [key: string]: unknown;
+export interface SubscriptionExpiredItem {
+  id: string;
+  org: { id: string; name: string };
+  module: { code: string; name: string };
+  status: string;
+  ends_at: string;
+  days_expired: number;
+}
+
+export interface SubscriptionNoPlanItem {
+  id: string;
+  name: string;
+  slug: string;
+  created_at: string;
+  days_since_creation: number;
 }
 
 export interface SubscriptionAlerts {
-  expired: SubscriptionAlertItem[];
-  trial_ending_soon: SubscriptionAlertItem[];
-  no_plan: SubscriptionAlertItem[];
+  generated_at: string;
+  expired: {
+    count: number;
+    items: SubscriptionExpiredItem[];
+  };
+  trial_ending_soon: {
+    count: number;
+    items: any[];
+  };
+  no_plan: {
+    count: number;
+    items: SubscriptionNoPlanItem[];
+  };
 }
 
 export interface PaginatedResponse<T> {
@@ -277,6 +302,87 @@ export interface WafRule {
   config: Record<string, unknown>;
 }
 
+export interface PlatformHealthSummary {
+  global_uptime_percent: number;
+  avg_api_latency_ms: number;
+  error_rate_percent: number;
+  updated_at: string;
+  active_orgs: number;
+  total_orgs: number;
+  active_users: number;
+  total_users: number;
+}
+
+export interface PlatformServiceHealth {
+  name: string;
+  status: "ok" | "degraded" | "down" | string;
+  latency_ms: number;
+  error_rate: number;
+}
+
+export interface PlatformHealthServices {
+  services: PlatformServiceHealth[];
+  updated_at: string;
+}
+
+export interface BusinessMetrics {
+  mrr: number;
+  arr: number;
+  active_tenants: number;
+  churn_rate: number;
+  net_revenue_retention: number;
+  trial_to_paid_rate: number;
+  time_series: {
+    new_tenants_by_month: Array<{ month: string; count: number }>;
+    new_subscriptions_by_month: Array<{ month: string; count: number }>;
+    cancelled_subscriptions_by_month: Array<{ month: string; count: number }>;
+  };
+}
+
+export interface OnboardingJob {
+  id: string;
+  tenant_id: string;
+  tenant_name: string;
+  stage: string;
+  status: "pending" | "completed" | "failed" | string;
+  started_at: string;
+  completed_at: string | null;
+  error: string | null;
+}
+
+export interface MarketingCampaign {
+  id: string;
+  name: string;
+  status: string;
+  created_at: string;
+  [key: string]: unknown;
+}
+
+export interface SupportTicket {
+  id: string;
+  subject: string;
+  status: string;
+  priority: string;
+  created_at: string;
+  [key: string]: unknown;
+}
+
+export interface ProjectItem {
+  id: string;
+  name: string;
+  status: string;
+  created_at: string;
+  [key: string]: unknown;
+}
+
+export interface EcommerceOrder {
+  id: string;
+  order_number: string;
+  total: string;
+  status: string;
+  created_at: string;
+}
+
 export type AdminModuleUpdate = {
   id: string;
 } & Partial<
@@ -303,20 +409,20 @@ export type AdminModulePatchPayload = Partial<
 export const adminApi = {
   overview: async () => (await api.get<AdminOverview>("/api/admin/overview/")).data,
 
-  licensingPlans: async () => (await api.get<PlatformPlan[]>("/api/admin/licensing/plans/")).data,
+  licensingPlans: async () => (await api.get<PlatformPlan[]>("/api/licensing/plans/")).data,
   createLicensingPlan: async (payload: PlatformPlanUpsert) =>
-    (await api.post<PlatformPlan>("/api/admin/licensing/plans/", payload)).data,
+    (await api.post<PlatformPlan>("/api/licensing/plans/", payload)).data,
   updateLicensingPlan: async (id: string, payload: PlatformPlanUpsert) =>
-    (await api.put<PlatformPlan>(`/api/admin/licensing/plans/${id}/`, payload)).data,
+    (await api.put<PlatformPlan>(`/api/licensing/plans/${id}/`, payload)).data,
   patchLicensingPlan: async (id: string, payload: Partial<PlatformPlanUpsert>) =>
-    (await api.patch<PlatformPlan>(`/api/admin/licensing/plans/${id}/`, payload)).data,
+    (await api.patch<PlatformPlan>(`/api/licensing/plans/${id}/`, payload)).data,
   toggleLicensingPlanActive: async (id: string, is_active: boolean) =>
-    (await api.patch<PlatformPlan>(`/api/admin/licensing/plans/${id}/`, { is_active })).data,
-  deleteLicensingPlan: async (id: string) => (await api.delete(`/api/admin/plans/${id}/delete/`)).data,
+    (await api.patch<PlatformPlan>(`/api/licensing/plans/${id}/`, { is_active })).data,
+  deleteLicensingPlan: async (id: string) => (await api.delete(`/api/plans/${id}/delete/`)).data,
 
-  licensingModules: async () => (await api.get<AdminModule[]>("/api/admin/licensing/modules/")).data,
+  licensingModules: async () => (await api.get<AdminModule[]>("/api/licensing/modules/")).data,
   patchLicensingModule: async (id: string, payload: AdminModulePatchPayload) =>
-    (await api.patch<AdminModule>(`/api/admin/licensing/modules/${id}/`, payload)).data,
+    (await api.patch<AdminModule>(`/api/licensing/modules/${id}/`, payload)).data,
 
   organizationsOverview: async (params?: { q?: string; plan?: string; status?: string; limit?: number; offset?: number; sort?: string }) =>
     (await api.get<PaginatedResponse<OrganizationSubscriptionOverview>>("/api/admin/organizations/", { params })).data,
@@ -336,7 +442,7 @@ export const adminApi = {
 
   subscriptionStats: async () => (await api.get<SubscriptionStats>("/api/admin/subscriptions/stats/")).data,
   subscriptionExpiringSoon: async () =>
-    (await api.get<SubscriptionAlertItem[]>("/api/admin/subscriptions/expiring-soon/")).data,
+    (await api.get<SubscriptionExpiredItem[]>("/api/subscriptions/expiring-soon/")).data,
   subscriptionAlerts: async () => (await api.get<SubscriptionAlerts>("/api/admin/subscriptions/alerts/")).data,
 
   organizations: async (params?: { q?: string; limit?: number; offset?: number; sort?: string }) =>
@@ -408,6 +514,51 @@ export const adminApi = {
   wafRules: async () => (await api.get<WafRule[]>("/api/admin/security/waf-rules/")).data,
   patchWafRule: async (id: string, payload: { is_enabled?: boolean; description?: string; config?: Record<string, unknown> }) =>
     (await api.patch<WafRule>(`/api/admin/security/waf-rules/${id}/`, payload)).data,
+
+  // Platform Health
+  platformHealthSummary: async () => (await api.get<PlatformHealthSummary>("/api/admin/platform-health/summary/")).data,
+  platformHealthServices: async () => (await api.get<PlatformHealthServices>("/api/admin/platform-health/services/")).data,
+
+  // Business Metrics
+  businessMetrics: async (params?: { period?: string }) => (await api.get<BusinessMetrics>("/api/admin/business-metrics/", { params })).data,
+
+  // Onboarding
+  onboardingJobs: async (params?: { q?: string; limit?: number; offset?: number; ordering?: string }) =>
+    (await api.get<PaginatedResponse<OnboardingJob>>("/api/admin/onboarding-jobs/", { params })).data,
+  retryOnboardingJob: async (id: string) => (await api.post<{ id: string; status: string }>(`/api/admin/onboarding-jobs/${id}/retry/`)).data,
+
+  // Billing Actions
+  finalizeInvoice: async (id: string, payload: { invoice_type: string }) =>
+    (await api.post(`/api/billing/invoices/${id}/finalize/`, payload)).data,
+  cancelInvoice: async (id: string) => (await api.post(`/api/billing/invoices/${id}/cancel/`)).data,
+  confirmPayment: async (id: string) => (await api.post(`/api/billing/payments/${id}/confirm/`)).data,
+
+  // Data Ops Actions
+  retryImport: async (id: string) => (await api.post(`/api/io/imports/${id}/retry/`)).data,
+  cancelImport: async (id: string) => (await api.post(`/api/io/imports/${id}/cancel/`)).data,
+  retryExport: async (id: string) => (await api.post(`/api/io/exports/${id}/retry/`)).data,
+  cancelExport: async (id: string) => (await api.post(`/api/io/exports/${id}/cancel/`)).data,
+
+  // Marketing
+  marketingCampaigns: async () => (await api.get<PaginatedResponse<MarketingCampaign>>("/api/marketing/campaigns/")).data,
+  createMarketingCampaign: async (payload: any) => (await api.post("/api/marketing/campaigns/", payload)).data,
+
+  // Support
+  supportTickets: async () => (await api.get<PaginatedResponse<SupportTicket>>("/api/support/tickets/")).data,
+  createSupportTicket: async (payload: any) => (await api.post("/api/support/tickets/", payload)).data,
+
+  // Projects
+  projects: async () => (await api.get<PaginatedResponse<ProjectItem>>("/api/projects/projects/")).data,
+
+  // E-commerce
+  ecommerceOrders: async () => (await api.get<PaginatedResponse<EcommerceOrder>>("/api/ecommerce/orders/")).data,
+
+  // Fiscal
+  fiscalConfigs: async () => (await api.get<any[]>("/api/fiscal/config/")).data,
+
+  // Labels
+  labelTemplates: async () => (await api.get<any[]>("/api/labels/templates/")).data,
+  generateLabel: async (payload: any) => (await api.post("/api/labels/", payload)).data,
 
   // General
   uploadImage: async (file: File) => {

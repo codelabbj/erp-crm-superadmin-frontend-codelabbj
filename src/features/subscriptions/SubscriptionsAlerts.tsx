@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import { adminApi } from "../../lib/adminApi";
+import { adminApi, type SubscriptionAlerts } from "../../lib/adminApi";
 import { formatIsoDate, getErrorMessage } from "../../lib/ui";
+import { AlertCircle, Clock, ShieldAlert, ArrowRight, Building2 } from "lucide-react";
 
 export function SubscriptionsAlerts() {
   const alertsQuery = useQuery({
@@ -8,56 +9,113 @@ export function SubscriptionsAlerts() {
     queryFn: () => adminApi.subscriptionAlerts(),
   });
 
-  const alerts = alertsQuery.data as any;
-
-  const getArray = (val: any) => Array.isArray(val) ? val : (val?.results ?? []);
-
-  const sections = [
-    {
-      title: "Abonnements expires",
-      items: getArray(alerts?.expired),
-      empty: "Aucun abonnement expire.",
-    },
-    {
-      title: "Essais se terminant bientot",
-      items: getArray(alerts?.trial_ending_soon),
-      empty: "Aucun essai en fin proche.",
-    },
-    {
-      title: "Organisations sans plan",
-      items: getArray(alerts?.no_plan),
-      empty: "Aucune organisation sans plan.",
-    },
-  ];
+  const alerts = alertsQuery.data as SubscriptionAlerts;
 
   return (
-    <section className="rounded-xl border border-border-soft bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-      <h3 className="mb-3 text-base font-semibold text-brand-purple-900 dark:text-slate-100">Alertes abonnements</h3>
+    <div className="grid gap-6">
+      <header>
+        <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Alertes & Surveillances</h2>
+        <p className="text-sm text-slate-500 dark:text-slate-400">Suivi critique des expirations et des organisations sans abonnement actif.</p>
+      </header>
 
-      {alertsQuery.isLoading ? <p className="mb-3 text-xs text-text-muted dark:text-slate-400">Chargement...</p> : null}
-      {alertsQuery.isError ? <p className="mb-3 text-sm text-red-700">{getErrorMessage(alertsQuery.error)}</p> : null}
-
-      <div className="grid gap-3">
-        {sections.map((section) => (
-          <div key={section.title} className="rounded-lg border border-slate-200 p-3 dark:border-slate-700">
-            <p className="m-0 mb-2 text-xs font-semibold text-slate-700 dark:text-slate-300">{section.title}</p>
-            {section.items.length === 0 ? (
-              <p className="m-0 text-xs text-slate-500 dark:text-slate-400">{section.empty}</p>
-            ) : (
-              <ul className="m-0 grid gap-1 p-0">
-                {section.items.map((item: any, idx: number) => (
-                  <li key={`${section.title}-${item.organization_id ?? idx}`} className="list-none text-sm text-slate-700 dark:text-slate-300">
-                    <span className="font-medium">{item.organization_name ?? "Organisation"}</span>
-                    {item.plan_code ? ` - plan: ${item.plan_code}` : ""}
-                    {item.module_code ? ` - module: ${item.module_code}` : ""}
-                    {item.ends_at ? ` - fin: ${formatIsoDate(item.ends_at)}` : ""}
-                  </li>
-                ))}
-              </ul>
-            )}
+      {alertsQuery.isLoading ? (
+        <div className="py-20 text-center text-slate-400">Chargement des alertes...</div>
+      ) : alertsQuery.isError ? (
+        <div className="rounded-2xl border border-red-100 bg-red-50 p-6 text-red-700 dark:border-red-900/20 dark:bg-red-900/10">
+          {getErrorMessage(alertsQuery.error)}
+        </div>
+      ) : (
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* Section: Expired */}
+          <div className="rounded-2xl border border-border-soft bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <div className="flex items-center justify-between border-b border-border-soft p-5 dark:border-slate-800">
+              <div className="flex items-center gap-2">
+                <div className="rounded-lg bg-rose-50 p-2 dark:bg-rose-900/20">
+                  <AlertCircle size={18} className="text-rose-500" />
+                </div>
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Abonnements expirés</h3>
+              </div>
+              <span className="rounded-full bg-rose-100 px-2.5 py-0.5 text-xs font-bold text-rose-700 dark:bg-rose-900/30 dark:text-rose-400">
+                {alerts.expired.count}
+              </span>
+            </div>
+            <div className="divide-y divide-border-soft dark:divide-slate-800">
+              {alerts.expired.items.length === 0 ? (
+                <p className="p-10 text-center text-xs text-slate-400">Aucun abonnement expiré trouvé.</p>
+              ) : (
+                alerts.expired.items.map((item) => (
+                  <div key={item.id} className="flex items-center justify-between p-5 transition hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                    <div>
+                      <h4 className="font-bold text-slate-900 dark:text-slate-100">{item.org.name}</h4>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        {item.module.name} • <span className="font-medium text-rose-500">Expiré il y a {item.days_expired}j</span>
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="text-right">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase">Échéance</p>
+                        <p className="text-xs font-medium text-slate-700 dark:text-slate-300">{formatIsoDate(item.ends_at)}</p>
+                      </div>
+                      <button className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
+                        <ArrowRight size={18} />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
-        ))}
-      </div>
-    </section>
+
+          {/* Section: No Plan */}
+          <div className="rounded-2xl border border-border-soft bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <div className="flex items-center justify-between border-b border-border-soft p-5 dark:border-slate-800">
+              <div className="flex items-center gap-2">
+                <div className="rounded-lg bg-amber-50 p-2 dark:bg-amber-900/20">
+                  <ShieldAlert size={18} className="text-amber-500" />
+                </div>
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Organisations sans plan</h3>
+              </div>
+              <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                {alerts.no_plan.count}
+              </span>
+            </div>
+            <div className="divide-y divide-border-soft dark:divide-slate-800">
+              {alerts.no_plan.items.length === 0 ? (
+                <p className="p-10 text-center text-xs text-slate-400">Toutes les organisations ont un plan.</p>
+              ) : (
+                alerts.no_plan.items.map((item) => (
+                  <div key={item.id} className="flex items-center justify-between p-5 transition hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                    <div className="flex items-center gap-3">
+                      <div className="rounded-full bg-slate-100 p-2 dark:bg-slate-800">
+                        <Building2 size={16} className="text-slate-400" />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-slate-900 dark:text-slate-100">{item.name}</h4>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                          Inscrit depuis {item.days_since_creation} jours
+                        </p>
+                      </div>
+                    </div>
+                    <button className="rounded-xl bg-brand-purple-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-brand-purple-700">
+                      Assigner
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Section: Trials (Placeholders or Real if count > 0) */}
+          <div className="lg:col-span-2 rounded-2xl border border-dashed border-slate-200 p-8 text-center dark:border-slate-800">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-50 dark:bg-slate-900">
+              <Clock size={24} className="text-slate-300" />
+            </div>
+            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+              {alerts.trial_ending_soon.count} essai(s) se terminant bientôt.
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
