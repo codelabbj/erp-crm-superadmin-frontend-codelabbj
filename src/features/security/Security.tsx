@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ShieldCheck, Plus, Clock, AlertTriangle, Shield, Settings2, ToggleLeft, ToggleRight } from "lucide-react";
 import { useState } from "react";
 import { adminApi } from "../../lib/adminApi";
+import { getErrorMessage } from "../../lib/ui";
 
 export function Security() {
   const [activeTab, setActiveTab] = useState<"banned" | "waf">("banned");
@@ -15,6 +16,22 @@ export function Security() {
   const { data: wafRules, isLoading: isWafLoading } = useQuery({
     queryKey: ["admin-waf-rules"],
     queryFn: () => adminApi.wafRules(),
+  });
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalError, setModalError] = useState("");
+  const [newBan, setNewBan] = useState({ ip_address: "", reason: "", expires_at: "", is_active: true });
+
+  const banMutation = useMutation({
+    mutationFn: (payload: { ip_address: string; reason: string; expires_at: string; is_active: boolean }) => 
+      adminApi.banIp(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-banned-ips"] });
+      setIsModalOpen(false);
+      setModalError("");
+      setNewBan({ ip_address: "", reason: "", expires_at: "", is_active: true });
+    },
+    onError: (e: unknown) => setModalError(getErrorMessage(e)),
   });
 
   const unbanMutation = useMutation({
@@ -39,7 +56,7 @@ export function Security() {
       <div className="flex gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-800/50 w-fit">
         <button
           onClick={() => setActiveTab("banned")}
-          className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
+          className={`rounded-lg px-4 py-2 text-sm font-semibold transition-all ${
             activeTab === "banned"
               ? "bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white"
               : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
@@ -49,7 +66,7 @@ export function Security() {
         </button>
         <button
           onClick={() => setActiveTab("waf")}
-          className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
+          className={`rounded-lg px-4 py-2 text-sm font-semibold transition-all ${
             activeTab === "waf"
               ? "bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white"
               : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
@@ -63,9 +80,11 @@ export function Security() {
         <div className="grid gap-4">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Restrictions IP actives</h3>
-            <button className="inline-flex items-center gap-2 rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-rose-700">
+            {/* DISABLED: Bannir une IP
+            <button onClick={() => setIsModalOpen(true)} className="btn-danger px-3 py-1.5 text-xs">
               <Plus size={14} /> Bannir une IP
             </button>
+            */}
           </div>
           <div className="overflow-hidden rounded-2xl border border-border-soft bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <table className="w-full text-left text-sm">
@@ -100,9 +119,9 @@ export function Security() {
                       )}
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <button
+                       <button
                         onClick={() => unbanMutation.mutate(ip.id)}
-                        className="text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400"
+                        className="btn-ghost h-9 w-9 p-0 text-slate-400 hover:text-emerald-600 dark:hover:bg-emerald-900/20"
                         title="Débannir"
                       >
                         <ShieldCheck size={18} />
@@ -139,7 +158,7 @@ export function Security() {
                     <Settings2 size={12} />
                     {JSON.stringify(rule.config)}
                   </div>
-                  <button className="text-[10px] font-bold text-brand-purple-600 hover:underline dark:text-brand-magenta-500">
+                  <button className="btn-ghost px-2 py-1 text-[10px] text-brand-purple-600 dark:text-brand-magenta-500">
                     Éditer
                   </button>
                 </div>
@@ -158,6 +177,70 @@ export function Security() {
                   Les modifications des règles WAF impactent l&apos;ensemble de la plateforme en temps réel. Soyez vigilant lors des changements de configuration (block vs sanitize).
                 </p>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-slate-900/60 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-lg animate-in zoom-in-95 duration-200 rounded-3xl border border-border-soft bg-white p-8 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+            <div className="mb-6 flex items-center justify-between">
+              <h3 className="text-xl font-black text-slate-900 dark:text-slate-100">Bannir une IP</h3>
+              <button 
+                onClick={() => setIsModalOpen(false)}
+                className="btn-ghost h-9 w-9 p-0 text-slate-400"
+              >
+                <Plus size={24} className="rotate-45" />
+              </button>
+            </div>
+
+            {modalError && (
+              <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-medium text-rose-700 dark:border-rose-900/40 dark:bg-rose-900/20 dark:text-rose-400">
+                {modalError}
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <div className="grid gap-1.5">
+                <label className="text-xs font-bold text-slate-500 uppercase">Adresse IP</label>
+                <input 
+                  value={newBan.ip_address}
+                  onChange={(e) => setNewBan({ ...newBan, ip_address: e.target.value })}
+                  placeholder="ex: 192.168.1.1"
+                  className="w-full"
+                />
+              </div>
+              <div className="grid gap-1.5">
+                <label className="text-xs font-bold text-slate-500 uppercase">Raison</label>
+                <textarea 
+                  value={newBan.reason}
+                  onChange={(e) => setNewBan({ ...newBan, reason: e.target.value })}
+                  placeholder="ex: Tentatives de brute force répétées"
+                  className="w-full"
+                  rows={3}
+                />
+              </div>
+              <div className="grid gap-1.5">
+                <label className="text-xs font-bold text-slate-500 uppercase">Date d'expiration</label>
+                <input 
+                  type="date"
+                  value={newBan.expires_at}
+                  onChange={(e) => setNewBan({ ...newBan, expires_at: e.target.value })}
+                  className="w-full"
+                />
+              </div>
+            </div>
+
+            <div className="mt-8 flex justify-end gap-3">
+              <button onClick={() => setIsModalOpen(false)} className="btn-secondary px-6">Annuler</button>
+              <button 
+                disabled={banMutation.isPending || !newBan.ip_address}
+                onClick={() => { setModalError(""); banMutation.mutate(newBan); }}
+                className="btn-danger px-6"
+              >
+                {banMutation.isPending ? "Bannissement..." : "Bannir l'IP"}
+              </button>
             </div>
           </div>
         </div>

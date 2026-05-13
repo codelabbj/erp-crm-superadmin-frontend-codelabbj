@@ -14,6 +14,7 @@ export type Tab =
   | "modules"
   | "backgroundJobs"
   | "staffUsers"
+  | "aiAssistant"
   | "auditLogs"
   | "bannedIpsWaf"
   | "billingOps"
@@ -38,14 +39,43 @@ export function formatIsoDate(iso: string | undefined): string {
 }
 
 export function getErrorMessage(error: unknown): string {
-  if (
-    typeof error === "object" &&
-    error &&
-    "message" in error &&
-    typeof (error as { message?: unknown }).message === "string"
-  ) {
-    return (error as { message: string }).message;
+  if (!error || typeof error !== "object") return "Une erreur est survenue.";
+
+  // Axios-style: error.response.data contains the API body
+  const data: unknown = (error as any)?.response?.data ?? (error as any)?.data;
+
+  if (data && typeof data === "object") {
+    // { "errors": { "field": ["msg", ...], ... } }
+    const errors = (data as any).errors;
+    if (errors && typeof errors === "object") {
+      const parts: string[] = [];
+      for (const [field, msgs] of Object.entries(errors)) {
+        const text = Array.isArray(msgs) ? msgs.join(", ") : String(msgs);
+        parts.push(`${field}: ${text}`);
+      }
+      if (parts.length) return parts.join(" | ");
+    }
+
+    // { "detail": "some message" }
+    if (typeof (data as any).detail === "string") {
+      return (data as any).detail;
+    }
+
+    // { "message": "some message" }
+    if (typeof (data as any).message === "string") {
+      return (data as any).message;
+    }
+
+    // { "non_field_errors": ["msg"] }
+    const nfe = (data as any).non_field_errors;
+    if (Array.isArray(nfe) && nfe.length) return nfe.join(", ");
   }
+
+  // Fallback to error.message (network errors, etc.)
+  if (typeof (error as any).message === "string") {
+    return (error as any).message;
+  }
+
   return "Une erreur est survenue.";
 }
 

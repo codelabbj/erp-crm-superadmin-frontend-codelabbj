@@ -86,7 +86,7 @@ export function Onboarding() {
                       <button
                         onClick={() => retryMutation.mutate(job.id)}
                         disabled={retryMutation.isPending}
-                        className="rounded-lg p-2 text-rose-500 transition hover:bg-rose-50 disabled:opacity-50 dark:hover:bg-rose-900/20"
+                        className="btn-ghost h-9 w-9 p-0 text-rose-500 hover:text-rose-600 dark:hover:bg-rose-900/20"
                         title="Relancer le job"
                       >
                         {retryMutation.isPending && retryMutation.variables === job.id ? (

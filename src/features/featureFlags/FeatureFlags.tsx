@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Trash2, ToggleLeft, ToggleRight, Building2, Globe } from "lucide-react";
 import { useState } from "react";
 import { adminApi } from "../../lib/adminApi";
+import { getErrorMessage } from "../../lib/ui";
 
 export function FeatureFlags() {
   const [activeTab, setActiveTab] = useState<"global" | "overrides">("global");
@@ -15,6 +16,22 @@ export function FeatureFlags() {
   const { data: overrides, isLoading: isOverridesLoading } = useQuery({
     queryKey: ["admin-feature-flag-overrides"],
     queryFn: () => adminApi.featureFlagOverrides(),
+  });
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalError, setModalError] = useState("");
+  const [newOverride, setNewOverride] = useState({ flag_key: "", is_enabled: true, tenant_id: "" });
+
+  const upsertOverrideMutation = useMutation({
+    mutationFn: (payload: { flag_key: string; is_enabled: boolean; tenant_id?: string }) => 
+      adminApi.upsertFeatureFlagOverride(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-feature-flag-overrides"] });
+      setIsModalOpen(false);
+      setModalError("");
+      setNewOverride({ flag_key: "", is_enabled: true, tenant_id: "" });
+    },
+    onError: (e: unknown) => setModalError(getErrorMessage(e)),
   });
 
   const patchFlagMutation = useMutation({
@@ -34,7 +51,7 @@ export function FeatureFlags() {
       <div className="flex gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-800/50 w-fit">
         <button
           onClick={() => setActiveTab("global")}
-          className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
+          className={`rounded-lg px-4 py-2 text-sm font-semibold transition-all ${
             activeTab === "global"
               ? "bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white"
               : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
@@ -44,7 +61,7 @@ export function FeatureFlags() {
         </button>
         <button
           onClick={() => setActiveTab("overrides")}
-          className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
+          className={`rounded-lg px-4 py-2 text-sm font-semibold transition-all ${
             activeTab === "overrides"
               ? "bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white"
               : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
@@ -84,7 +101,7 @@ export function FeatureFlags() {
         <div className="grid gap-4">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Surcharges actives</h3>
-            <button className="inline-flex items-center gap-2 rounded-lg border border-border-soft bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+            <button onClick={() => setIsModalOpen(true)} className="btn-secondary px-3 py-1.5 text-xs">
               <Plus size={14} /> Créer un override
             </button>
           </div>
@@ -123,7 +140,7 @@ export function FeatureFlags() {
                       )}
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <button className="text-slate-400 hover:text-rose-600 dark:hover:text-rose-400">
+                      <button className="btn-ghost h-8 w-8 p-0 text-slate-400 hover:text-rose-600 dark:hover:bg-rose-900/20">
                         <Trash2 size={16} />
                       </button>
                     </td>
@@ -131,6 +148,73 @@ export function FeatureFlags() {
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-slate-900/60 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-lg animate-in zoom-in-95 duration-200 rounded-3xl border border-border-soft bg-white p-8 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+            <div className="mb-6 flex items-center justify-between">
+              <h3 className="text-xl font-black text-slate-900 dark:text-slate-100">Nouvel Override</h3>
+              <button 
+                onClick={() => setIsModalOpen(false)}
+                className="btn-ghost h-9 w-9 p-0 text-slate-400"
+              >
+                <Plus size={24} className="rotate-45" />
+              </button>
+            </div>
+
+            {modalError && (
+              <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-medium text-rose-700 dark:border-rose-900/40 dark:bg-rose-900/20 dark:text-rose-400">
+                {modalError}
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <div className="grid gap-1.5">
+                <label className="text-xs font-bold text-slate-500 uppercase">Clé du Flag</label>
+                <select 
+                  value={newOverride.flag_key}
+                  onChange={(e) => setNewOverride({ ...newOverride, flag_key: e.target.value })}
+                  className="w-full"
+                >
+                  <option value="">Sélectionner un flag...</option>
+                  {globalFlags?.map((f) => (
+                    <option key={f.flag_key} value={f.flag_key}>{f.flag_key}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="grid gap-1.5">
+                <label className="text-xs font-bold text-slate-500 uppercase">ID du Tenant (optionnel)</label>
+                <input 
+                  value={newOverride.tenant_id}
+                  onChange={(e) => setNewOverride({ ...newOverride, tenant_id: e.target.value })}
+                  placeholder="Laisser vide pour global"
+                  className="w-full"
+                />
+              </div>
+              <div className="flex items-center justify-between rounded-xl border border-slate-100 p-4 dark:border-slate-800">
+                <span className="text-sm font-bold text-slate-700 dark:text-slate-300">État du Flag</span>
+                <button
+                  onClick={() => setNewOverride({ ...newOverride, is_enabled: !newOverride.is_enabled })}
+                  className="text-slate-400 transition hover:text-brand-purple-600"
+                >
+                  {newOverride.is_enabled ? <ToggleRight size={32} className="text-emerald-500" /> : <ToggleLeft size={32} />}
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-8 flex justify-end gap-3">
+              <button onClick={() => setIsModalOpen(false)} className="btn-secondary px-6">Annuler</button>
+              <button 
+                disabled={upsertOverrideMutation.isPending || !newOverride.flag_key}
+                onClick={() => { setModalError(""); upsertOverrideMutation.mutate(newOverride); }}
+                className="btn-primary px-6"
+              >
+                {upsertOverrideMutation.isPending ? "Création..." : "Enregistrer"}
+              </button>
+            </div>
           </div>
         </div>
       )}

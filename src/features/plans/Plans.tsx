@@ -155,7 +155,7 @@ export function Plans() {
         <h3 className="m-0 text-base font-semibold text-brand-purple-900 dark:text-slate-100">Plans (PlatformPlan)</h3>
         <button
           type="button"
-          className="cursor-pointer rounded-md border border-brand-magenta-500 bg-brand-magenta-600 px-3 py-2 text-sm text-white disabled:cursor-not-allowed disabled:opacity-70"
+          className="btn-magenta"
           onClick={startCreate}
           disabled={isMutating}
         >
@@ -211,7 +211,7 @@ export function Plans() {
                   <div className="flex flex-wrap gap-1.5">
                     <button
                       type="button"
-                      className="cursor-pointer rounded-md border border-gray-300 bg-white px-2 py-1 text-xs text-slate-700 transition hover:border-brand-magenta-500 hover:bg-brand-magenta-50 hover:text-brand-magenta-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-brand-magenta-400 dark:hover:bg-slate-700 dark:hover:text-brand-magenta-300"
+                      className="btn-secondary px-2 py-1 text-xs"
                       onClick={() => startEdit(plan)}
                       disabled={isMutating}
                     >
@@ -219,7 +219,7 @@ export function Plans() {
                     </button>
                     <button
                       type="button"
-                      className="cursor-pointer rounded-md border border-gray-300 bg-white px-2 py-1 text-xs text-slate-700 transition hover:border-brand-magenta-500 hover:bg-brand-magenta-50 hover:text-brand-magenta-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-brand-magenta-400 dark:hover:bg-slate-700 dark:hover:text-brand-magenta-300"
+                      className="btn-secondary px-2 py-1 text-xs"
                       onClick={() => toggleMut.mutate({ id: plan.id, is_active: !plan.is_active })}
                       disabled={isMutating}
                     >
@@ -227,7 +227,7 @@ export function Plans() {
                     </button>
                     <button
                       type="button"
-                      className="cursor-pointer rounded-md border border-red-300 bg-white px-2 py-1 text-xs text-red-700 transition hover:bg-red-50 dark:border-red-700 dark:bg-slate-800 dark:text-red-300 dark:hover:bg-red-900/20"
+                      className="btn-danger px-2 py-1 text-xs"
                       onClick={() => setDeletingPlan(plan)}
                       disabled={isMutating}
                     >
@@ -323,7 +323,7 @@ export function Plans() {
             <div className="flex justify-end gap-2">
               <button
                 type="button"
-                className="cursor-pointer rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                className="btn-secondary"
                 onClick={() => {
                   setIsFormOpen(false);
                   setEditingPlan(null);
@@ -335,7 +335,7 @@ export function Plans() {
               </button>
               <button
                 type="button"
-                className="cursor-pointer rounded-md border border-brand-magenta-500 bg-brand-magenta-600 px-3 py-2 text-sm text-white disabled:cursor-not-allowed disabled:opacity-70"
+                className="btn-magenta"
                 onClick={handleSubmit}
                 disabled={isMutating}
               >
@@ -356,7 +356,7 @@ export function Plans() {
             <div className="flex justify-end gap-2">
               <button
                 type="button"
-                className="cursor-pointer rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                className="btn-secondary"
                 onClick={() => setDeletingPlan(null)}
                 disabled={deleteMut.isPending}
               >
@@ -364,7 +364,7 @@ export function Plans() {
               </button>
               <button
                 type="button"
-                className="cursor-pointer rounded-md border border-red-600 bg-red-600 px-3 py-2 text-sm text-white disabled:cursor-not-allowed disabled:opacity-70"
+                className="btn-danger"
                 onClick={() => deleteMut.mutate(deletingPlan.id)}
                 disabled={deleteMut.isPending}
               >

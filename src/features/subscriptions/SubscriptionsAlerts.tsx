@@ -56,7 +56,7 @@ export function SubscriptionsAlerts() {
                         <p className="text-[10px] font-bold text-slate-400 uppercase">Échéance</p>
                         <p className="text-xs font-medium text-slate-700 dark:text-slate-300">{formatIsoDate(item.ends_at)}</p>
                       </div>
-                      <button className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
+                      <button className="btn-ghost h-9 w-9 p-0">
                         <ArrowRight size={18} />
                       </button>
                     </div>
@@ -96,7 +96,7 @@ export function SubscriptionsAlerts() {
                         </p>
                       </div>
                     </div>
-                    <button className="rounded-xl bg-brand-purple-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-brand-purple-700">
+                    <button className="btn-magenta px-3 py-1.5 text-xs">
                       Assigner
                     </button>
                   </div>

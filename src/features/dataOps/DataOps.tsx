@@ -75,13 +75,21 @@ export function DataOps() {
       <div className="mt-4 flex flex-wrap items-end gap-3">
         <div className="inline-flex rounded-xl border border-slate-200 p-1 dark:border-slate-700">
           <button
-            className={`rounded-lg px-3 py-1.5 text-sm ${view === "imports" ? "bg-brand-purple-700 text-white" : "text-slate-600 dark:text-slate-300"}`}
+            className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition-all duration-200 ${
+              view === "imports" 
+                ? "bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white" 
+                : "text-slate-500 hover:bg-white/50 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-700/50 dark:hover:text-slate-200"
+            }`}
             onClick={() => setView("imports")}
           >
             Imports
           </button>
           <button
-            className={`rounded-lg px-3 py-1.5 text-sm ${view === "exports" ? "bg-brand-purple-700 text-white" : "text-slate-600 dark:text-slate-300"}`}
+            className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition-all duration-200 ${
+              view === "exports" 
+                ? "bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white" 
+                : "text-slate-500 hover:bg-white/50 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-700/50 dark:hover:text-slate-200"
+            }`}
             onClick={() => setView("exports")}
           >
             Exports
@@ -122,7 +130,7 @@ export function DataOps() {
                       {job.status === "failed" && (
                         <button
                           onClick={() => retryImportMutation.mutate(job.id)}
-                          className="rounded-lg p-1.5 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+                          className="btn-ghost h-8 w-8 p-0 text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:bg-emerald-900/30"
                           title="Relancer"
                         >
                           {retryImportMutation.isPending && retryImportMutation.variables === job.id ? (
@@ -135,7 +143,7 @@ export function DataOps() {
                       {(job.status === "pending" || job.status === "running") && (
                         <button
                           onClick={() => cancelImportMutation.mutate(job.id)}
-                          className="rounded-lg p-1.5 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20"
+                          className="btn-ghost h-8 w-8 p-0 text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:bg-rose-900/30"
                           title="Annuler"
                         >
                           {cancelImportMutation.isPending && cancelImportMutation.variables === job.id ? (
@@ -180,7 +188,7 @@ export function DataOps() {
                       {job.status === "failed" && (
                         <button
                           onClick={() => retryExportMutation.mutate(job.id)}
-                          className="rounded-lg p-1.5 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+                          className="btn-ghost h-8 w-8 p-0 text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:bg-emerald-900/30"
                           title="Relancer"
                         >
                           {retryExportMutation.isPending && retryExportMutation.variables === job.id ? (
@@ -193,7 +201,7 @@ export function DataOps() {
                       {(job.status === "pending" || job.status === "running") && (
                         <button
                           onClick={() => cancelExportMutation.mutate(job.id)}
-                          className="rounded-lg p-1.5 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20"
+                          className="btn-ghost h-8 w-8 p-0 text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:bg-rose-900/30"
                           title="Annuler"
                         >
                           {cancelExportMutation.isPending && cancelExportMutation.variables === job.id ? (

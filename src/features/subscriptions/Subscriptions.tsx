@@ -94,7 +94,11 @@ export function Subscriptions({ focusOrgId, onFocusOrgHandled }: SubscriptionsPr
   };
 
   const assignPlanMut = useMutation({
-    mutationFn: (plan_code: string) => adminApi.assignPlanToOrganization(selectedOrgId as string, { plan_code }),
+    mutationFn: (plan_code: string) => {
+      const plan = (plans ?? []).find((p) => p.code === plan_code);
+      if (!plan) return Promise.reject(new Error(`Plan introuvable: ${plan_code}`));
+      return adminApi.assignPlanToOrganization(selectedOrgId as string, { plan_id: plan.id });
+    },
     onSuccess: async () => {
       setFeedback("Plan assigne a l'organisation.");
       await refreshOrgData();
@@ -103,7 +107,7 @@ export function Subscriptions({ focusOrgId, onFocusOrgHandled }: SubscriptionsPr
   });
 
   const addSeatsMut = useMutation({
-    mutationFn: (seats: number) => adminApi.addSeatsToOrganization(selectedOrgId as string, { seats }),
+    mutationFn: (seats: number) => adminApi.addSeatsToOrganization(selectedOrgId as string, { quantity: seats }),
     onSuccess: async () => {
       setFeedback("Sieges ajoutes.");
       await refreshOrgData();
@@ -131,7 +135,7 @@ export function Subscriptions({ focusOrgId, onFocusOrgHandled }: SubscriptionsPr
   });
 
   const extendSubMut = useMutation({
-    mutationFn: (args: { id: string; ends_at: string }) => adminApi.extendSubscription(args.id, { ends_at: args.ends_at }),
+    mutationFn: (args: { id: string; ends_at: string }) => adminApi.extendSubscription(args.id, { new_end_date: args.ends_at }),
     onSuccess: async () => {
       setFeedback("Abonnement prolonge.");
       await refreshOrgData();
@@ -304,7 +308,7 @@ export function Subscriptions({ focusOrgId, onFocusOrgHandled }: SubscriptionsPr
       <div className="mb-2 flex flex-wrap items-end gap-3">
         <button
           type="button"
-          className="cursor-pointer rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-slate-700 transition hover:border-brand-magenta-500 hover:bg-brand-magenta-50 hover:text-brand-magenta-700 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-brand-magenta-400 dark:hover:bg-slate-700 dark:hover:text-brand-magenta-300"
+          className="btn-secondary"
           onClick={() => setOffset((v) => Math.max(0, v - limit))}
           disabled={offset === 0}
         >
@@ -312,7 +316,7 @@ export function Subscriptions({ focusOrgId, onFocusOrgHandled }: SubscriptionsPr
         </button>
         <button
           type="button"
-          className="cursor-pointer rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-slate-700 transition hover:border-brand-magenta-500 hover:bg-brand-magenta-50 hover:text-brand-magenta-700 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-brand-magenta-400 dark:hover:bg-slate-700 dark:hover:text-brand-magenta-300"
+          className="btn-secondary"
           onClick={() => setOffset((v) => v + limit)}
           disabled={(data?.results?.length ?? 0) < limit}
         >
@@ -356,7 +360,7 @@ export function Subscriptions({ focusOrgId, onFocusOrgHandled }: SubscriptionsPr
                 </label>
                 <button
                   type="button"
-                  className="cursor-pointer rounded-md border border-brand-magenta-500 bg-brand-magenta-600 px-3 py-2 text-sm text-white disabled:cursor-not-allowed disabled:opacity-70"
+                  className="btn-magenta h-10"
                   disabled={!selectedPlanCode || isMutating}
                   onClick={() => setPendingAction({ kind: "assign_plan", planCode: selectedPlanCode })}
                 >
@@ -388,7 +392,7 @@ export function Subscriptions({ focusOrgId, onFocusOrgHandled }: SubscriptionsPr
                 </label>
                 <button
                   type="button"
-                  className="cursor-pointer rounded-md border border-brand-magenta-500 bg-brand-magenta-600 px-3 py-2 text-sm text-white disabled:cursor-not-allowed disabled:opacity-70"
+                  className="btn-magenta h-10"
                   disabled={Number(seatsToAdd) <= 0 || isMutating}
                   onClick={() => setPendingAction({ kind: "add_seats", seats: Number(seatsToAdd) })}
                 >
@@ -428,7 +432,7 @@ export function Subscriptions({ focusOrgId, onFocusOrgHandled }: SubscriptionsPr
                         <div className="flex flex-wrap gap-1.5">
                           <button
                             type="button"
-                            className="cursor-pointer rounded-md border border-gray-300 bg-white px-2 py-1 text-xs text-slate-700 transition hover:border-brand-magenta-500 hover:bg-brand-magenta-50 hover:text-brand-magenta-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-brand-magenta-400 dark:hover:bg-slate-700 dark:hover:text-brand-magenta-300"
+                            className="btn-secondary px-2 py-1 text-xs"
                             disabled={isMutating}
                             onClick={() => setPendingAction({ kind: "activate_trial", subId: sub.id })}
                           >
@@ -436,7 +440,7 @@ export function Subscriptions({ focusOrgId, onFocusOrgHandled }: SubscriptionsPr
                           </button>
                           <button
                             type="button"
-                            className="cursor-pointer rounded-md border border-gray-300 bg-white px-2 py-1 text-xs text-slate-700 transition hover:border-brand-magenta-500 hover:bg-brand-magenta-50 hover:text-brand-magenta-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-brand-magenta-400 dark:hover:bg-slate-700 dark:hover:text-brand-magenta-300"
+                            className="btn-secondary px-2 py-1 text-xs"
                             disabled={isMutating}
                             onClick={() =>
                               setPendingAction({
@@ -459,7 +463,7 @@ export function Subscriptions({ focusOrgId, onFocusOrgHandled }: SubscriptionsPr
                           </label>
                           <button
                             type="button"
-                            className="cursor-pointer rounded-md border border-gray-300 bg-white px-2 py-1 text-xs text-slate-700 transition hover:border-brand-magenta-500 hover:bg-brand-magenta-50 hover:text-brand-magenta-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-brand-magenta-400 dark:hover:bg-slate-700 dark:hover:text-brand-magenta-300"
+                            className="btn-secondary px-2 py-1 text-xs"
                             disabled={!extendDateBySubId[sub.id] || isMutating}
                             onClick={() => setPendingAction({ kind: "extend", subId: sub.id, endsAt: extendDateBySubId[sub.id] })}
                           >
@@ -467,7 +471,7 @@ export function Subscriptions({ focusOrgId, onFocusOrgHandled }: SubscriptionsPr
                           </button>
                           <button
                             type="button"
-                            className="cursor-pointer rounded-md border border-red-300 bg-white px-2 py-1 text-xs text-red-700 transition hover:bg-red-50 dark:border-red-700 dark:bg-slate-800 dark:text-red-300 dark:hover:bg-red-900/20"
+                            className="btn-danger px-2 py-1 text-xs"
                             disabled={isMutating}
                             onClick={() => setPendingAction({ kind: "cancel", subId: sub.id })}
                           >
@@ -491,7 +495,7 @@ export function Subscriptions({ focusOrgId, onFocusOrgHandled }: SubscriptionsPr
             <div className="flex justify-end gap-2">
               <button
                 type="button"
-                className="cursor-pointer rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                className="btn-secondary"
                 onClick={() => setPendingAction(null)}
                 disabled={isMutating}
               >
@@ -499,11 +503,7 @@ export function Subscriptions({ focusOrgId, onFocusOrgHandled }: SubscriptionsPr
               </button>
               <button
                 type="button"
-                className={`cursor-pointer rounded-md px-3 py-2 text-sm text-white disabled:cursor-not-allowed disabled:opacity-70 ${
-                  pendingAction.kind === "cancel"
-                    ? "border border-red-600 bg-red-600"
-                    : "border border-brand-magenta-500 bg-brand-magenta-600"
-                }`}
+                className={pendingAction.kind === "cancel" ? "btn-danger" : "btn-magenta"}
                 onClick={handleConfirmAction}
                 disabled={isMutating}
               >

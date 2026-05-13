@@ -1,13 +1,29 @@
-import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Megaphone, Plus, Mail, Users, Calendar, ArrowRight } from "lucide-react";
 import { adminApi } from "../../lib/adminApi";
-import { formatIsoDate, normalizeList } from "../../lib/ui";
+import { formatIsoDate, getErrorMessage, normalizeList } from "../../lib/ui";
 
 export function Marketing() {
   const { data: campaignsData, isLoading } = useQuery({
     queryKey: ["marketing-campaigns"],
     queryFn: () => adminApi.marketingCampaigns(),
+  });
+
+  const queryClient = useQueryClient();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalError, setModalError] = useState("");
+  const [newCampaign, setNewCampaign] = useState({ name: "", status: "draft" });
+
+  const createMut = useMutation({
+    mutationFn: adminApi.createMarketingCampaign,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["marketing-campaigns"] });
+      setIsModalOpen(false);
+      setModalError("");
+      setNewCampaign({ name: "", status: "draft" });
+    },
+    onError: (e: unknown) => setModalError(getErrorMessage(e)),
   });
 
   const campaigns = useMemo(() => normalizeList<any>(campaignsData), [campaignsData]);
@@ -27,7 +43,7 @@ export function Marketing() {
           <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Marketing & Campagnes</h2>
           <p className="text-sm text-slate-500 dark:text-slate-400">Gérez les communications globales et les campagnes de fidélisation.</p>
         </div>
-        <button className="inline-flex items-center gap-2 rounded-xl bg-brand-purple-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:bg-brand-purple-700 active:scale-95">
+        <button onClick={() => setIsModalOpen(true)} className="btn-primary">
           <Plus size={18} />
           Nouvelle campagne
         </button>
@@ -63,7 +79,7 @@ export function Marketing() {
                     </div>
                   </div>
                 </div>
-                <button className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
+                <button className="btn-ghost h-10 w-10 p-0">
                   <ArrowRight size={20} />
                 </button>
               </div>
@@ -71,6 +87,45 @@ export function Marketing() {
           )}
         </div>
       </div>
+
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-slate-900/60 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md animate-in zoom-in-95 duration-200 rounded-3xl border border-border-soft bg-white p-8 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+            <div className="mb-6 flex items-center justify-between">
+              <h3 className="text-xl font-black text-slate-900 dark:text-slate-100">Nouvelle Campagne</h3>
+              <button onClick={() => setIsModalOpen(false)} className="btn-ghost h-9 w-9 p-0 text-slate-400">
+                <Plus size={24} className="rotate-45" />
+              </button>
+            </div>
+            {modalError && (
+              <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-medium text-rose-700 dark:border-rose-900/40 dark:bg-rose-900/20 dark:text-rose-400">
+                {modalError}
+              </div>
+            )}
+            <div className="space-y-4">
+              <div className="grid gap-1.5">
+                <label className="text-xs font-bold text-slate-500 uppercase">Nom de la campagne</label>
+                <input 
+                  value={newCampaign.name}
+                  onChange={(e) => setNewCampaign({ ...newCampaign, name: e.target.value })}
+                  placeholder="ex: Campagne Fidélité 2024"
+                  className="w-full"
+                />
+              </div>
+            </div>
+            <div className="mt-8 flex justify-end gap-3">
+              <button onClick={() => setIsModalOpen(false)} className="btn-secondary px-6">Annuler</button>
+              <button 
+                disabled={createMut.isPending || !newCampaign.name}
+                onClick={() => { setModalError(""); createMut.mutate(newCampaign); }}
+                className="btn-primary px-6"
+              >
+                {createMut.isPending ? "Création..." : "Créer"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

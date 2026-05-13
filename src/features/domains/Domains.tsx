@@ -2,14 +2,30 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Globe, Plus, CheckCircle2, ShieldCheck, AlertCircle, RefreshCw, Search } from "lucide-react";
 import { useState } from "react";
 import { adminApi, type AdminDomain } from "../../lib/adminApi";
+import { getErrorMessage } from "../../lib/ui";
 
 export function Domains() {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalError, setModalError] = useState("");
+  const [newDomain, setNewDomain] = useState({ tenant_id: "", domain: "", cname_target: "" });
   const [q, setQ] = useState("");
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
     queryKey: ["admin-domains", q],
     queryFn: () => adminApi.domains({ q }),
+  });
+
+  const createMutation = useMutation({
+    mutationFn: (payload: { tenant_id: string; domain: string; cname_target: string }) => 
+      adminApi.createDomain(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-domains"] });
+      setIsModalOpen(false);
+      setModalError("");
+      setNewDomain({ tenant_id: "", domain: "", cname_target: "" });
+    },
+    onError: (e: unknown) => setModalError(getErrorMessage(e)),
   });
 
   const verifyMutation = useMutation({
@@ -31,7 +47,7 @@ export function Domains() {
           <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Domaines & SSL</h2>
           <p className="text-sm text-slate-500 dark:text-slate-400">Gérez les domaines personnalisés et les certificats SSL des tenants.</p>
         </div>
-        <button className="inline-flex items-center gap-2 rounded-xl bg-brand-purple-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:bg-brand-purple-700 active:scale-95">
+        <button onClick={() => setIsModalOpen(true)} className="btn-primary">
           <Plus size={18} />
           Nouveau domaine
         </button>
@@ -101,7 +117,7 @@ export function Domains() {
                       {!domain.dns_verified && (
                         <button
                           onClick={() => verifyMutation.mutate(domain.id)}
-                          className="rounded-lg p-2 text-slate-400 transition hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-900/20"
+                          className="btn-ghost h-9 w-9 p-0 text-slate-400 hover:text-emerald-600 dark:hover:bg-emerald-900/20"
                           title="Vérifier DNS"
                         >
                           <ShieldCheck size={18} />
@@ -109,7 +125,7 @@ export function Domains() {
                       )}
                       <button
                         onClick={() => renewMutation.mutate(domain.id)}
-                        className="rounded-lg p-2 text-slate-400 transition hover:bg-brand-purple-50 hover:text-brand-purple-600 dark:hover:bg-brand-purple-900/20"
+                        className="btn-ghost h-9 w-9 p-0 text-slate-400 hover:text-brand-purple-600 dark:hover:bg-brand-purple-900/20"
                         title="Renouveler SSL"
                       >
                         <RefreshCw size={18} />
@@ -122,6 +138,69 @@ export function Domains() {
           </tbody>
         </table>
       </div>
+
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-slate-900/60 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-lg animate-in zoom-in-95 duration-200 rounded-3xl border border-border-soft bg-white p-8 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+            <div className="mb-6 flex items-center justify-between">
+              <h3 className="text-xl font-black text-slate-900 dark:text-slate-100">Nouveau Domaine</h3>
+              <button 
+                onClick={() => setIsModalOpen(false)}
+                className="btn-ghost h-9 w-9 p-0 text-slate-400"
+              >
+                <Plus size={24} className="rotate-45" />
+              </button>
+            </div>
+
+            {modalError && (
+              <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-medium text-rose-700 dark:border-rose-900/40 dark:bg-rose-900/20 dark:text-rose-400">
+                {modalError}
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <div className="grid gap-1.5">
+                <label className="text-xs font-bold text-slate-500 uppercase">ID du Tenant</label>
+                <input 
+                  value={newDomain.tenant_id}
+                  onChange={(e) => setNewDomain({ ...newDomain, tenant_id: e.target.value })}
+                  placeholder="ex: 123e4567-e89b..."
+                  className="w-full"
+                />
+              </div>
+              <div className="grid gap-1.5">
+                <label className="text-xs font-bold text-slate-500 uppercase">Domaine</label>
+                <input 
+                  value={newDomain.domain}
+                  onChange={(e) => setNewDomain({ ...newDomain, domain: e.target.value })}
+                  placeholder="ex: erp.client.com"
+                  className="w-full"
+                />
+              </div>
+              <div className="grid gap-1.5">
+                <label className="text-xs font-bold text-slate-500 uppercase">Cible CNAME</label>
+                <input 
+                  value={newDomain.cname_target}
+                  onChange={(e) => setNewDomain({ ...newDomain, cname_target: e.target.value })}
+                  placeholder="ex: ingress.codelab.bj"
+                  className="w-full"
+                />
+              </div>
+            </div>
+
+            <div className="mt-8 flex justify-end gap-3">
+              <button onClick={() => setIsModalOpen(false)} className="btn-secondary px-6">Annuler</button>
+              <button 
+                disabled={createMutation.isPending}
+                onClick={() => { setModalError(""); createMutation.mutate(newDomain); }}
+                className="btn-primary px-6"
+              >
+                {createMutation.isPending ? "Création..." : "Créer le domaine"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

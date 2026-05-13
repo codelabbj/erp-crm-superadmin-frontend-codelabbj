@@ -33,6 +33,33 @@ export interface AdminUser {
   created_at: string;
 }
 
+export interface UserRelatedData {
+  success: boolean;
+  data: {
+    user: AdminUser;
+    organizations: any[];
+    collaborators: any[];
+    subscriptions: {
+      available: boolean;
+      message: string;
+      items: any[];
+    };
+    products: any[];
+    customers: any[];
+    orders: any[];
+    invoices: any[];
+    totals: {
+      organizations: number;
+      collaborators: number;
+      products: number;
+      customers: number;
+      orders: number;
+      invoices: number;
+      subscriptions: number;
+    };
+  };
+}
+
 /** Aligné sur `licensing.Module` + réponse `AdminModulesView`. */
 export interface AdminModule {
   id: string;
@@ -107,6 +134,31 @@ export interface OrganizationDetail extends OrganizationSubscriptionOverview {
   seats_max_hard?: number;
 }
 
+export type OrganizationUpsert = {
+  name: string;
+  slug: string;
+  is_active?: boolean;
+};
+
+export interface OrganizationRelatedData {
+  success: boolean;
+  data: {
+    organization: AdminOrganization & { email?: string };
+    users: AdminUser[];
+    customers: any[];
+    products: any[];
+    orders: any[];
+    invoices: any[];
+    totals: {
+      users: number;
+      customers: number;
+      products: number;
+      orders: number;
+      invoices: number;
+    };
+  };
+}
+
 export interface OrganizationSubscriptionItem {
   id: string;
   module: { id: string; code: string; name: string };
@@ -118,12 +170,11 @@ export interface OrganizationSubscriptionItem {
 }
 
 export type AssignPlanPayload = {
-  plan_id?: string;
-  plan_code?: string;
+  plan_id: string;
 };
 
 export type AddSeatsPayload = {
-  seats: number;
+  quantity: number;
 };
 
 export type AdminSubscriptionPatchPayload = Partial<
@@ -383,6 +434,51 @@ export interface EcommerceOrder {
   created_at: string;
 }
 
+export interface AIModel {
+  id: string;
+  created: number;
+  owned_by: string;
+}
+
+export interface AIAssistantConfig {
+  models: AIModel[];
+  config: {
+    chat: string;
+    code: string;
+    rag: string;
+  };
+}
+
+export interface AIAssistantResponse {
+  response: string;
+  mode: string;
+}
+
+export interface AIAssistantPayload {
+  prompt: string;
+  model_id?: string;
+  context?: Record<string, any>;
+}
+
+export interface AIConversation {
+  id: string;
+  org: string;
+  user: string;
+  title: string;
+  mode: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AIMessage {
+  id: string;
+  conversation: string;
+  role: "user" | "assistant" | "system";
+  content: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export type AdminModuleUpdate = {
   id: string;
 } & Partial<
@@ -427,6 +523,8 @@ export const adminApi = {
   organizationsOverview: async (params?: { q?: string; plan?: string; status?: string; limit?: number; offset?: number; sort?: string }) =>
     (await api.get<PaginatedResponse<OrganizationSubscriptionOverview>>("/api/admin/organizations/", { params })).data,
   organizationDetail: async (id: string) => (await api.get<OrganizationDetail>(`/api/admin/organizations/${id}/`)).data,
+  organizationRelatedData: async (id: string) => 
+    (await api.get<OrganizationRelatedData>(`/api/admin/organizations/${id}/related/`)).data,
   organizationSubscriptions: async (id: string, params?: { limit?: number; offset?: number; sort?: string }) =>
     (await api.get<PaginatedResponse<OrganizationSubscriptionItem>>(`/api/admin/organizations/${id}/subscriptions/`, { params })).data,
   assignPlanToOrganization: async (id: string, payload: AssignPlanPayload) =>
@@ -437,12 +535,12 @@ export const adminApi = {
   patchSubscription: async (id: string, payload: AdminSubscriptionPatchPayload) =>
     (await api.patch(`/api/admin/subscriptions/${id}/`, payload)).data,
   deleteSubscription: async (id: string) => (await api.delete(`/api/admin/subscriptions/${id}/`)).data,
-  extendSubscription: async (id: string, payload: { ends_at: string }) =>
+  extendSubscription: async (id: string, payload: { new_end_date?: string; extend_days?: number }) =>
     (await api.post(`/api/admin/subscriptions/${id}/extend/`, payload)).data,
 
   subscriptionStats: async () => (await api.get<SubscriptionStats>("/api/admin/subscriptions/stats/")).data,
-  subscriptionExpiringSoon: async () =>
-    (await api.get<SubscriptionExpiredItem[]>("/api/subscriptions/expiring-soon/")).data,
+  subscriptionExpiringSoon: async (params?: { days?: number }) =>
+    (await api.get<PaginatedResponse<AdminSubscription>>("/api/admin/subscriptions/expiring-soon/", { params })).data,
   subscriptionAlerts: async () => (await api.get<SubscriptionAlerts>("/api/admin/subscriptions/alerts/")).data,
 
   organizations: async (params?: { q?: string; limit?: number; offset?: number; sort?: string }) =>
@@ -450,10 +548,13 @@ export const adminApi = {
 
   updateOrganization: async (payload: { id: string; is_active: boolean }) =>
     (await api.patch("/api/admin/organizations/", payload)).data,
+  createOrganization: async (payload: OrganizationUpsert) =>
+    (await api.post<AdminOrganization>("/api/admin/organizations/", payload)).data,
 
   users: async (params?: { q?: string; limit?: number; offset?: number; sort?: string }) =>
     (await api.get<PaginatedResponse<AdminUser>>("/api/admin/users/", { params })).data,
-
+  userRelatedData: async (id: string) =>
+    (await api.get<UserRelatedData>(`/api/admin/users/${id}/related/`)).data,
   updateUser: async (payload: AdminUserUpdate) =>
     (await api.patch("/api/admin/users/", payload)).data,
 
@@ -476,7 +577,8 @@ export const adminApi = {
     (await api.post<RoleItem>("/api/roles/", payload)).data,
   permissionsSchema: async () => (await api.get<PermissionsSchema>("/api/permissions-schema/")).data,
 
-  auditLogs: async () => (await api.get<AuditLogItem[]>("/api/audit-logs/")).data,
+  auditLogs: async (params?: { q?: string; action?: string; limit?: number; offset?: number; sort?: string }) =>
+    (await api.get<PaginatedResponse<AuditLogItem>>("/api/audit-logs/", { params })).data,
   billingClients: async (params?: { q?: string; limit?: number; offset?: number; sort?: string }) =>
     (await api.get<PaginatedResponse<BillingClientItem> | BillingClientItem[]>("/api/billing/clients/", { params })).data,
   billingInvoices: async (params?: { q?: string; limit?: number; offset?: number; sort?: string }) =>
@@ -546,19 +648,36 @@ export const adminApi = {
   // Support
   supportTickets: async () => (await api.get<PaginatedResponse<SupportTicket>>("/api/support/tickets/")).data,
   createSupportTicket: async (payload: any) => (await api.post("/api/support/tickets/", payload)).data,
+  updateSupportTicket: async (id: string, payload: Partial<{ status: string; priority: string; notes: string }>) =>
+    (await api.patch(`/api/support/tickets/${id}/`, payload)).data,
 
   // Projects
   projects: async () => (await api.get<PaginatedResponse<ProjectItem>>("/api/projects/projects/")).data,
+  createProject: async (payload: { name: string; status: string; description?: string }) =>
+    (await api.post("/api/projects/projects/", payload)).data,
 
   // E-commerce
   ecommerceOrders: async () => (await api.get<PaginatedResponse<EcommerceOrder>>("/api/ecommerce/orders/")).data,
+  ecommerceStorefronts: async () => (await api.get<any[]>("/api/ecommerce/storefronts/")).data,
+  updateEcommerceOrder: async (id: string, payload: { status: string }) =>
+    (await api.patch(`/api/ecommerce/orders/${id}/`, payload)).data,
 
   // Fiscal
   fiscalConfigs: async () => (await api.get<any[]>("/api/fiscal/config/")).data,
+  createFiscalConfig: async (payload: { name: string; regime: string; tax_rate: number; country: string; is_active: boolean }) =>
+    (await api.post("/api/fiscal/config/", payload)).data,
+  updateFiscalConfig: async (id: string, payload: Partial<{ name: string; regime: string; tax_rate: number; is_active: boolean }>) =>
+    (await api.patch(`/api/fiscal/config/${id}/`, payload)).data,
+  generateFiscalReport: async (payload: { year: number; type: string }) =>
+    (await api.post("/api/fiscal/reports/generate/", payload)).data,
 
   // Labels
   labelTemplates: async () => (await api.get<any[]>("/api/labels/templates/")).data,
+  createLabelTemplate: async (payload: { name: string; dimensions: string; format: string; content?: string }) =>
+    (await api.post("/api/labels/templates/", payload)).data,
   generateLabel: async (payload: any) => (await api.post("/api/labels/", payload)).data,
+  printLabel: async (payload: { template_id: string; data: Record<string, string>; copies: number }) =>
+    (await api.post("/api/labels/print/", payload)).data,
 
   // General
   uploadImage: async (file: File) => {
@@ -568,5 +687,10 @@ export const adminApi = {
       headers: { "Content-Type": "multipart/form-data" },
     })).data;
   },
+
+  // Assistant IA
+  aiModels: async () => (await api.get<AIAssistantConfig>("/api/ai/assistant/models/")).data.models,
+  askAssistant: async (payload: AIAssistantPayload) => 
+    (await api.post<AIAssistantResponse>("/api/ai/assistant/ask/", payload)).data,
 };
 

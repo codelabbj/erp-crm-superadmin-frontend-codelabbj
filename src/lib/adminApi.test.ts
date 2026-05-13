@@ -85,11 +85,11 @@ describe("adminApi", () => {
       params: { limit: 5, offset: 0, sort: "-starts_at" },
     });
 
-    await adminApi.assignPlanToOrganization("oid", { plan_code: "pro" });
-    expect(post).toHaveBeenCalledWith("/api/admin/organizations/oid/assign-plan/", { plan_code: "pro" });
+    await adminApi.assignPlanToOrganization("oid", { plan_id: "pro-id" });
+    expect(post).toHaveBeenCalledWith("/api/admin/organizations/oid/assign-plan/", { plan_id: "pro-id" });
 
-    await adminApi.addSeatsToOrganization("oid", { seats: 2 });
-    expect(post).toHaveBeenCalledWith("/api/admin/organizations/oid/add-seats/", { seats: 2 });
+    await adminApi.addSeatsToOrganization("oid", { quantity: 2 });
+    expect(post).toHaveBeenCalledWith("/api/admin/organizations/oid/add-seats/", { quantity: 2 });
   });
 
   it("subscriptions (patch, delete, extend)", async () => {
@@ -99,8 +99,8 @@ describe("adminApi", () => {
     await adminApi.deleteSubscription("sid");
     expect(del).toHaveBeenCalledWith("/api/admin/subscriptions/sid/");
 
-    await adminApi.extendSubscription("sid", { ends_at: "2026-12-31" });
-    expect(post).toHaveBeenCalledWith("/api/admin/subscriptions/sid/extend/", { ends_at: "2026-12-31" });
+    await adminApi.extendSubscription("sid", { new_end_date: "2026-12-31" });
+    expect(post).toHaveBeenCalledWith("/api/admin/subscriptions/sid/extend/", { new_end_date: "2026-12-31" });
   });
 
   it("subscription stats & alerts", async () => {
@@ -108,10 +108,24 @@ describe("adminApi", () => {
     expect(get).toHaveBeenCalledWith("/api/admin/subscriptions/stats/");
 
     await adminApi.subscriptionExpiringSoon();
-    expect(get).toHaveBeenCalledWith("/api/admin/subscriptions/expiring-soon/");
+    expect(get).toHaveBeenCalledWith("/api/admin/subscriptions/expiring-soon/", { params: undefined });
 
     await adminApi.subscriptionAlerts();
     expect(get).toHaveBeenCalledWith("/api/admin/subscriptions/alerts/");
+  });
+
+  it("relationship data and AI assistant", async () => {
+    await adminApi.organizationRelatedData("org123");
+    expect(get).toHaveBeenCalledWith("/api/admin/organizations/org123/related/");
+
+    await adminApi.userRelatedData("user456");
+    expect(get).toHaveBeenCalledWith("/api/admin/users/user456/related/");
+
+    await adminApi.aiModels();
+    expect(get).toHaveBeenCalledWith("/api/ai/assistant/models/");
+
+    await adminApi.askAssistant({ prompt: "Hello?", model_id: "m1" });
+    expect(post).toHaveBeenCalledWith("/api/ai/assistant/ask/", { prompt: "Hello?", model_id: "m1" });
   });
 
   it("legacy organizations, users, modules, subs list", async () => {

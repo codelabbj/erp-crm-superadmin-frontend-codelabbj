@@ -24,10 +24,11 @@ import {
   ShoppingCart,
   Scale,
   Tag,
+  Sparkles,
 } from "lucide-react";
 import type { Tab } from "../lib/ui";
 
-type MenuSection = "overview" | "tenants" | "revenue" | "platformOps" | "security" | "businessModules";
+type MenuSection = "overview" | "tenants" | "revenue" | "platformOps" | "security" | "businessModules" | "intelligence";
 
 type SidebarProps = {
   tab: Tab;
@@ -54,6 +55,7 @@ const sectionByTab: Record<Tab, MenuSection> = {
   staffUsers: "platformOps",
   auditLogs: "security",
   bannedIpsWaf: "security",
+  aiAssistant: "intelligence",
   billingOps: "revenue",
   dataOps: "platformOps",
   marketing: "businessModules",
@@ -70,16 +72,16 @@ export function Sidebar({ tab, onTabChange, isRefreshing, onRefresh }: SidebarPr
   const isSectionOpen = (section: MenuSection) => section === activeSection || section === expandedSection;
 
   const navBtn = (isActive: boolean) =>
-    `mb-1 flex w-full items-center gap-2 rounded-xl border px-3 py-2 text-left text-sm font-medium transition ${
+    `mb-1 flex w-full items-center gap-2 rounded-xl border px-3 py-2 text-left text-sm font-semibold transition-all duration-200 ${
       isActive
-        ? "border-brand-purple-200 bg-white text-brand-purple-700 shadow-sm dark:border-brand-purple-700 dark:bg-slate-800 dark:text-brand-magenta-500"
-        : "border-transparent bg-transparent text-slate-500 hover:bg-white hover:text-brand-purple-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+        ? "border-brand-purple-200 bg-white text-brand-purple-700 shadow-sm dark:border-brand-purple-500/50 dark:bg-slate-800 dark:text-brand-magenta-400 shadow-brand-purple-500/10"
+        : "border-transparent bg-transparent text-slate-500 hover:bg-white hover:text-brand-purple-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
     }`;
 
   const sectionTriggerBtn = (isOpen: boolean) =>
-    `mb-2 flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wide transition ${
+    `mb-2 flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-[10px] font-black uppercase tracking-widest transition-all duration-200 ${
       isOpen
-        ? "bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
+        ? "bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-200"
         : "text-slate-400 hover:bg-slate-200 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-300"
     }`;
 
@@ -99,7 +101,7 @@ export function Sidebar({ tab, onTabChange, isRefreshing, onRefresh }: SidebarPr
 
   return (
     <aside className="fixed top-0 left-0 bottom-0 w-72 overflow-auto overflow-y-hidden border-r border-slate-200 bg-slate-100 p-4 dark:border-slate-800 dark:bg-slate-950">
-      <h2 className="mb-4 px-2 text-lg font-semibold text-slate-900 dark:text-slate-100">Super Admin</h2>
+      <h2 className="mb-4 px-2 text-lg font-semibold text-slate-900 dark:text-slate-100"><span className="text-brand-purple-600 dark:text-brand-purple-500">OWO</span> Admin</h2>
       <div className="mb-4">
         <button type="button" className={sectionTriggerBtn(isSectionOpen("overview"))} onClick={() => toggleSection("overview")}>
           <span>Vue d&apos;ensemble</span>
@@ -138,10 +140,12 @@ export function Sidebar({ tab, onTabChange, isRefreshing, onRefresh }: SidebarPr
               <Rocket size={16} />
               Onboarding
             </button>
+            {/* DISABLED: Domaines & SSL
             <button className={navBtn(tab === "domainsSsl")} onClick={() => onTabChange("domainsSsl")}>
               <Globe size={16} />
               Domaines & SSL
             </button>
+            */}
           </div>
         </div>
       </div>
@@ -250,16 +254,33 @@ export function Sidebar({ tab, onTabChange, isRefreshing, onRefresh }: SidebarPr
               <Scale size={16} />
               Fiscalité
             </button>
+            {/* DISABLED: Étiquettes & Barcodes
             <button className={navBtn(tab === "labels")} onClick={() => onTabChange("labels")}>
               <Tag size={16} />
               Étiquettes
+            </button>
+            */}
+          </div>
+        </div>
+      </div>
+
+      <div className="mb-4">
+        <button type="button" className={sectionTriggerBtn(isSectionOpen("intelligence"))} onClick={() => toggleSection("intelligence")}>
+          <span>Intelligence</span>
+          {isSectionOpen("intelligence") ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+        </button>
+        <div className={sectionContent(isSectionOpen("intelligence"))}>
+          <div className="ml-3 border-l border-slate-300 pl-3 dark:border-slate-700">
+            <button className={navBtn(tab === "aiAssistant")} onClick={() => onTabChange("aiAssistant")}>
+              <Sparkles size={16} />
+              Assistant IA
             </button>
           </div>
         </div>
       </div>
 
       <button
-        className="mt-2 inline-flex w-full items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-left text-sm font-medium text-slate-600 transition hover:border-brand-purple-300 hover:text-brand-purple-700 disabled:cursor-not-allowed disabled:opacity-70 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+        className="btn-secondary mt-2 w-full justify-start"
         onClick={onRefresh}
         disabled={isRefreshing}
       >

@@ -108,7 +108,7 @@ export function SubscriptionsStats() {
                         <p className="text-xs font-bold text-slate-900 dark:text-slate-100">{item.name}</p>
                         <p className="text-[10px] text-amber-600 dark:text-amber-400">Inscrit depuis {item.days_since_creation}j</p>
                       </div>
-                      <button className="text-[10px] font-bold text-brand-purple-600 uppercase hover:underline">Assigner</button>
+                      <button className="btn-ghost px-2 py-1 text-[10px] font-black text-brand-purple-600 uppercase dark:text-brand-magenta-500">Assigner</button>
                     </div>
                   ))}
                 </div>

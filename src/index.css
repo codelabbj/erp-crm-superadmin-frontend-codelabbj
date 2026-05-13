@@ -3,11 +3,14 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --color-brand-purple-900: #1f0b5b;
-  --color-brand-purple-800: #2d0a84;
-  --color-brand-purple-700: #3a0ca3;
-  --color-brand-magenta-600: #ee1d52;
-  --color-brand-magenta-500: #ff255f;
+  --color-brand-purple-900: #3b0a02;
+  --color-brand-purple-800: #7a1a05;
+  --color-brand-purple-700: #b83208;
+  --color-brand-purple-600: #d94510;
+  --color-brand-purple-500: #e84917;
+  --color-brand-magenta-600: #c93519;
+  --color-brand-magenta-500: #e04422;
+  --color-brand-magenta-400: #f0694a;
 
   --color-surface-bg: #f6f7fb;
   --color-surface-card: #ffffff;
@@ -145,7 +148,7 @@
   /* Scrollbar styling */
   * {
     scrollbar-width: thin;
-    scrollbar-color: #7c3aed #eef2ff;
+    scrollbar-color: #d94510 #fff3ef;
   }
 
   *::-webkit-scrollbar {
@@ -154,22 +157,22 @@
   }
 
   *::-webkit-scrollbar-track {
-    background: #eef2ff;
+    background: #fff3ef;
     border-radius: 999px;
   }
 
   *::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, #7c3aed, #ee1d52);
+    background: linear-gradient(180deg, #d94510, #b83208);
     border-radius: 999px;
-    border: 2px solid #eef2ff;
+    border: 2px solid #fff3ef;
   }
 
   *::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(180deg, #6d28d9, #db2777);
+    background: linear-gradient(180deg, #b83208, #7a1a05);
   }
 
   .dark * {
-    scrollbar-color: #a78bfa #0f172a;
+    scrollbar-color: #e84917 #1a0600;
   }
 
   .dark *::-webkit-scrollbar-track {
@@ -177,11 +180,56 @@
   }
 
   .dark *::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, #8b5cf6, #ec4899);
+    background: linear-gradient(180deg, #e84917, #c93519);
     border-color: #0f172a;
   }
 
   .dark *::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(180deg, #7c3aed, #db2777);
+    background: linear-gradient(180deg, #d94510, #b83208);
+  }
+
+  /* Button Utilities */
+  .btn-primary, .btn-secondary, .btn-ghost, .btn-magenta, .btn-danger {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-primary {
+    @apply bg-brand-purple-700 text-white hover:bg-brand-purple-800 shadow-sm shadow-brand-purple-700/20;
+  }
+
+  .dark .btn-primary {
+    @apply bg-brand-purple-600 hover:bg-brand-purple-500 shadow-brand-purple-500/20;
+  }
+
+  .btn-magenta {
+    @apply bg-brand-magenta-600 text-white hover:bg-brand-magenta-500 shadow-sm shadow-brand-magenta-600/20;
+  }
+
+  .dark .btn-magenta {
+    @apply bg-brand-magenta-500 hover:bg-brand-magenta-400 shadow-brand-magenta-500/20;
+  }
+
+  .btn-secondary {
+    @apply border border-slate-300 bg-white text-slate-700 hover:bg-slate-50;
+  }
+
+  .dark .btn-secondary {
+    @apply border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700;
+  }
+
+  .btn-ghost {
+    @apply text-slate-600 hover:bg-slate-100;
+  }
+
+  .dark .btn-ghost {
+    @apply text-slate-400 hover:bg-slate-800;
+  }
+
+  .btn-danger {
+    @apply bg-red-600 text-white hover:bg-red-700;
+  }
+
+  .dark .btn-danger {
+    @apply bg-red-500 hover:bg-red-400;
   }
 }

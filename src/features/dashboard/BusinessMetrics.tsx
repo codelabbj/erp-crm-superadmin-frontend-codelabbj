@@ -26,10 +26,10 @@ export function BusinessMetrics() {
             <button
               key={p}
               onClick={() => setPeriod(p)}
-              className={`rounded-lg px-3 py-1.5 text-xs font-bold uppercase transition ${
+              className={`rounded-lg px-3 py-1.5 text-xs font-black uppercase transition-all duration-200 ${
                 period === p
                   ? "bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white"
-                  : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                  : "text-slate-500 hover:bg-white/50 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-700/50 dark:hover:text-slate-200"
               }`}
             >
               {p}

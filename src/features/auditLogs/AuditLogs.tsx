@@ -18,17 +18,19 @@ export function AuditLogs() {
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["audit-logs"],
-    queryFn: adminApi.auditLogs,
+    queryFn: () => adminApi.auditLogs(),
   });
 
   const actions = useMemo(() => {
-    const values = new Set((data ?? []).map((l) => l.action).filter(Boolean));
+    const logs = (data?.results ?? []) as AuditLogItem[];
+    const values = new Set(logs.map((l) => String(l.action)).filter(Boolean));
     return Array.from(values).sort();
   }, [data]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return (data ?? []).filter((row) => {
+    const logs = (data?.results ?? []) as AuditLogItem[];
+    return logs.filter((row) => {
       if (actionFilter && row.action !== actionFilter) return false;
       if (!q) return true;
       return (
@@ -116,7 +118,7 @@ export function AuditLogs() {
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-slate-700 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                className="btn-secondary px-3 py-1.5"
                 onClick={() => setOffset((v) => Math.max(0, v - limit))}
                 disabled={offset === 0}
               >
@@ -124,7 +126,7 @@ export function AuditLogs() {
               </button>
               <button
                 type="button"
-                className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-slate-700 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                className="btn-secondary px-3 py-1.5"
                 onClick={() => setOffset((v) => v + limit)}
                 disabled={offset + limit >= filtered.length}
               >

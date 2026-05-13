@@ -72,19 +72,31 @@ export function BillingOps() {
       <div className="mt-4 flex flex-wrap items-end gap-3">
         <div className="inline-flex rounded-xl border border-slate-200 p-1 dark:border-slate-700">
           <button
-            className={`rounded-lg px-3 py-1.5 text-sm ${view === "clients" ? "bg-brand-purple-700 text-white" : "text-slate-600 dark:text-slate-300"}`}
+            className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition-all duration-200 ${
+              view === "clients" 
+                ? "bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white" 
+                : "text-slate-500 hover:bg-white/50 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-700/50 dark:hover:text-slate-200"
+            }`}
             onClick={() => setView("clients")}
           >
             Clients
           </button>
           <button
-            className={`rounded-lg px-3 py-1.5 text-sm ${view === "invoices" ? "bg-brand-purple-700 text-white" : "text-slate-600 dark:text-slate-300"}`}
+            className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition-all duration-200 ${
+              view === "invoices" 
+                ? "bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white" 
+                : "text-slate-500 hover:bg-white/50 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-700/50 dark:hover:text-slate-200"
+            }`}
             onClick={() => setView("invoices")}
           >
             Invoices
           </button>
           <button
-            className={`rounded-lg px-3 py-1.5 text-sm ${view === "payments" ? "bg-brand-purple-700 text-white" : "text-slate-600 dark:text-slate-300"}`}
+            className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition-all duration-200 ${
+              view === "payments" 
+                ? "bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white" 
+                : "text-slate-500 hover:bg-white/50 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-700/50 dark:hover:text-slate-200"
+            }`}
             onClick={() => setView("payments")}
           >
             Payments
@@ -152,7 +164,7 @@ export function BillingOps() {
                       {inv.status === "draft" && (
                         <button
                           onClick={() => finalizeMutation.mutate({ id: inv.id, type: "simple" })}
-                          className="rounded-lg p-1.5 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+                          className="btn-ghost h-8 w-8 p-0 text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:bg-emerald-900/30"
                           title="Finaliser"
                         >
                           {finalizeMutation.isPending && finalizeMutation.variables?.id === inv.id ? (
@@ -165,7 +177,7 @@ export function BillingOps() {
                       {inv.status !== "cancelled" && (
                         <button
                           onClick={() => cancelMutation.mutate(inv.id)}
-                          className="rounded-lg p-1.5 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20"
+                          className="btn-ghost h-8 w-8 p-0 text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:bg-rose-900/30"
                           title="Annuler"
                         >
                           {cancelMutation.isPending && cancelMutation.variables === inv.id ? (
@@ -211,7 +223,7 @@ export function BillingOps() {
                     {p.status !== "confirmed" && (
                       <button
                         onClick={() => confirmPaymentMutation.mutate(p.id)}
-                        className="rounded-lg p-1.5 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+                        className="btn-ghost h-8 w-8 p-0 text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:bg-emerald-900/30"
                         title="Confirmer"
                       >
                         {confirmPaymentMutation.isPending && confirmPaymentMutation.variables === p.id ? (

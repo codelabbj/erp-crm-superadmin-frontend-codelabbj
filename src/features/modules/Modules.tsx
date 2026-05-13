@@ -116,7 +116,7 @@ export function Modules() {
                 <td>
                   <button
                     type="button"
-                    className="cursor-pointer rounded-md border border-gray-300 bg-white px-2 py-1 text-xs text-slate-700 transition hover:border-brand-magenta-500 hover:bg-brand-magenta-50 hover:text-brand-magenta-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-brand-magenta-400 dark:hover:bg-slate-700 dark:hover:text-brand-magenta-300"
+                    className="btn-secondary px-2 py-1 text-xs"
                     onClick={() => mut.mutate({ id: m.id, is_active: !m.is_active })}
                   >
                     {m.is_active ? "Oui" : "Non"}

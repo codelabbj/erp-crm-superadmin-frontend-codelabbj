@@ -12,7 +12,7 @@ import { DataOps } from "../features/dataOps/DataOps";
 import { Plans } from "../features/plans/Plans";
 import { SubscriptionsStats } from "../features/subscriptions/SubscriptionsStats";
 import { SubscriptionsAlerts } from "../features/subscriptions/SubscriptionsAlerts";
-import { Domains } from "../features/domains/Domains";
+// DISABLED: import { Domains } from "../features/domains/Domains";
 import { FeatureFlags } from "../features/featureFlags/FeatureFlags";
 import { Security } from "../features/security/Security";
 import { PlatformHealth } from "../features/dashboard/PlatformHealth";
@@ -23,7 +23,8 @@ import { Support } from "../features/support/Support";
 import { Projects } from "../features/projects/Projects";
 import { Ecommerce } from "../features/ecommerce/Ecommerce";
 import { Fiscal } from "../features/fiscal/Fiscal";
-import { Labels } from "../features/labels/Labels";
+// DISABLED: import { Labels } from "../features/labels/Labels";
+import { AIAssistant } from "../features/ai/AIAssistant";
 import type { Tab } from "../lib/ui";
 import { authApi } from "../lib/api";
 import { applyTheme, getInitialTheme, type ThemeMode } from "../lib/theme";
@@ -126,11 +127,11 @@ export function AppShell() {
       <Sidebar tab={tab} onTabChange={setTab} isRefreshing={isRefreshing} onRefresh={refreshAllData} />
       <main className="ml-72 min-h-screen bg-surface-bg dark:bg-slate-950">
         <header className="sticky top-0 z-10 flex min-h-16 items-center justify-between border-b border-border-soft bg-white px-5 dark:border-slate-800 dark:bg-slate-900">
-          <h1 className="text-lg font-semibold text-brand-purple-900 dark:text-slate-100">Console Super Admin</h1>
+          <h1 className="text-lg font-semibold text-slate-900 dark:text-slate-100"><span className="text-brand-purple-600 dark:text-brand-purple-500">OWO</span> Admin</h1>
           <div className="relative flex items-center gap-2">
             <button
               type="button"
-              className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+              className="btn-secondary h-9 w-9 p-0"
               onClick={toggleTheme}
             >
               {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
@@ -150,7 +151,7 @@ export function AppShell() {
                 <p className="m-0 text-xs text-text-muted dark:text-slate-400">{me?.user?.email || "—"}</p>
                 <button
                   type="button"
-                  className="cursor-pointer rounded-md border border-gray-300 bg-white px-2 py-2 text-left text-sm transition hover:border-brand-magenta-500 hover:text-brand-purple-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                  className="btn-ghost justify-start px-2 py-2 text-sm"
                   onClick={() => {
                     setIsUserMenuOpen(false);
                     setIsLogoutConfirmOpen(true);
@@ -186,7 +187,7 @@ export function AppShell() {
           {tab === "platformHealth" && <PlatformHealth />}
           {tab === "businessMetrics" && <BusinessMetrics />}
           {tab === "onboarding" && <Onboarding />}
-          {tab === "domainsSsl" && <Domains />}
+          {/* DISABLED: {tab === "domainsSsl" && <Domains />} */}
           {tab === "plansFeatures" && <Plans />}
           {tab === "featureFlags" && <FeatureFlags />}
           {tab === "bannedIpsWaf" && <Security />}
@@ -195,9 +196,10 @@ export function AppShell() {
           {tab === "projects" && <Projects />}
           {tab === "ecommerce" && <Ecommerce />}
           {tab === "fiscal" && <Fiscal />}
-          {tab === "labels" && <Labels />}
+          {/* DISABLED: {tab === "labels" && <Labels />} */}
           {tab === "billingOps" && <BillingOps />}
           {tab === "dataOps" && <DataOps />}
+          {tab === "aiAssistant" && <AIAssistant />}
         </section>
       </main>
       {refreshToast ? (
@@ -220,14 +222,14 @@ export function AppShell() {
             <div className="flex justify-end gap-2">
               <button
                 type="button"
-                className="cursor-pointer rounded-md border border-brand-magenta-500 bg-brand-magenta-600 px-3 py-2 text-sm text-white"
+                className="btn-magenta"
                 onClick={logout}
               >
                 Oui, me deconnecter
               </button>
               <button
                 type="button"
-                className="cursor-pointer rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                className="btn-secondary"
                 onClick={() => setIsLogoutConfirmOpen(false)}
               >
                 Annuler

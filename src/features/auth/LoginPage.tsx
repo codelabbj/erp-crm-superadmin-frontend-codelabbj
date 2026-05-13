@@ -46,13 +46,13 @@ export function LoginPage({ onLogged }: { onLogged: () => void }) {
 
   return (
     <div className="relative grid min-h-screen bg-surface-bg dark:bg-slate-950">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(58,12,163,0.18),transparent_40%),radial-gradient(circle_at_80%_70%,rgba(238,29,82,0.12),transparent_45%)] dark:opacity-45" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(232,73,23,0.18),transparent_40%),radial-gradient(circle_at_80%_70%,rgba(224,68,34,0.12),transparent_45%)] dark:opacity-45" />
       <div className="relative grid flex-1 place-items-center px-4 py-12">
         <div className="grid w-[min(96vw,460px)] gap-5 rounded-2xl border border-white/50 bg-white/85 p-7 shadow-2xl backdrop-blur-sm dark:border-slate-700 dark:bg-slate-900/90">
           <div className="flex justify-end">
             <button
               type="button"
-              className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+              className="btn-secondary h-9 w-9 p-0"
               onClick={toggleTheme}
             >
               {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
@@ -61,9 +61,9 @@ export function LoginPage({ onLogged }: { onLogged: () => void }) {
           <div className="grid place-items-center gap-2">
             <div className="inline-flex items-center gap-2 rounded-full bg-brand-purple-700/10 px-3 py-1 text-brand-purple-700">
               <PanelsTopLeft size={16} />
-              <span className="text-xl font-semibold">Codelab</span>
+              <span className="text-xl font-semibold">OWO</span>
             </div>
-            <h1 className="m-0 text-3xl font-semibold text-brand-purple-900 dark:text-slate-100">Connexion Super Admin</h1>
+            <h1 className="m-0 text-3xl font-semibold text-slate-900 dark:text-slate-100">Connexion <span className="text-brand-purple-600 dark:text-brand-purple-500">OWO</span> Admin</h1>
             <p className="m-0 text-center text-sm text-text-muted dark:text-slate-400">Acces securise a la console d&apos;administration globale.</p>
           </div>
 
@@ -95,7 +95,7 @@ export function LoginPage({ onLogged }: { onLogged: () => void }) {
               />
               <button
                 type="button"
-                className="ml-2 inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-gray-500 transition hover:bg-brand-purple-700/10 hover:text-brand-purple-700 dark:text-slate-400 dark:hover:bg-brand-magenta-500/10 dark:hover:text-brand-magenta-500"
+                className="btn-ghost ml-2 h-7 w-7 p-0"
                 onClick={() => setShowPassword((v) => !v)}
               >
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -104,7 +104,7 @@ export function LoginPage({ onLogged }: { onLogged: () => void }) {
           </label>
 
           <button
-            className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-linear-to-r from-brand-purple-700 to-brand-magenta-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-purple-700/30 disabled:cursor-not-allowed disabled:opacity-60"
+            className="btn-primary py-3 shadow-brand-purple-700/30"
             onClick={() => login.mutate()}
             disabled={login.isPending}
           >
@@ -126,7 +126,7 @@ export function LoginPage({ onLogged }: { onLogged: () => void }) {
             </div>
             <button
               type="button"
-              className="inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+              className="btn-ghost h-7 w-7 p-0"
               aria-label="Fermer la notification"
               title="Fermer la notification"
               onClick={() => setToastMessage("")}

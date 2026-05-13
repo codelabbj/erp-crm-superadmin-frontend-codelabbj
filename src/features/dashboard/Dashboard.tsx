@@ -33,7 +33,7 @@ function RowActionsMenu({ onViewSubscriptions, onViewInList }: { onViewSubscript
     <div className="relative flex justify-end" ref={wrapRef}>
       <button
         type="button"
-        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-transparent text-slate-500 transition hover:border-slate-200 hover:bg-slate-100 hover:text-slate-800 dark:hover:border-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+        className="btn-secondary h-9 w-9 p-0"
         aria-label="Actions sur cette organisation"
         onClick={() => setOpen((v) => !v)}
       >
@@ -219,7 +219,7 @@ export function Dashboard({ onOpenOrgSubscriptions, onOpenOrganizationsList }: D
         <div className="px-6 py-4 text-center">
           <button
             type="button"
-            className="cursor-pointer text-base font-semibold text-brand-purple-700 hover:text-brand-magenta-600"
+            className="btn-ghost"
             onClick={onOpenOrganizationsList}
           >
             Voir toutes les organisations
