@@ -7,7 +7,6 @@ import {
   ChevronUp,
   Flag,
   FileSearch,
-  Globe,
   LayoutDashboard,
   ReceiptText,
   Rocket,
@@ -23,7 +22,6 @@ import {
   Briefcase,
   ShoppingCart,
   Scale,
-  Tag,
   Sparkles,
 } from "lucide-react";
 import type { Tab } from "../lib/ui";

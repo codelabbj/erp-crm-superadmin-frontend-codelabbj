@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  ShoppingCart, Store, Package, CreditCard, ExternalLink,
-  ArrowRight, TrendingUp, X, BarChart3, Globe, CheckCircle2, Clock, AlertCircle,
+  ShoppingCart, Store, CreditCard, ExternalLink,
+  ArrowRight, X, BarChart3, Globe, CheckCircle2, Clock, AlertCircle,
 } from "lucide-react";
 import { adminApi, type EcommerceOrder } from "../../lib/adminApi";
 import { formatIsoDate, getErrorMessage, normalizeList } from "../../lib/ui";
