@@ -10,6 +10,7 @@ export function AppRouter() {
     PlatformHealth,
     BusinessMetrics,
     Organizations,
+    OrganizationDetailPage,
     Onboarding,
     SubscriptionsPage,
     SubscriptionsStats,
@@ -41,6 +42,7 @@ export function AppRouter() {
               <Route path="platform-health" element={<PlatformHealth />} />
               <Route path="business-metrics" element={<BusinessMetrics />} />
               <Route path="organizations" element={<Organizations />} />
+              <Route path="organizations/:orgId" element={<OrganizationDetailPage />} />
               <Route path="onboarding" element={<Onboarding />} />
               <Route path="subscriptions" element={<SubscriptionsPage />} />
               <Route path="subscriptions/stats" element={<SubscriptionsStats />} />

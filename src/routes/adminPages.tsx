@@ -3,6 +3,7 @@ import { Dashboard } from "@/features/dashboard/Dashboard";
 import { PlatformHealth } from "@/features/dashboard/PlatformHealth";
 import { BusinessMetrics } from "@/features/dashboard/BusinessMetrics";
 import { Organizations } from "@/features/organizations/Organizations";
+import { OrganizationDetailPage } from "@/features/organizations/OrganizationDetailPage";
 import { Onboarding } from "@/features/organizations/Onboarding";
 import { Subscriptions } from "@/features/subscriptions/Subscriptions";
 import { SubscriptionsStats } from "@/features/subscriptions/SubscriptionsStats";
@@ -50,6 +51,7 @@ export const adminPages = {
   PlatformHealth,
   BusinessMetrics,
   Organizations,
+  OrganizationDetailPage,
   Onboarding,
   SubscriptionsPage,
   SubscriptionsStats,
