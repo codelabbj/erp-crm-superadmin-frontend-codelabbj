@@ -380,13 +380,17 @@ export interface BusinessMetrics {
   mrr: number;
   arr: number;
   active_tenants: number;
+  active_plans?: number;
   churn_rate: number;
   net_revenue_retention: number;
   trial_to_paid_rate: number;
+  by_plan?: Array<{ plan_code: string; count: number }>;
   time_series: {
     new_tenants_by_month: Array<{ month: string; count: number }>;
-    new_subscriptions_by_month: Array<{ month: string; count: number }>;
-    cancelled_subscriptions_by_month: Array<{ month: string; count: number }>;
+    new_subscriptions_by_month?: Array<{ month: string; count: number }>;
+    new_plans_by_month?: Array<{ month: string; count: number }>;
+    cancelled_subscriptions_by_month?: Array<{ month: string; count: number }>;
+    expired_plans_by_month?: Array<{ month: string; count: number }>;
   };
 }
 
