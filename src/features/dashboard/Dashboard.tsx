@@ -24,6 +24,7 @@ import {
   aggregateByField,
   countryFlag,
   formatPercent,
+  seriesNewOrgsByMonth,
 } from "./dashboardUtils";
 import { formatMoney } from "@/lib/money";
 import {
@@ -200,13 +201,11 @@ export function Dashboard({ onOpenOrgSubscriptions, onOpenOrganizationsList }: D
   const activeTenants = businessMetrics?.active_tenants ?? overview?.active_orgs ?? overview?.organizations;
   const arpu = mrr != null && activeTenants ? mrr / activeTenants : undefined;
 
-  const tenantSeries =
-    businessMetrics?.time_series?.new_tenants_by_month ??
-    subStats?.monthly_evolution?.map((m) => ({
-      month: m.month,
-      count: m.active_subscriptions,
-    })) ??
-    [];
+  const tenantSeries = useMemo(() => {
+    const fromMetrics = businessMetrics?.time_series?.new_tenants_by_month;
+    if (fromMetrics?.length) return fromMetrics;
+    return seriesNewOrgsByMonth(orgsGeo?.results ?? []);
+  }, [businessMetrics, orgsGeo?.results]);
 
   const planDistribution = useMemo(() => {
     const fromStats = subStats?.by_plan?.map((p) => ({ label: p.plan_code, count: p.count })) ?? [];
@@ -425,8 +424,8 @@ export function Dashboard({ onOpenOrgSubscriptions, onOpenOrganizationsList }: D
       {/* Graphiques & répartitions */}
       <div className="grid gap-5 lg:grid-cols-3">
         <DashboardSection
-          title="Croissance tenants"
-          description="Nouveaux comptes / mois"
+          title="Nouvelles organisations"
+          description="Inscriptions clientes par mois — chaque barre compte les orgs créées sur la plateforme"
           className="lg:col-span-1"
           action={
             <Link to="/business-metrics" className="text-xs font-semibold text-brand-purple-600 dark:text-brand-magenta-400">
@@ -434,7 +433,16 @@ export function Dashboard({ onOpenOrgSubscriptions, onOpenOrganizationsList }: D
             </Link>
           }
         >
-          <MiniBarChart data={tenantSeries} colorClass="bg-brand-purple-500" />
+          <MiniBarChart
+            data={tenantSeries}
+            colorClass="bg-brand-purple-500"
+            emptyLabel="Aucune organisation enregistrée sur la période."
+            unitLabel="nouvelle(s) org."
+          />
+          <p className="mt-2 text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
+            Une <strong>organisation</strong> = un client ERP (entreprise avec son espace, utilisateurs et abonnement).
+            Ce n&apos;est pas le nombre total d&apos;orgs actives, seulement les <strong>nouvelles inscriptions</strong> du mois.
+          </p>
         </DashboardSection>
 
         <DashboardSection title="Répartition par plan" className="lg:col-span-1">

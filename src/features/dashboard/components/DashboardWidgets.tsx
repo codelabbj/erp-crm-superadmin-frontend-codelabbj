@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { ArrowDownRight, ArrowUpRight, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatMonthLabel } from "@/features/dashboard/dashboardUtils";
 
 export function DashboardSection({
   title,
@@ -90,36 +91,45 @@ export function MiniBarChart({
   data,
   colorClass = "bg-brand-purple-500",
   emptyLabel = "Aucune donnée",
+  unitLabel = "organisation(s)",
 }: {
   data: Array<{ month: string; count: number }>;
   colorClass?: string;
   emptyLabel?: string;
+  unitLabel?: string;
 }) {
   if (!data.length) {
     return <p className="py-8 text-center text-xs text-slate-400">{emptyLabel}</p>;
   }
 
   const max = Math.max(...data.map((d) => d.count ?? 0), 1);
+  const total = data.reduce((acc, d) => acc + (d.count ?? 0), 0);
 
   return (
-    <div className="relative flex h-40 items-end gap-2 pt-6">
-      {data.slice(-8).map((d) => {
-        const height = ((d.count ?? 0) / max) * 100;
-        return (
-          <div key={d.month} className="group flex min-w-0 flex-1 flex-col items-center">
-            <span className="mb-1 text-[10px] font-bold text-slate-600 opacity-0 transition group-hover:opacity-100 dark:text-slate-300">
-              {d.count ?? 0}
-            </span>
-            <div
-              className={cn("w-full rounded-t-md transition-all duration-500", colorClass)}
-              style={{ height: `${Math.max(height, 4)}%` }}
-            />
-            <span className="mt-2 truncate text-[9px] font-medium text-slate-500 dark:text-slate-400">
-              {d.month.slice(5) || d.month}
-            </span>
-          </div>
-        );
-      })}
+    <div>
+      <div className="relative flex h-40 items-end gap-2 pt-6">
+        {data.slice(-8).map((d) => {
+          const height = ((d.count ?? 0) / max) * 100;
+          return (
+            <div key={d.month} className="group flex min-w-0 flex-1 flex-col items-center">
+              <span className="mb-1 text-[10px] font-bold tabular-nums text-slate-700 dark:text-slate-200">
+                {d.count ?? 0}
+              </span>
+              <div
+                className={cn("w-full rounded-t-md transition-all duration-500", colorClass)}
+                style={{ height: `${Math.max(height, 4)}%` }}
+                title={`${formatMonthLabel(d.month)} : ${d.count ?? 0} ${unitLabel}`}
+              />
+              <span className="mt-2 truncate text-[9px] font-medium text-slate-500 dark:text-slate-400">
+                {formatMonthLabel(d.month)}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+      <p className="mt-3 text-center text-[11px] text-slate-500 dark:text-slate-400">
+        Total affiché : <strong className="text-slate-700 dark:text-slate-200">{total}</strong> {unitLabel}
+      </p>
     </div>
   );
 }
