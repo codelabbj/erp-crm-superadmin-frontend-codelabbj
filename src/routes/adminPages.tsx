@@ -10,6 +10,7 @@ import { SubscriptionsStats } from "@/features/subscriptions/SubscriptionsStats"
 import { SubscriptionsAlerts } from "@/features/subscriptions/SubscriptionsAlerts";
 import { Plans } from "@/features/plans/Plans";
 import { BillingOps } from "@/features/billingOps/BillingOps";
+import { BusinessInvoices } from "@/features/businessInvoices/BusinessInvoices";
 import { FeatureFlags } from "@/features/featureFlags/FeatureFlags";
 import { Modules } from "@/features/modules/Modules";
 import { DataOps } from "@/features/dataOps/DataOps";
@@ -58,6 +59,7 @@ export const adminPages = {
   SubscriptionsAlerts,
   Plans,
   BillingOps,
+  BusinessInvoices,
   FeatureFlags,
   Modules,
   DataOps,

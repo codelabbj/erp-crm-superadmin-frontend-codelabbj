@@ -17,6 +17,7 @@ export function AppRouter() {
     SubscriptionsAlerts,
     Plans,
     BillingOps,
+    BusinessInvoices,
     FeatureFlags,
     Modules,
     DataOps,
@@ -49,6 +50,7 @@ export function AppRouter() {
               <Route path="subscriptions/alerts" element={<SubscriptionsAlerts />} />
               <Route path="plans" element={<Plans />} />
               <Route path="billing/invoices" element={<BillingOps />} />
+              <Route path="billing/business-invoices" element={<BusinessInvoices />} />
               <Route path="platform/feature-flags" element={<FeatureFlags />} />
               <Route path="platform/modules" element={<Modules />} />
               <Route path="platform/jobs" element={<DataOps />} />

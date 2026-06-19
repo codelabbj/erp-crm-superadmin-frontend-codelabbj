@@ -140,6 +140,36 @@ export type OrganizationUpsert = {
   is_active?: boolean;
 };
 
+export interface BusinessInvoiceItem {
+  id: string;
+  invoice_number: string;
+  org_id: string;
+  org_name: string;
+  status: string;
+  deployment_type: "platform" | "dedicated";
+  billing_cycle: string;
+  included_seats: number;
+  amount_total: string;
+  currency: string;
+  recipient_email: string;
+  payment_url: string;
+  sent_at: string | null;
+  paid_at: string | null;
+  created_at: string;
+}
+
+export interface CreateBusinessInvoicePayload {
+  org_id: string;
+  recipient_email: string;
+  recipient_name?: string;
+  deployment_type?: "platform" | "dedicated";
+  billing_cycle?: "monthly" | "yearly";
+  included_seats?: number;
+  amount_total: string;
+  send_email?: boolean;
+  notes?: string;
+}
+
 export interface OrganizationRelatedData {
   success: boolean;
   data: {
@@ -632,6 +662,25 @@ export const adminApi = {
   onboardingJobs: async (params?: { q?: string; limit?: number; offset?: number; ordering?: string }) =>
     (await api.get<PaginatedResponse<OnboardingJob>>("/api/admin/onboarding-jobs/", { params })).data,
   retryOnboardingJob: async (id: string) => (await api.post<{ id: string; status: string }>(`/api/admin/onboarding-jobs/${id}/retry/`)).data,
+
+  // Factures Business (abonnement commercial)
+  businessInvoices: async (params?: {
+    status?: string;
+    org_id?: string;
+    limit?: number;
+    offset?: number;
+  }) =>
+    (
+      await api.get<PaginatedResponse<BusinessInvoiceItem>>("/api/admin/business-invoices/", {
+        params,
+      })
+    ).data,
+  createBusinessInvoice: async (payload: CreateBusinessInvoicePayload) =>
+    (await api.post<BusinessInvoiceItem>("/api/admin/business-invoices/", payload)).data,
+  sendBusinessInvoice: async (id: string) =>
+    (await api.post<BusinessInvoiceItem>(`/api/admin/business-invoices/${id}/send/`)).data,
+  cancelBusinessInvoice: async (id: string) =>
+    (await api.post<BusinessInvoiceItem>(`/api/admin/business-invoices/${id}/cancel/`)).data,
 
   // Billing Actions
   finalizeInvoice: async (id: string, payload: { invoice_type: string }) =>

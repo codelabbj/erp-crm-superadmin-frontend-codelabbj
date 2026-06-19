@@ -58,7 +58,8 @@ export const NAV_SECTIONS_MAIN: NavSection[] = [
     items: [
       { icon: WalletCards, label: "Abonnements", path: "/subscriptions" },
       { icon: SlidersHorizontal, label: "Plans & fonctionnalités", path: "/plans" },
-      { icon: ReceiptText, label: "Factures", path: "/billing/invoices" },
+      { icon: ReceiptText, label: "Factures Business", path: "/billing/business-invoices" },
+      { icon: ReceiptText, label: "Factures tenants", path: "/billing/invoices" },
     ],
   },
   {
