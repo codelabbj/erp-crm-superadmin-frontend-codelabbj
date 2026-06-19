@@ -1,0 +1,69 @@
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { LoginPage } from "@/features/auth/LoginPage";
+import { DashboardLayout } from "@/layouts/DashboardLayout";
+import { adminPages } from "@/routes/adminPages";
+import { ProtectedRoute, SuperAdminGuard } from "@/routes/guards";
+
+export function AppRouter() {
+  const {
+    DashboardPage,
+    PlatformHealth,
+    BusinessMetrics,
+    Organizations,
+    Onboarding,
+    SubscriptionsPage,
+    SubscriptionsStats,
+    SubscriptionsAlerts,
+    Plans,
+    BillingOps,
+    FeatureFlags,
+    Modules,
+    DataOps,
+    Users,
+    AuditLogs,
+    Security,
+    Marketing,
+    Support,
+    Projects,
+    Ecommerce,
+    Fiscal,
+    AIAssistant,
+  } = adminPages;
+
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route element={<ProtectedRoute />}>
+          <Route element={<SuperAdminGuard />}>
+            <Route element={<DashboardLayout />}>
+              <Route index element={<DashboardPage />} />
+              <Route path="platform-health" element={<PlatformHealth />} />
+              <Route path="business-metrics" element={<BusinessMetrics />} />
+              <Route path="organizations" element={<Organizations />} />
+              <Route path="onboarding" element={<Onboarding />} />
+              <Route path="subscriptions" element={<SubscriptionsPage />} />
+              <Route path="subscriptions/stats" element={<SubscriptionsStats />} />
+              <Route path="subscriptions/alerts" element={<SubscriptionsAlerts />} />
+              <Route path="plans" element={<Plans />} />
+              <Route path="billing/invoices" element={<BillingOps />} />
+              <Route path="platform/feature-flags" element={<FeatureFlags />} />
+              <Route path="platform/modules" element={<Modules />} />
+              <Route path="platform/jobs" element={<DataOps />} />
+              <Route path="platform/staff" element={<Users />} />
+              <Route path="security/audit-logs" element={<AuditLogs />} />
+              <Route path="security/waf" element={<Security />} />
+              <Route path="business/marketing" element={<Marketing />} />
+              <Route path="business/support" element={<Support />} />
+              <Route path="business/projects" element={<Projects />} />
+              <Route path="business/ecommerce" element={<Ecommerce />} />
+              <Route path="business/fiscal" element={<Fiscal />} />
+              <Route path="intelligence/ai" element={<AIAssistant />} />
+            </Route>
+          </Route>
+        </Route>
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}

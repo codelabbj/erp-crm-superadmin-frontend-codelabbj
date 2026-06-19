@@ -1,11 +1,19 @@
 import { useEffect, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { AlertTriangle, Eye, EyeOff, Lock, Mail, Moon, PanelsTopLeft, ShieldCheck, Sun, X } from "lucide-react";
 import { authApi } from "../../lib/api";
 import { getErrorMessage } from "../../lib/ui";
 import { applyTheme, getInitialTheme, type ThemeMode } from "../../lib/theme";
 
-export function LoginPage({ onLogged }: { onLogged: () => void }) {
+export function LoginPage() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (localStorage.getItem("sa_access")) {
+      navigate("/", { replace: true });
+    }
+  }, [navigate]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [toastMessage, setToastMessage] = useState("");
@@ -22,8 +30,7 @@ export function LoginPage({ onLogged }: { onLogged: () => void }) {
       return me;
     },
     onSuccess: () => {
-      window.history.replaceState(null, "", "/");
-      onLogged();
+      navigate("/", { replace: true });
     },
     onError: (e) => {
       const maybeAxios = e as { response?: { data?: { detail?: string } } };

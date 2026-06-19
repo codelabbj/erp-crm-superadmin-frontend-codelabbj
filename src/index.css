@@ -3,6 +3,39 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
+  --owo-accent: #d94510;
+
+  --color-primary-0: #d94510;
+  --color-primary-1: #d94510;
+  --color-primary-2: #d94510cc;
+  --color-primary-3: #d9451099;
+  --color-primary-4: #d9451066;
+  --color-primary-5: #d9451033;
+  --color-primary-6: #b83208;
+  --color-primary-7: #7a1a05;
+  --color-primary-8: #f0694a;
+  --color-primary-9: #f8b4a0;
+
+  --color-neutral-0: #ffffff;
+  --color-neutral-1: #f1f5f9;
+  --color-neutral-2: #f8fafc;
+  --color-neutral-3: #ffffff;
+  --color-neutral-4: #e2e8f0;
+  --color-neutral-5: #cbd5e1;
+  --color-neutral-6: #94a3b8;
+  --color-neutral-7: #64748b;
+  --color-neutral-8: #334155;
+  --color-neutral-9: #0f172a;
+  --color-neutral-10: #000000;
+
+  --color-success-1: #10b981;
+  --color-success-2: #10b9811a;
+  --color-success-3: #059669;
+
+  --color-danger-1: #ef4444;
+  --color-danger-2: #ef44441a;
+  --color-danger-3: #dc2626;
+
   --color-brand-purple-900: #3b0a02;
   --color-brand-purple-800: #7a1a05;
   --color-brand-purple-700: #b83208;
@@ -25,6 +58,22 @@
 
   --spacing-layout-x: 1.125rem;
   --spacing-layout-y: 1rem;
+}
+
+.dark {
+  --color-neutral-0: #11141d;
+  --color-neutral-1: #1c212d;
+  --color-neutral-2: #0b0e14;
+  --color-neutral-3: #11141d;
+  --color-neutral-4: #ffffff0a;
+  --color-neutral-5: #ffffff14;
+  --color-neutral-6: #475569;
+  --color-neutral-7: #94a3b8;
+  --color-neutral-8: #cbd5e1;
+  --color-neutral-9: #f8fafc;
+  --color-neutral-10: #ffffff;
+  --color-danger-2: #ef44440d;
+  --color-success-2: #10b9810d;
 }
 
 @layer base {
