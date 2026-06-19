@@ -3,6 +3,10 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Megaphone, Plus, Mail, Users, Calendar, ArrowRight } from "lucide-react";
 import { adminApi } from "../../lib/adminApi";
 import { formatIsoDate, getErrorMessage, normalizeList } from "../../lib/ui";
+import { FilterBar, FilterSelect, SearchInput } from "@/components/ui/FilterBar";
+import { Pagination } from "@/components/ui/Pagination";
+import { useDebouncedValue, usePaginationState } from "@/hooks/useListState";
+import { clientPageSlice } from "@/lib/pagination";
 
 export function Marketing() {
   const { data: campaignsData, isLoading } = useQuery({
@@ -14,6 +18,10 @@ export function Marketing() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalError, setModalError] = useState("");
   const [newCampaign, setNewCampaign] = useState({ name: "", status: "draft" });
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const debouncedSearch = useDebouncedValue(search);
+  const { page, setPage, pageSize, resetPage } = usePaginationState(15);
 
   const createMut = useMutation({
     mutationFn: adminApi.createMarketingCampaign,
@@ -27,6 +35,20 @@ export function Marketing() {
   });
 
   const campaigns = useMemo(() => normalizeList<any>(campaignsData), [campaignsData]);
+
+  const filteredCampaigns = useMemo(() => {
+    const q = debouncedSearch.trim().toLowerCase();
+    return campaigns.filter((c) => {
+      if (statusFilter && c.status !== statusFilter) return false;
+      if (!q) return true;
+      return String(c.name ?? "").toLowerCase().includes(q);
+    });
+  }, [campaigns, debouncedSearch, statusFilter]);
+
+  const { items: pagedCampaigns, total } = useMemo(
+    () => clientPageSlice(filteredCampaigns, page, pageSize),
+    [filteredCampaigns, page, pageSize],
+  );
 
   const activeCount = useMemo(() => campaigns.filter((c) => c.status === "active" || c.status === "en_cours").length, [campaigns]);
   const totalRecipients = useMemo(() => campaigns.reduce((sum, c) => sum + (Number(c.recipients_count) || 0), 0), [campaigns]);
@@ -55,17 +77,42 @@ export function Marketing() {
         <StatCard title="Taux d'ouverture" value={avgOpenRate ? `${avgOpenRate}%` : "—"} icon={<Mail size={20} />} />
       </div>
 
+      <FilterBar>
+        <SearchInput
+          value={search}
+          onChange={(v) => {
+            setSearch(v);
+            resetPage();
+          }}
+          placeholder="Nom de campagne…"
+        />
+        <FilterSelect
+          value={statusFilter}
+          onChange={(v) => {
+            setStatusFilter(v);
+            resetPage();
+          }}
+          placeholder="Tous les statuts"
+          options={[
+            { value: "draft", label: "Brouillon" },
+            { value: "active", label: "Active" },
+            { value: "en_cours", label: "En cours" },
+            { value: "completed", label: "Terminée" },
+          ]}
+        />
+      </FilterBar>
+
       <div className="rounded-2xl border border-border-soft bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <div className="border-b border-border-soft p-5 dark:border-slate-800">
-          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Campagnes récentes</h3>
+          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Campagnes</h3>
         </div>
         <div className="divide-y divide-border-soft dark:divide-slate-800">
           {isLoading ? (
             <div className="p-8 text-center text-slate-400">Chargement...</div>
-          ) : campaigns.length === 0 ? (
+          ) : pagedCampaigns.length === 0 ? (
             <div className="p-8 text-center text-slate-400">Aucune campagne trouvée.</div>
           ) : (
-            campaigns.map((campaign) => (
+            pagedCampaigns.map((campaign) => (
               <div key={campaign.id} className="flex items-center justify-between p-5 transition hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
                 <div className="flex items-center gap-4">
                   <div className="rounded-full bg-brand-purple-50 p-3 dark:bg-brand-purple-900/20">
@@ -85,6 +132,9 @@ export function Marketing() {
               </div>
             ))
           )}
+        </div>
+        <div className="border-t border-border-soft p-4 dark:border-slate-800">
+          <Pagination page={page} pageSize={pageSize} total={total} onPageChange={setPage} />
         </div>
       </div>
 

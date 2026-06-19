@@ -1,7 +1,7 @@
 import { ChevronLeft, ChevronRight, LogOut, RefreshCw } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { Logo } from "@/components/ui/Logo";
-import { NAV_SECTIONS } from "@/lib/navigation";
+import { NAV_SECTIONS_FOOTER, NAV_SECTIONS_MAIN, type NavSection } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
 type SidebarProps = {
@@ -13,6 +13,58 @@ type SidebarProps = {
   onRefresh: () => void;
   isRefreshing: boolean;
 };
+
+function NavSections({ sections, isCollapsed }: { sections: NavSection[]; isCollapsed: boolean }) {
+  return (
+    <>
+      {sections.map((section) => (
+        <div key={section.sectionKey} className="space-y-0.5">
+          {!isCollapsed ? (
+            <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-wider text-neutral-6">
+              {section.title}
+            </p>
+          ) : (
+            <div className="mx-3 mb-1 h-px bg-neutral-4/60" aria-hidden />
+          )}
+          {section.items.map((item) => (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              end={item.end ?? item.path === "/"}
+              title={isCollapsed ? item.label : undefined}
+              className={({ isActive }) =>
+                cn(
+                  "flex h-9 items-center gap-3 overflow-hidden rounded-xl px-3",
+                  "text-sm font-medium transition-colors duration-150",
+                  isActive
+                    ? "bg-primary-5 text-primary-1 shadow-[inset_3px_0_0_0_var(--owo-accent)]"
+                    : "text-neutral-7 hover:bg-neutral-1 hover:text-neutral-9 dark:hover:bg-neutral-8 dark:hover:text-neutral-10",
+                )
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  <item.icon
+                    className={cn("h-4 w-4 shrink-0", isActive ? "text-primary-1" : "text-neutral-6")}
+                  />
+                  <span
+                    className={cn(
+                      "overflow-hidden whitespace-nowrap",
+                      "transition-[opacity,max-width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]",
+                      isCollapsed ? "max-w-0 opacity-0" : "max-w-[200px] opacity-100",
+                    )}
+                  >
+                    {item.label}
+                  </span>
+                </>
+              )}
+            </NavLink>
+          ))}
+        </div>
+      ))}
+    </>
+  );
+}
 
 export function Sidebar({
   isCollapsed,
@@ -36,52 +88,15 @@ export function Sidebar({
         <Logo isCollapsed={isCollapsed} />
       </div>
 
-      <nav className="flex-1 space-y-3 overflow-y-auto px-3 py-3">
-        {NAV_SECTIONS.map((section) => (
-          <div key={section.sectionKey} className="space-y-0.5">
-            {!isCollapsed ? (
-              <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-wider text-neutral-6">
-                {section.title}
-              </p>
-            ) : (
-              <div className="mx-3 mb-1 h-px bg-neutral-4/60" aria-hidden />
-            )}
-            {section.items.map((item) => (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                end={item.end ?? item.path === "/"}
-                title={isCollapsed ? item.label : undefined}
-                className={({ isActive }) =>
-                  cn(
-                    "flex h-9 items-center gap-3 overflow-hidden rounded-xl px-3",
-                    "text-sm font-medium transition-colors duration-150",
-                    isActive
-                      ? "bg-primary-5 text-primary-1 shadow-[inset_3px_0_0_0_var(--owo-accent)]"
-                      : "text-neutral-7 hover:bg-neutral-1 hover:text-neutral-9 dark:hover:bg-neutral-8 dark:hover:text-neutral-10",
-                  )
-                }
-              >
-                {({ isActive }) => (
-                  <>
-                    <item.icon
-                      className={cn("h-4 w-4 shrink-0", isActive ? "text-primary-1" : "text-neutral-6")}
-                    />
-                    <span
-                      className={cn(
-                        "overflow-hidden whitespace-nowrap",
-                        "transition-[opacity,max-width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]",
-                        isCollapsed ? "max-w-0 opacity-0" : "max-w-[200px] opacity-100",
-                      )}
-                    >
-                      {item.label}
-                    </span>
-                  </>
-                )}
-              </NavLink>
-            ))}
-          </div>
-        ))}
+      <nav className="min-h-0 flex-1 space-y-3 overflow-y-auto px-3 py-3">
+        <NavSections sections={NAV_SECTIONS_MAIN} isCollapsed={isCollapsed} />
+      </nav>
+
+      <nav className="max-h-[42vh] shrink-0 space-y-3 overflow-y-auto border-t border-neutral-4 px-3 py-3">
+        {!isCollapsed ? (
+          <p className="px-3 text-[10px] font-semibold uppercase tracking-wider text-neutral-5">Plus</p>
+        ) : null}
+        <NavSections sections={NAV_SECTIONS_FOOTER} isCollapsed={isCollapsed} />
       </nav>
 
       <div className="shrink-0 space-y-2 border-t border-neutral-4 p-3">
@@ -108,8 +123,7 @@ export function Sidebar({
           <RefreshCw className={cn("h-4 w-4 shrink-0 text-neutral-6", isRefreshing && "animate-spin")} />
           <span
             className={cn(
-              "overflow-hidden whitespace-nowrap",
-              "transition-[opacity,max-width] duration-300",
+              "overflow-hidden whitespace-nowrap transition-[opacity,max-width] duration-300",
               isCollapsed ? "max-w-0 opacity-0" : "max-w-[200px] opacity-100",
             )}
           >
@@ -130,8 +144,7 @@ export function Sidebar({
           <LogOut className="h-4 w-4 shrink-0 text-neutral-6" />
           <span
             className={cn(
-              "overflow-hidden whitespace-nowrap",
-              "transition-[opacity,max-width] duration-300",
+              "overflow-hidden whitespace-nowrap transition-[opacity,max-width] duration-300",
               isCollapsed ? "max-w-0 opacity-0" : "max-w-[200px] opacity-100",
             )}
           >

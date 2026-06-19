@@ -2,20 +2,30 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { adminApi } from "../../lib/adminApi";
 import { formatIsoDate, getErrorMessage } from "../../lib/ui";
+import { FilterBar, SearchInput } from "@/components/ui/FilterBar";
+import { ListPageShell, PageHeader } from "@/components/ui/PageHeader";
+import { Pagination } from "@/components/ui/Pagination";
+import { useDebouncedValue, usePaginationState } from "@/hooks/useListState";
+import { paginatedCount } from "@/lib/pagination";
 
 export function Users() {
   const [q, setQ] = useState("");
-  const [offset, setOffset] = useState(0);
+  const debouncedQ = useDebouncedValue(q);
+  const { page, setPage, offset, pageSize, resetPage } = usePaginationState(30);
   const [feedback, setFeedback] = useState("");
   const [pendingAction, setPendingAction] = useState<{
     message: string;
     payload: { id: string; is_active?: boolean; is_staff?: boolean; is_superuser?: boolean };
   } | null>(null);
-  const limit = 30;
 
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ["users", q, offset],
-    queryFn: () => adminApi.users({ q: q || undefined, limit, offset }),
+    queryKey: ["users", debouncedQ, page],
+    queryFn: () =>
+      adminApi.users({
+        q: debouncedQ || undefined,
+        limit: pageSize,
+        offset,
+      }),
   });
   const qc = useQueryClient();
   const mut = useMutation({
@@ -27,7 +37,10 @@ export function Users() {
     onError: (e) => setFeedback(getErrorMessage(e)),
   });
 
-  const confirmAndMutate = (message: string, payload: { id: string; is_active?: boolean; is_staff?: boolean; is_superuser?: boolean }) => {
+  const confirmAndMutate = (
+    message: string,
+    payload: { id: string; is_active?: boolean; is_staff?: boolean; is_superuser?: boolean },
+  ) => {
     setPendingAction({ message, payload });
   };
 
@@ -38,27 +51,25 @@ export function Users() {
     });
   };
 
+  const total = paginatedCount(data);
+
   return (
-    <div className="rounded-xl border border-border-soft bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-      <h3 className="mb-2 text-base font-semibold text-brand-purple-900 dark:text-slate-100">Utilisateurs</h3>
-      <div className="mb-3 flex flex-wrap items-end gap-3">
-        <label className="flex flex-col gap-1 text-xs text-gray-700 dark:text-slate-300">
-          Recherche
-          <input
-            value={q}
-            onChange={(e) => {
-              setQ(e.target.value);
-              setOffset(0);
-            }}
-            placeholder="Email, nom..."
-            className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-brand-magenta-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
-          />
-        </label>
-      </div>
-      {feedback ? <p className="mb-3 text-xs text-text-muted dark:text-slate-400">{feedback}</p> : null}
-      {isLoading ? <p className="mb-3 text-xs text-text-muted dark:text-slate-400">Chargement...</p> : null}
-      {isError ? <p className="mb-3 text-sm text-red-700">{getErrorMessage(error)}</p> : null}
-      <div className="max-w-full overflow-x-auto">
+    <ListPageShell>
+      <PageHeader title="Utilisateurs" description="Gestion des comptes et rôles plateforme." />
+      <FilterBar>
+        <SearchInput
+          value={q}
+          onChange={(v) => {
+            setQ(v);
+            resetPage();
+          }}
+          placeholder="Email, nom…"
+        />
+      </FilterBar>
+      {feedback ? <p className="text-xs text-text-muted dark:text-slate-400">{feedback}</p> : null}
+      {isLoading ? <p className="text-xs text-text-muted dark:text-slate-400">Chargement...</p> : null}
+      {isError ? <p className="text-sm text-red-700">{getErrorMessage(error)}</p> : null}
+      <div className="max-w-full overflow-x-auto rounded-xl border border-border-soft bg-white dark:border-slate-800 dark:bg-slate-900">
         <table className="min-w-full text-sm">
           <thead>
             <tr>
@@ -109,7 +120,9 @@ export function Users() {
                       className="btn-secondary px-2 py-1 text-xs"
                       onClick={() =>
                         confirmAndMutate(
-                          u.is_active ? "Confirmer la desactivation de cet utilisateur ?" : "Confirmer l'activation de cet utilisateur ?",
+                          u.is_active
+                            ? "Confirmer la desactivation de cet utilisateur ?"
+                            : "Confirmer l'activation de cet utilisateur ?",
                           { id: u.id, is_active: !u.is_active },
                         )
                       }
@@ -149,24 +162,7 @@ export function Users() {
           </tbody>
         </table>
       </div>
-      <div className="mb-2 flex flex-wrap items-end gap-3">
-        <button
-          type="button"
-          className="btn-secondary"
-          onClick={() => setOffset((v) => Math.max(0, v - limit))}
-          disabled={offset === 0}
-        >
-          Precedent
-        </button>
-        <button
-          type="button"
-          className="btn-secondary"
-          onClick={() => setOffset((v) => v + limit)}
-          disabled={(data?.results?.length ?? 0) < limit}
-        >
-          Suivant
-        </button>
-      </div>
+      <Pagination page={page} pageSize={pageSize} total={total} onPageChange={setPage} />
       {pendingAction ? (
         <div className="fixed inset-0 z-30 grid place-items-center bg-gray-900/55 p-4">
           <div className="grid w-[min(92vw,420px)] gap-3 rounded-xl border border-border-soft bg-white p-4 shadow-xl dark:border-slate-700 dark:bg-slate-900">
@@ -181,18 +177,13 @@ export function Users() {
               >
                 Annuler
               </button>
-              <button
-                type="button"
-                className="btn-magenta"
-                onClick={handleConfirmAction}
-                disabled={mut.isPending}
-              >
+              <button type="button" className="btn-magenta" onClick={handleConfirmAction} disabled={mut.isPending}>
                 {mut.isPending ? "Application..." : "Confirmer"}
               </button>
             </div>
           </div>
         </div>
       ) : null}
-    </div>
+    </ListPageShell>
   );
 }

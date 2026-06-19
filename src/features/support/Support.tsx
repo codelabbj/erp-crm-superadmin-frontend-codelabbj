@@ -3,6 +3,11 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, MessageSquare, Clock, CheckCircle2, AlertCircle, X, Tag, Calendar } from "lucide-react";
 import { adminApi, type SupportTicket } from "../../lib/adminApi";
 import { formatIsoDate, getErrorMessage, normalizeList } from "../../lib/ui";
+import { FilterBar, FilterButton, FilterSelect, SearchInput } from "@/components/ui/FilterBar";
+import { ListPageShell, PageHeader } from "@/components/ui/PageHeader";
+import { Pagination } from "@/components/ui/Pagination";
+import { useDebouncedValue, usePaginationState } from "@/hooks/useListState";
+import { clientPageSlice } from "@/lib/pagination";
 
 export function Support() {
   const { data: ticketsData, isLoading } = useQuery({
@@ -15,6 +20,11 @@ export function Support() {
   const [modalError, setModalError] = useState("");
   const [newTicket, setNewTicket] = useState({ title: "", priority: "medium", status: "open" });
 
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [priorityFilter, setPriorityFilter] = useState("");
+  const debouncedSearch = useDebouncedValue(search);
+  const { page, setPage, pageSize, resetPage } = usePaginationState(20);
   const [managingTicket, setManagingTicket] = useState<SupportTicket | null>(null);
   const [manageForm, setManageForm] = useState({ status: "", priority: "" });
   const [manageError, setManageError] = useState("");
@@ -49,24 +59,96 @@ export function Support() {
 
   const tickets = useMemo(() => normalizeList<SupportTicket>(ticketsData), [ticketsData]);
 
-  return (
-    <div className="grid gap-6">
-      <header className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Support & Tickets</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400">Gérez les demandes d&apos;assistance des organisations.</p>
-        </div>
-        <button onClick={() => setIsModalOpen(true)} className="btn-primary">
-          <Plus size={18} />
-          Nouveau ticket
-        </button>
-      </header>
+  const statusCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: tickets.length };
+    for (const t of tickets) {
+      counts[t.status] = (counts[t.status] ?? 0) + 1;
+    }
+    return counts;
+  }, [tickets]);
 
-      <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
-        <FilterBadge label="Tous les tickets" count={tickets.length} active />
-        <FilterBadge label="Ouverts" count={2} />
-        <FilterBadge label="En attente" count={0} />
-        <FilterBadge label="Résolus" count={5} />
+  const filteredTickets = useMemo(() => {
+    const q = debouncedSearch.trim().toLowerCase();
+    return tickets.filter((t) => {
+      if (statusFilter && t.status !== statusFilter) return false;
+      if (priorityFilter && t.priority !== priorityFilter) return false;
+      if (!q) return true;
+      const subject = String(t.subject || t.title || "").toLowerCase();
+      return subject.includes(q) || t.id.toLowerCase().includes(q);
+    });
+  }, [tickets, debouncedSearch, statusFilter, priorityFilter]);
+
+  const { items: pagedTickets, total } = useMemo(
+    () => clientPageSlice(filteredTickets, page, pageSize),
+    [filteredTickets, page, pageSize],
+  );
+
+  return (
+    <ListPageShell>
+      <PageHeader
+        title="Support & Tickets"
+        description="Gérez les demandes d'assistance des organisations."
+        actions={
+          <button onClick={() => setIsModalOpen(true)} className="btn-primary">
+            <Plus size={18} />
+            Nouveau ticket
+          </button>
+        }
+      />
+
+      <FilterBar>
+        <SearchInput
+          value={search}
+          onChange={(v) => {
+            setSearch(v);
+            resetPage();
+          }}
+          placeholder="Sujet, référence…"
+        />
+        <FilterSelect
+          value={statusFilter}
+          onChange={(v) => {
+            setStatusFilter(v);
+            resetPage();
+          }}
+          placeholder="Tous les statuts"
+          options={[
+            { value: "open", label: "Ouvert" },
+            { value: "pending", label: "En attente" },
+            { value: "in_progress", label: "En cours" },
+            { value: "resolved", label: "Résolu" },
+            { value: "closed", label: "Fermé" },
+          ]}
+        />
+        <FilterSelect
+          value={priorityFilter}
+          onChange={(v) => {
+            setPriorityFilter(v);
+            resetPage();
+          }}
+          placeholder="Toutes priorités"
+          options={[
+            { value: "low", label: "Faible" },
+            { value: "medium", label: "Moyenne" },
+            { value: "high", label: "Haute" },
+            { value: "urgent", label: "Urgent" },
+          ]}
+        />
+      </FilterBar>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <FilterButton active={!statusFilter} onClick={() => { setStatusFilter(""); resetPage(); }}>
+          Tous ({statusCounts.all})
+        </FilterButton>
+        <FilterButton active={statusFilter === "open"} onClick={() => { setStatusFilter("open"); resetPage(); }}>
+          Ouverts ({statusCounts.open ?? 0})
+        </FilterButton>
+        <FilterButton active={statusFilter === "pending"} onClick={() => { setStatusFilter("pending"); resetPage(); }}>
+          En attente ({statusCounts.pending ?? 0})
+        </FilterButton>
+        <FilterButton active={statusFilter === "resolved" || statusFilter === "closed"} onClick={() => { setStatusFilter("resolved"); resetPage(); }}>
+          Résolus ({(statusCounts.resolved ?? 0) + (statusCounts.closed ?? 0)})
+        </FilterButton>
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-border-soft bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
@@ -83,10 +165,10 @@ export function Support() {
           <tbody className="divide-y divide-border-soft dark:divide-slate-800">
             {isLoading ? (
               <tr><td colSpan={5} className="px-6 py-12 text-center text-slate-400">Chargement des tickets...</td></tr>
-            ) : tickets.length === 0 ? (
+            ) : pagedTickets.length === 0 ? (
               <tr><td colSpan={5} className="px-6 py-12 text-center text-slate-400">Aucun ticket trouvé.</td></tr>
             ) : (
-              tickets.map((ticket) => (
+              pagedTickets.map((ticket) => (
                 <tr key={ticket.id} className="transition hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
                   <td className="px-6 py-4">
                     <div className="font-bold text-slate-900 dark:text-slate-100">{ticket.subject}</div>
@@ -117,6 +199,7 @@ export function Support() {
           </tbody>
         </table>
       </div>
+      <Pagination page={page} pageSize={pageSize} total={total} onPageChange={setPage} />
 
       {isModalOpen && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-slate-900/60 p-4 backdrop-blur-sm">
@@ -251,19 +334,7 @@ export function Support() {
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function FilterBadge({ label, count, active }: { label: string; count?: number; active?: boolean }) {
-  return (
-    <button className={`flex shrink-0 items-center gap-2 rounded-full border px-4 py-1.5 text-xs font-black uppercase tracking-tight transition-all duration-200 ${
-      active 
-        ? "border-brand-purple-600 bg-brand-purple-600 text-white shadow-md shadow-brand-purple-500/20 dark:border-brand-magenta-500 dark:bg-brand-magenta-500" 
-        : "border-border-soft bg-white text-slate-500 hover:border-brand-purple-300 hover:text-brand-purple-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400 dark:hover:border-slate-700 dark:hover:text-slate-200"
-    }`}>
-      {label} {count !== undefined && <span className={`ml-1 rounded-full px-1.5 py-0.5 text-[10px] ${active ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500 dark:bg-slate-800"}`}>{count}</span>}
-    </button>
+    </ListPageShell>
   );
 }
 

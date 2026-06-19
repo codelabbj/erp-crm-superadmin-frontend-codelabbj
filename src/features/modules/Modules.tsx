@@ -1,10 +1,18 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { adminApi, type AdminModuleUpdate } from "../../lib/adminApi";
 import { getErrorMessage } from "../../lib/ui";
+import { FilterBar, FilterSelect, SearchInput } from "@/components/ui/FilterBar";
+import { ListPageShell, PageHeader } from "@/components/ui/PageHeader";
+import { Pagination } from "@/components/ui/Pagination";
+import { useDebouncedValue, usePaginationState } from "@/hooks/useListState";
+import { clientPageSlice } from "@/lib/pagination";
 
 export function Modules() {
   const [filter, setFilter] = useState("");
+  const [activeOnly, setActiveOnly] = useState("");
+  const debouncedFilter = useDebouncedValue(filter);
+  const { page, setPage, pageSize, resetPage } = usePaginationState(25);
   const [feedback, setFeedback] = useState("");
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["modules"],
@@ -19,29 +27,50 @@ export function Modules() {
     },
     onError: (e) => setFeedback(getErrorMessage(e)),
   });
-  const rows = (data ?? []).filter((m) => {
-    const q = filter.trim().toLowerCase();
-    if (!q) return true;
-    return m.code.toLowerCase().includes(q) || m.name.toLowerCase().includes(q);
-  });
+
+  const filteredRows = useMemo(() => {
+    const q = debouncedFilter.trim().toLowerCase();
+    return (data ?? []).filter((m) => {
+      if (activeOnly === "true" && !m.is_active) return false;
+      if (activeOnly === "false" && m.is_active) return false;
+      if (!q) return true;
+      return m.code.toLowerCase().includes(q) || m.name.toLowerCase().includes(q);
+    });
+  }, [data, debouncedFilter, activeOnly]);
+
+  const { items: rows, total } = useMemo(
+    () => clientPageSlice(filteredRows, page, pageSize),
+    [filteredRows, page, pageSize],
+  );
 
   return (
-    <div className="rounded-xl border border-border-soft bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-      <h3 className="mb-2 text-base font-semibold text-brand-purple-900 dark:text-slate-100">Modules (catalogue licensing)</h3>
-      <div className="mb-3 flex flex-wrap items-end gap-3">
-        <label className="flex flex-col gap-1 text-xs text-gray-700 dark:text-slate-300">
-          Recherche (code/nom)
-          <input
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            placeholder="ex: CRM"
-            className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-brand-magenta-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
-          />
-        </label>
-      </div>
-      {feedback ? <p className="mb-3 text-xs text-text-muted dark:text-slate-400">{feedback}</p> : null}
-      {isLoading ? <p className="mb-3 text-xs text-text-muted dark:text-slate-400">Chargement...</p> : null}
-      {isError ? <p className="mb-3 text-sm text-red-700">{getErrorMessage(error)}</p> : null}
+    <ListPageShell>
+      <PageHeader title="Modules" description="Catalogue licensing — prix, essai et activation." />
+      <FilterBar>
+        <SearchInput
+          value={filter}
+          onChange={(v) => {
+            setFilter(v);
+            resetPage();
+          }}
+          placeholder="Code ou nom…"
+        />
+        <FilterSelect
+          value={activeOnly}
+          onChange={(v) => {
+            setActiveOnly(v);
+            resetPage();
+          }}
+          placeholder="Tous"
+          options={[
+            { value: "true", label: "Actifs" },
+            { value: "false", label: "Inactifs" },
+          ]}
+        />
+      </FilterBar>
+      {feedback ? <p className="text-xs text-text-muted dark:text-slate-400">{feedback}</p> : null}
+      {isLoading ? <p className="text-xs text-text-muted dark:text-slate-400">Chargement...</p> : null}
+      {isError ? <p className="text-sm text-red-700">{getErrorMessage(error)}</p> : null}
       <div className="max-w-full overflow-x-auto">
         <table className="min-w-full text-sm">
           <thead>
@@ -127,6 +156,7 @@ export function Modules() {
           </tbody>
         </table>
       </div>
-    </div>
+      <Pagination page={page} pageSize={pageSize} total={total} onPageChange={setPage} />
+    </ListPageShell>
   );
 }

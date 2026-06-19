@@ -2,6 +2,11 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { adminApi, type PlatformPlan, type PlatformPlanUpsert } from "../../lib/adminApi";
 import { getErrorMessage } from "../../lib/ui";
+import { FilterBar, FilterSelect, SearchInput } from "@/components/ui/FilterBar";
+import { ListPageShell, PageHeader } from "@/components/ui/PageHeader";
+import { Pagination } from "@/components/ui/Pagination";
+import { useDebouncedValue, usePaginationState } from "@/hooks/useListState";
+import { clientPageSlice } from "@/lib/pagination";
 
 type PlanFormState = {
   name: string;
@@ -63,6 +68,10 @@ function toPayload(form: PlanFormState): PlatformPlanUpsert {
 
 export function Plans() {
   const [feedback, setFeedback] = useState("");
+  const [search, setSearch] = useState("");
+  const [activeFilter, setActiveFilter] = useState("");
+  const debouncedSearch = useDebouncedValue(search);
+  const { page, setPage, pageSize, resetPage } = usePaginationState(20);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<PlatformPlan | null>(null);
   const [form, setForm] = useState<PlanFormState>(emptyForm);
@@ -122,7 +131,22 @@ export function Plans() {
 
   const isMutating = createMut.isPending || updateMut.isPending || toggleMut.isPending || deleteMut.isPending;
   const modules = useMemo(() => modulesQuery.data ?? [], [modulesQuery.data]);
-  const plans = useMemo(() => plansQuery.data ?? [], [plansQuery.data]);
+  const allPlans = useMemo(() => plansQuery.data ?? [], [plansQuery.data]);
+
+  const filteredPlans = useMemo(() => {
+    const q = debouncedSearch.trim().toLowerCase();
+    return allPlans.filter((plan) => {
+      if (activeFilter === "true" && !plan.is_active) return false;
+      if (activeFilter === "false" && plan.is_active) return false;
+      if (!q) return true;
+      return plan.name.toLowerCase().includes(q) || plan.code.toLowerCase().includes(q);
+    });
+  }, [allPlans, debouncedSearch, activeFilter]);
+
+  const { items: plans, total } = useMemo(
+    () => clientPageSlice(filteredPlans, page, pageSize),
+    [filteredPlans, page, pageSize],
+  );
 
   const startCreate = () => {
     setIsFormOpen(true);
@@ -150,18 +174,38 @@ export function Plans() {
   };
 
   return (
-    <section className="rounded-xl border border-border-soft bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <h3 className="m-0 text-base font-semibold text-brand-purple-900 dark:text-slate-100">Plans (PlatformPlan)</h3>
-        <button
-          type="button"
-          className="btn-magenta"
-          onClick={startCreate}
-          disabled={isMutating}
-        >
-          Nouveau plan
-        </button>
-      </div>
+    <ListPageShell>
+      <PageHeader
+        title="Plans"
+        description="Offres PlatformPlan — tarifs, sièges et modules inclus."
+        actions={
+          <button type="button" className="btn-magenta" onClick={startCreate} disabled={isMutating}>
+            Nouveau plan
+          </button>
+        }
+      />
+      <FilterBar>
+        <SearchInput
+          value={search}
+          onChange={(v) => {
+            setSearch(v);
+            resetPage();
+          }}
+          placeholder="Nom ou code…"
+        />
+        <FilterSelect
+          value={activeFilter}
+          onChange={(v) => {
+            setActiveFilter(v);
+            resetPage();
+          }}
+          placeholder="Tous"
+          options={[
+            { value: "true", label: "Actifs" },
+            { value: "false", label: "Inactifs" },
+          ]}
+        />
+      </FilterBar>
 
       {feedback ? <p className="mb-3 text-xs text-text-muted dark:text-slate-400">{feedback}</p> : null}
       {plansQuery.isLoading ? <p className="mb-3 text-xs text-text-muted dark:text-slate-400">Chargement...</p> : null}
@@ -240,6 +284,7 @@ export function Plans() {
           </tbody>
         </table>
       </div>
+      <Pagination page={page} pageSize={pageSize} total={total} onPageChange={setPage} />
 
       {isFormOpen ? (
         <div className="fixed inset-0 z-30 grid place-items-center bg-gray-900/55 p-4">
@@ -374,6 +419,6 @@ export function Plans() {
           </div>
         </div>
       ) : null}
-    </section>
+    </ListPageShell>
   );
 }

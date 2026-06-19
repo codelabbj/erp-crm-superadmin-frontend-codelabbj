@@ -1,11 +1,19 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ShieldCheck, Plus, Clock, AlertTriangle, Shield, Settings2, ToggleLeft, ToggleRight } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { adminApi } from "../../lib/adminApi";
 import { getErrorMessage } from "../../lib/ui";
+import { FilterBar, SearchInput } from "@/components/ui/FilterBar";
+import { Pagination } from "@/components/ui/Pagination";
+import { useDebouncedValue, usePaginationState } from "@/hooks/useListState";
+import { clientPageSlice } from "@/lib/pagination";
 
 export function Security() {
   const [activeTab, setActiveTab] = useState<"banned" | "waf">("banned");
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search);
+  const bannedPagination = usePaginationState(20);
+  const wafPagination = usePaginationState(9);
   const queryClient = useQueryClient();
 
   const { data: bannedIps, isLoading: isBannedLoading } = useQuery({
@@ -44,6 +52,38 @@ export function Security() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-waf-rules"] }),
   });
 
+  const filteredBanned = useMemo(() => {
+    const q = debouncedSearch.trim().toLowerCase();
+    const list = bannedIps ?? [];
+    if (!q) return list;
+    return list.filter(
+      (ip) =>
+        ip.ip_address.toLowerCase().includes(q) ||
+        (ip.reason ?? "").toLowerCase().includes(q),
+    );
+  }, [bannedIps, debouncedSearch]);
+
+  const { items: pagedBanned, total: bannedTotal } = useMemo(
+    () => clientPageSlice(filteredBanned, bannedPagination.page, bannedPagination.pageSize),
+    [filteredBanned, bannedPagination.page, bannedPagination.pageSize],
+  );
+
+  const filteredWaf = useMemo(() => {
+    const q = debouncedSearch.trim().toLowerCase();
+    const list = wafRules ?? [];
+    if (!q) return list;
+    return list.filter(
+      (rule) =>
+        rule.key.toLowerCase().includes(q) ||
+        (rule.description ?? "").toLowerCase().includes(q),
+    );
+  }, [wafRules, debouncedSearch]);
+
+  const { items: pagedWaf, total: wafTotal } = useMemo(
+    () => clientPageSlice(filteredWaf, wafPagination.page, wafPagination.pageSize),
+    [filteredWaf, wafPagination.page, wafPagination.pageSize],
+  );
+
   return (
     <div className="grid gap-6">
       <header className="flex items-center justify-between">
@@ -76,6 +116,18 @@ export function Security() {
         </button>
       </div>
 
+      <FilterBar>
+        <SearchInput
+          value={search}
+          onChange={(v) => {
+            setSearch(v);
+            bannedPagination.resetPage();
+            wafPagination.resetPage();
+          }}
+          placeholder={activeTab === "banned" ? "IP ou raison…" : "Clé ou description WAF…"}
+        />
+      </FilterBar>
+
       {activeTab === "banned" ? (
         <div className="grid gap-4">
           <div className="flex items-center justify-between">
@@ -100,9 +152,9 @@ export function Security() {
               <tbody className="divide-y divide-border-soft dark:divide-slate-800">
                 {isBannedLoading ? (
                   <tr><td colSpan={5} className="px-6 py-8 text-center text-slate-400">Chargement...</td></tr>
-                ) : bannedIps?.length === 0 ? (
+                ) : pagedBanned.length === 0 ? (
                   <tr><td colSpan={5} className="px-6 py-8 text-center text-slate-400">Aucune IP bannie actuellement.</td></tr>
-                ) : bannedIps?.map((ip) => (
+                ) : pagedBanned.map((ip) => (
                   <tr key={ip.id} className="transition hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
                     <td className="px-6 py-4 font-mono font-medium text-slate-900 dark:text-slate-100">{ip.ip_address}</td>
                     <td className="px-6 py-4 text-xs text-slate-600 dark:text-slate-300">{ip.reason}</td>
@@ -132,13 +184,21 @@ export function Security() {
               </tbody>
             </table>
           </div>
+          <Pagination
+            page={bannedPagination.page}
+            pageSize={bannedPagination.pageSize}
+            total={bannedTotal}
+            onPageChange={bannedPagination.setPage}
+          />
         </div>
       ) : (
         <div className="grid gap-4">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {isWafLoading ? (
               <p className="col-span-full py-12 text-center text-slate-400">Chargement des règles...</p>
-            ) : wafRules?.map((rule) => (
+            ) : pagedWaf.length === 0 ? (
+              <p className="col-span-full py-12 text-center text-slate-400">Aucune règle trouvée.</p>
+            ) : pagedWaf.map((rule) => (
               <div key={rule.id} className="group relative overflow-hidden rounded-2xl border border-border-soft bg-white p-5 shadow-sm transition hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
                 <div className="mb-4 flex items-start justify-between">
                   <div className="rounded-xl bg-slate-50 p-2 dark:bg-slate-800">
@@ -168,6 +228,12 @@ export function Security() {
               </div>
             ))}
           </div>
+          <Pagination
+            page={wafPagination.page}
+            pageSize={wafPagination.pageSize}
+            total={wafTotal}
+            onPageChange={wafPagination.setPage}
+          />
           <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/30 dark:bg-amber-900/10">
             <div className="flex gap-3">
               <AlertTriangle className="text-amber-600" size={18} />

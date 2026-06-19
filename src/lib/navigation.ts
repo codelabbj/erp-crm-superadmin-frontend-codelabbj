@@ -33,17 +33,16 @@ export interface NavSection {
   sectionKey: string;
   title: string;
   items: NavItem[];
+  /** Sections secondaires affichées en bas de la sidebar */
+  placement?: "main" | "footer";
 }
 
-export const NAV_SECTIONS: NavSection[] = [
+/** Navigation principale — outils métier quotidiens */
+export const NAV_SECTIONS_MAIN: NavSection[] = [
   {
     sectionKey: "overview",
     title: "Vue d'ensemble",
-    items: [
-      { icon: LayoutDashboard, label: "Tableau de bord", path: "/", end: true },
-      { icon: ServerCog, label: "Santé plateforme", path: "/platform-health" },
-      { icon: BarChart3, label: "Métriques business", path: "/business-metrics" },
-    ],
+    items: [{ icon: LayoutDashboard, label: "Tableau de bord", path: "/", end: true }],
   },
   {
     sectionKey: "tenants",
@@ -55,11 +54,9 @@ export const NAV_SECTIONS: NavSection[] = [
   },
   {
     sectionKey: "revenue",
-    title: "Revenus & plans",
+    title: "Revenus",
     items: [
       { icon: WalletCards, label: "Abonnements", path: "/subscriptions" },
-      { icon: BarChart3, label: "Stats abonnements", path: "/subscriptions/stats" },
-      { icon: FileSearch, label: "Alertes abonnements", path: "/subscriptions/alerts" },
       { icon: SlidersHorizontal, label: "Plans & fonctionnalités", path: "/plans" },
       { icon: ReceiptText, label: "Factures", path: "/billing/invoices" },
     ],
@@ -68,9 +65,7 @@ export const NAV_SECTIONS: NavSection[] = [
     sectionKey: "platform",
     title: "Plateforme",
     items: [
-      { icon: Flag, label: "Feature flags", path: "/platform/feature-flags" },
       { icon: Puzzle, label: "Modules", path: "/platform/modules" },
-      { icon: Upload, label: "Jobs arrière-plan", path: "/platform/jobs" },
       { icon: Users2, label: "Utilisateurs staff", path: "/platform/staff" },
     ],
   },
@@ -82,9 +77,25 @@ export const NAV_SECTIONS: NavSection[] = [
       { icon: ShieldBan, label: "IP bannies / WAF", path: "/security/waf" },
     ],
   },
+];
+
+/** Outils secondaires — en bas de la sidebar */
+export const NAV_SECTIONS_FOOTER: NavSection[] = [
+  {
+    sectionKey: "analytics",
+    title: "Analyses",
+    placement: "footer",
+    items: [
+      { icon: ServerCog, label: "Santé plateforme", path: "/platform-health" },
+      { icon: BarChart3, label: "Métriques business", path: "/business-metrics" },
+      { icon: BarChart3, label: "Stats abonnements", path: "/subscriptions/stats" },
+      { icon: FileSearch, label: "Alertes abonnements", path: "/subscriptions/alerts" },
+    ],
+  },
   {
     sectionKey: "business",
     title: "Modules métier",
+    placement: "footer",
     items: [
       { icon: Megaphone, label: "Marketing", path: "/business/marketing" },
       { icon: LifeBuoy, label: "Support / Tickets", path: "/business/support" },
@@ -94,8 +105,15 @@ export const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
-    sectionKey: "intelligence",
-    title: "Intelligence",
-    items: [{ icon: Sparkles, label: "Assistant IA", path: "/intelligence/ai" }],
+    sectionKey: "tools",
+    title: "Outils avancés",
+    placement: "footer",
+    items: [
+      { icon: Flag, label: "Feature flags", path: "/platform/feature-flags" },
+      { icon: Upload, label: "Jobs arrière-plan", path: "/platform/jobs" },
+      { icon: Sparkles, label: "Assistant IA", path: "/intelligence/ai" },
+    ],
   },
 ];
+
+export const NAV_SECTIONS = [...NAV_SECTIONS_MAIN, ...NAV_SECTIONS_FOOTER];

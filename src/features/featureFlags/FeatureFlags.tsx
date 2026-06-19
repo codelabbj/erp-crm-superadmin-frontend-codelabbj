@@ -1,11 +1,19 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Trash2, ToggleLeft, ToggleRight, Building2, Globe } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { adminApi } from "../../lib/adminApi";
 import { getErrorMessage } from "../../lib/ui";
+import { FilterBar, SearchInput } from "@/components/ui/FilterBar";
+import { Pagination } from "@/components/ui/Pagination";
+import { useDebouncedValue, usePaginationState } from "@/hooks/useListState";
+import { clientPageSlice } from "@/lib/pagination";
 
 export function FeatureFlags() {
   const [activeTab, setActiveTab] = useState<"global" | "overrides">("global");
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search);
+  const flagsPagination = usePaginationState(15);
+  const overridesPagination = usePaginationState(20);
   const queryClient = useQueryClient();
 
   const { data: globalFlags, isLoading: isFlagsLoading } = useQuery({
@@ -39,6 +47,38 @@ export function FeatureFlags() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-feature-flags"] }),
   });
 
+  const filteredFlags = useMemo(() => {
+    const q = debouncedSearch.trim().toLowerCase();
+    const list = globalFlags ?? [];
+    if (!q) return list;
+    return list.filter(
+      (f) =>
+        f.flag_key.toLowerCase().includes(q) ||
+        (f.description ?? "").toLowerCase().includes(q),
+    );
+  }, [globalFlags, debouncedSearch]);
+
+  const { items: pagedFlags, total: flagsTotal } = useMemo(
+    () => clientPageSlice(filteredFlags, flagsPagination.page, flagsPagination.pageSize),
+    [filteredFlags, flagsPagination.page, flagsPagination.pageSize],
+  );
+
+  const filteredOverrides = useMemo(() => {
+    const q = debouncedSearch.trim().toLowerCase();
+    const list = overrides ?? [];
+    if (!q) return list;
+    return list.filter(
+      (o) =>
+        o.flag_key.toLowerCase().includes(q) ||
+        (o.tenant_id ?? "").toLowerCase().includes(q),
+    );
+  }, [overrides, debouncedSearch]);
+
+  const { items: pagedOverrides, total: overridesTotal } = useMemo(
+    () => clientPageSlice(filteredOverrides, overridesPagination.page, overridesPagination.pageSize),
+    [filteredOverrides, overridesPagination.page, overridesPagination.pageSize],
+  );
+
   return (
     <div className="grid gap-6">
       <header className="flex items-center justify-between">
@@ -71,11 +111,25 @@ export function FeatureFlags() {
         </button>
       </div>
 
+      <FilterBar>
+        <SearchInput
+          value={search}
+          onChange={(v) => {
+            setSearch(v);
+            flagsPagination.resetPage();
+            overridesPagination.resetPage();
+          }}
+          placeholder={activeTab === "global" ? "Clé ou description…" : "Flag ou tenant…"}
+        />
+      </FilterBar>
+
       {activeTab === "global" ? (
         <div className="grid gap-4">
           {isFlagsLoading ? (
             <p className="text-center py-12 text-slate-400">Chargement des flags...</p>
-          ) : globalFlags?.map((flag) => (
+          ) : pagedFlags.length === 0 ? (
+            <p className="text-center py-12 text-slate-400">Aucun flag trouvé.</p>
+          ) : pagedFlags.map((flag) => (
             <div key={flag.flag_key} className="flex items-center justify-between rounded-2xl border border-border-soft bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
               <div className="grid gap-1">
                 <div className="flex items-center gap-2">
@@ -96,6 +150,12 @@ export function FeatureFlags() {
               </button>
             </div>
           ))}
+          <Pagination
+            page={flagsPagination.page}
+            pageSize={flagsPagination.pageSize}
+            total={flagsTotal}
+            onPageChange={flagsPagination.setPage}
+          />
         </div>
       ) : (
         <div className="grid gap-4">
@@ -119,9 +179,9 @@ export function FeatureFlags() {
               <tbody className="divide-y divide-border-soft dark:divide-slate-800">
                 {isOverridesLoading ? (
                   <tr><td colSpan={5} className="px-6 py-8 text-center text-slate-400">Chargement...</td></tr>
-                ) : overrides?.length === 0 ? (
+                ) : pagedOverrides.length === 0 ? (
                   <tr><td colSpan={5} className="px-6 py-8 text-center text-slate-400">Aucun override configuré.</td></tr>
-                ) : overrides?.map((override) => (
+                ) : pagedOverrides.map((override) => (
                   <tr key={override.id} className="transition hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
                     <td className="px-6 py-4 font-mono text-xs font-bold text-slate-900 dark:text-slate-100">{override.flag_key}</td>
                     <td className="px-6 py-4">
@@ -149,6 +209,12 @@ export function FeatureFlags() {
               </tbody>
             </table>
           </div>
+          <Pagination
+            page={overridesPagination.page}
+            pageSize={overridesPagination.pageSize}
+            total={overridesTotal}
+            onPageChange={overridesPagination.setPage}
+          />
         </div>
       )}
 

@@ -9,6 +9,11 @@ import {
   type PaginatedResponse,
 } from "../../lib/adminApi";
 import { getErrorMessage } from "../../lib/ui";
+import { FilterBar, SearchInput } from "@/components/ui/FilterBar";
+import { ListPageShell, PageHeader } from "@/components/ui/PageHeader";
+import { Pagination } from "@/components/ui/Pagination";
+import { useDebouncedValue, usePaginationState } from "@/hooks/useListState";
+import { paginatedCount } from "@/lib/pagination";
 
 type BillingView = "clients" | "invoices" | "payments";
 
@@ -21,18 +26,41 @@ function normalizeList<T>(data: PaginatedResponse<T> | T[] | undefined): T[] {
 export function BillingOps() {
   const [view, setView] = useState<BillingView>("clients");
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search);
+  const { page, setPage, offset, pageSize, resetPage } = usePaginationState(25);
 
   const clientsQuery = useQuery({
-    queryKey: ["billing-clients", search],
-    queryFn: () => adminApi.billingClients({ q: search || undefined, limit: 80, offset: 0, sort: "-id" }),
+    queryKey: ["billing-clients", debouncedSearch, page],
+    queryFn: () =>
+      adminApi.billingClients({
+        q: debouncedSearch || undefined,
+        limit: pageSize,
+        offset,
+        sort: "-id",
+      }),
+    enabled: view === "clients",
   });
   const invoicesQuery = useQuery({
-    queryKey: ["billing-invoices", search],
-    queryFn: () => adminApi.billingInvoices({ q: search || undefined, limit: 80, offset: 0, sort: "-issued_at" }),
+    queryKey: ["billing-invoices", debouncedSearch, page],
+    queryFn: () =>
+      adminApi.billingInvoices({
+        q: debouncedSearch || undefined,
+        limit: pageSize,
+        offset,
+        sort: "-issued_at",
+      }),
+    enabled: view === "invoices",
   });
   const paymentsQuery = useQuery({
-    queryKey: ["billing-payments", search],
-    queryFn: () => adminApi.billingPayments({ q: search || undefined, limit: 80, offset: 0, sort: "-created_at" }),
+    queryKey: ["billing-payments", debouncedSearch, page],
+    queryFn: () =>
+      adminApi.billingPayments({
+        q: debouncedSearch || undefined,
+        limit: pageSize,
+        offset,
+        sort: "-created_at",
+      }),
+    enabled: view === "payments",
   });
 
   const clients = useMemo(() => normalizeList(clientsQuery.data), [clientsQuery.data]);
@@ -66,47 +94,40 @@ export function BillingOps() {
     (view === "invoices" && invoicesQuery.error) ||
     (view === "payments" && paymentsQuery.error);
 
+  const activeData =
+    view === "clients" ? clientsQuery.data : view === "invoices" ? invoicesQuery.data : paymentsQuery.data;
+  const total = paginatedCount(activeData as Parameters<typeof paginatedCount>[0]);
+
   return (
-    <section className="rounded-2xl border border-border-soft bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-      <h2 className="m-0 text-xl font-semibold text-slate-900 dark:text-slate-100">Billing Ops</h2>
-      <div className="mt-4 flex flex-wrap items-end gap-3">
-        <div className="inline-flex rounded-xl border border-slate-200 p-1 dark:border-slate-700">
-          <button
-            className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition-all duration-200 ${
-              view === "clients" 
-                ? "bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white" 
-                : "text-slate-500 hover:bg-white/50 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-700/50 dark:hover:text-slate-200"
-            }`}
-            onClick={() => setView("clients")}
-          >
-            Clients
-          </button>
-          <button
-            className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition-all duration-200 ${
-              view === "invoices" 
-                ? "bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white" 
-                : "text-slate-500 hover:bg-white/50 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-700/50 dark:hover:text-slate-200"
-            }`}
-            onClick={() => setView("invoices")}
-          >
-            Invoices
-          </button>
-          <button
-            className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition-all duration-200 ${
-              view === "payments" 
-                ? "bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white" 
-                : "text-slate-500 hover:bg-white/50 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-700/50 dark:hover:text-slate-200"
-            }`}
-            onClick={() => setView("payments")}
-          >
-            Payments
-          </button>
+    <ListPageShell>
+      <PageHeader title="Facturation" description="Clients, factures et paiements." />
+      <FilterBar>
+        <div className="inline-flex rounded-xl border border-neutral-4 p-1">
+          {(["clients", "invoices", "payments"] as const).map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              className={`rounded-lg px-3 py-1.5 text-sm font-semibold ${
+                view === tab ? "bg-neutral-0 text-neutral-9 shadow-sm" : "text-neutral-6"
+              }`}
+              onClick={() => {
+                setView(tab);
+                resetPage();
+              }}
+            >
+              {tab === "clients" ? "Clients" : tab === "invoices" ? "Factures" : "Paiements"}
+            </button>
+          ))}
         </div>
-        <label className="grid gap-1 text-sm">
-          <span className="text-slate-600 dark:text-slate-300">Recherche</span>
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="nom, facture, statut..." className="w-72" />
-        </label>
-      </div>
+        <SearchInput
+          value={search}
+          onChange={(v) => {
+            setSearch(v);
+            resetPage();
+          }}
+          placeholder="Nom, facture, statut…"
+        />
+      </FilterBar>
 
       {loading ? <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">Chargement...</p> : null}
       {error ? <p className="mt-4 text-sm text-red-600">{getErrorMessage(error)}</p> : null}
@@ -240,6 +261,7 @@ export function BillingOps() {
           </table>
         </div>
       ) : null}
-    </section>
+      <Pagination page={page} pageSize={pageSize} total={total} onPageChange={setPage} />
+    </ListPageShell>
   );
 }

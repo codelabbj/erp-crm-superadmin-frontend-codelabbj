@@ -2,6 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { adminApi } from "../../lib/adminApi";
 import { formatIsoDate, getErrorMessage } from "../../lib/ui";
+import { FilterBar, FilterSelect, SearchInput } from "@/components/ui/FilterBar";
+import { ListPageShell, PageHeader } from "@/components/ui/PageHeader";
+import { Pagination } from "@/components/ui/Pagination";
+import { useDebouncedValue, usePaginationState } from "@/hooks/useListState";
+import { paginatedCount } from "@/lib/pagination";
 
 type PendingAction =
   | { kind: "assign_plan"; planCode: string }
@@ -19,16 +24,16 @@ type SubscriptionsProps = {
 
 export function Subscriptions({ focusOrgId, onFocusOrgHandled }: SubscriptionsProps) {
   const [q, setQ] = useState("");
+  const debouncedQ = useDebouncedValue(q);
   const [statusFilter, setStatusFilter] = useState("");
   const [planFilter, setPlanFilter] = useState("");
-  const [offset, setOffset] = useState(0);
+  const { page, setPage, offset, pageSize, resetPage } = usePaginationState(30);
   const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
   const [selectedPlanCode, setSelectedPlanCode] = useState("");
   const [seatsToAdd, setSeatsToAdd] = useState("1");
   const [feedback, setFeedback] = useState("");
   const [extendDateBySubId, setExtendDateBySubId] = useState<Record<string, string>>({});
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
-  const limit = 30;
   const qc = useQueryClient();
 
   const { data: plans } = useQuery({
@@ -37,13 +42,13 @@ export function Subscriptions({ focusOrgId, onFocusOrgHandled }: SubscriptionsPr
   });
 
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ["org-subscriptions-overview", q, statusFilter, planFilter, offset],
+    queryKey: ["org-subscriptions-overview", debouncedQ, statusFilter, planFilter, page],
     queryFn: () =>
       adminApi.organizationsOverview({
-        q: q || undefined,
+        q: debouncedQ || undefined,
         plan: planFilter || undefined,
         status: statusFilter || undefined,
-        limit,
+        limit: pageSize,
         offset,
         sort: "-created_at",
       }),
@@ -196,57 +201,43 @@ export function Subscriptions({ focusOrgId, onFocusOrgHandled }: SubscriptionsPr
   };
 
   return (
-    <div className="rounded-xl border border-border-soft bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-      <h3 className="mb-2 text-base font-semibold text-brand-purple-900 dark:text-slate-100">Abonnements par organisation</h3>
-      <div className="mb-3 flex flex-wrap items-end gap-3">
-        <label className="flex flex-col gap-1 text-xs text-gray-700 dark:text-slate-300">
-          Recherche organisation
-          <input
-            value={q}
-            onChange={(e) => {
-              setQ(e.target.value);
-              setOffset(0);
-            }}
-            placeholder="Nom d'organisation..."
-            className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-brand-magenta-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-gray-700 dark:text-slate-300">
-          Statut
-          <select
-            value={statusFilter}
-            onChange={(e) => {
-              setStatusFilter(e.target.value);
-              setOffset(0);
-            }}
-            className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-brand-magenta-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-          >
-            <option value="">Tous</option>
-            <option value="active">actif</option>
-            <option value="suspended">suspendu</option>
-            <option value="trial">essai</option>
-          </select>
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-gray-700 dark:text-slate-300">
-          Plan
-          <select
-            value={planFilter}
-            onChange={(e) => {
-              setPlanFilter(e.target.value);
-              setOffset(0);
-            }}
-            className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-brand-magenta-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-          >
-            <option value="">Tous</option>
-            <option value="none">Aucun</option>
-            {(plans ?? []).map((plan) => (
-              <option key={plan.id} value={plan.code}>
-                {plan.name} ({plan.code})
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
+    <ListPageShell>
+      <PageHeader title="Abonnements" description="Vue par organisation, plans et sièges." />
+      <FilterBar>
+        <SearchInput
+          value={q}
+          onChange={(v) => {
+            setQ(v);
+            resetPage();
+          }}
+          placeholder="Nom d'organisation…"
+        />
+        <FilterSelect
+          value={statusFilter}
+          onChange={(v) => {
+            setStatusFilter(v);
+            resetPage();
+          }}
+          placeholder="Tous les statuts"
+          options={[
+            { value: "active", label: "Actif" },
+            { value: "suspended", label: "Suspendu" },
+            { value: "trial", label: "Essai" },
+          ]}
+        />
+        <FilterSelect
+          value={planFilter}
+          onChange={(v) => {
+            setPlanFilter(v);
+            resetPage();
+          }}
+          placeholder="Tous les plans"
+          options={[
+            { value: "none", label: "Aucun" },
+            ...(plans ?? []).map((plan) => ({ value: plan.code, label: `${plan.name} (${plan.code})` })),
+          ]}
+        />
+      </FilterBar>
       {feedback ? <p className="mb-3 text-xs text-text-muted dark:text-slate-400">{feedback}</p> : null}
       {isLoading ? <p className="mb-3 text-xs text-text-muted dark:text-slate-400">Chargement...</p> : null}
       {isError ? <p className="mb-3 text-sm text-red-700">{getErrorMessage(error)}</p> : null}
@@ -304,28 +295,7 @@ export function Subscriptions({ focusOrgId, onFocusOrgHandled }: SubscriptionsPr
           </tbody>
         </table>
       </div>
-      <br /><br />
-      <div className="mb-2 flex flex-wrap items-end gap-3">
-        <button
-          type="button"
-          className="btn-secondary"
-          onClick={() => setOffset((v) => Math.max(0, v - limit))}
-          disabled={offset === 0}
-        >
-          Precedent
-        </button>
-        <button
-          type="button"
-          className="btn-secondary"
-          onClick={() => setOffset((v) => v + limit)}
-          disabled={(data?.results?.length ?? 0) < limit}
-        >
-          Suivant
-        </button>
-      </div>
-      <p className="mb-0 text-xs text-text-muted dark:text-slate-400">
-        Total : {data?.count ?? 0} (page {Math.floor(offset / limit) + 1}, limite {limit})
-      </p>
+      <Pagination page={page} pageSize={pageSize} total={paginatedCount(data)} onPageChange={setPage} />
 
       {selectedOrgId ? (
         <section className="mt-5 grid gap-4 rounded-xl border border-slate-200 p-4 dark:border-slate-800">
@@ -513,6 +483,6 @@ export function Subscriptions({ focusOrgId, onFocusOrgHandled }: SubscriptionsPr
           </div>
         </div>
       ) : null}
-    </div>
+    </ListPageShell>
   );
 }

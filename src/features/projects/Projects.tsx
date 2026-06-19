@@ -3,6 +3,10 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Briefcase, Plus, CheckSquare, Layers, Clock, ArrowUpRight, X } from "lucide-react";
 import { adminApi, type ProjectItem } from "../../lib/adminApi";
 import { formatIsoDate, getErrorMessage, normalizeList } from "../../lib/ui";
+import { FilterBar, FilterSelect, SearchInput } from "@/components/ui/FilterBar";
+import { Pagination } from "@/components/ui/Pagination";
+import { useDebouncedValue, usePaginationState } from "@/hooks/useListState";
+import { clientPageSlice } from "@/lib/pagination";
 
 export function Projects() {
   const queryClient = useQueryClient();
@@ -17,6 +21,24 @@ export function Projects() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalError, setModalError] = useState("");
   const [newProject, setNewProject] = useState({ name: "", description: "", status: "active" });
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const debouncedSearch = useDebouncedValue(search);
+  const { page, setPage, pageSize, resetPage } = usePaginationState(9);
+
+  const filteredProjects = useMemo(() => {
+    const q = debouncedSearch.trim().toLowerCase();
+    return projects.filter((p) => {
+      if (statusFilter && p.status !== statusFilter) return false;
+      if (!q) return true;
+      return p.name.toLowerCase().includes(q) || String(p.description ?? "").toLowerCase().includes(q);
+    });
+  }, [projects, debouncedSearch, statusFilter]);
+
+  const { items: pagedProjects, total } = useMemo(
+    () => clientPageSlice(filteredProjects, page, pageSize),
+    [filteredProjects, page, pageSize],
+  );
 
   const createMut = useMutation({
     mutationFn: adminApi.createProject,
@@ -42,13 +64,37 @@ export function Projects() {
         </button>
       </header>
 
+      <FilterBar>
+        <SearchInput
+          value={search}
+          onChange={(v) => {
+            setSearch(v);
+            resetPage();
+          }}
+          placeholder="Nom ou description…"
+        />
+        <FilterSelect
+          value={statusFilter}
+          onChange={(v) => {
+            setStatusFilter(v);
+            resetPage();
+          }}
+          placeholder="Tous les statuts"
+          options={[
+            { value: "active", label: "Actif" },
+            { value: "paused", label: "En pause" },
+            { value: "completed", label: "Terminé" },
+          ]}
+        />
+      </FilterBar>
+
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {isLoading ? (
           <div className="col-span-full py-12 text-center text-slate-400">Chargement des projets...</div>
-        ) : projects.length === 0 ? (
-          <div className="col-span-full py-12 text-center text-slate-400">Aucun projet actif.</div>
+        ) : pagedProjects.length === 0 ? (
+          <div className="col-span-full py-12 text-center text-slate-400">Aucun projet trouvé.</div>
         ) : (
-          projects.map((project) => (
+          pagedProjects.map((project) => (
             <div key={project.id} className="group flex flex-col justify-between rounded-2xl border border-border-soft bg-white p-5 shadow-sm transition hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
               <div>
                 <div className="mb-4 flex items-center justify-between">
@@ -90,6 +136,7 @@ export function Projects() {
           ))
         )}
       </div>
+      <Pagination page={page} pageSize={pageSize} total={total} onPageChange={setPage} />
 
       {isModalOpen && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-slate-900/60 p-4 backdrop-blur-sm">

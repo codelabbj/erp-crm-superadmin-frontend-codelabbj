@@ -1,16 +1,30 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { RefreshCw, Search, CheckCircle2, Clock, AlertCircle, PlayCircle, Loader2 } from "lucide-react";
+import { RefreshCw, CheckCircle2, Clock, AlertCircle, PlayCircle, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { adminApi } from "../../lib/adminApi";
 import { formatIsoDate } from "../../lib/ui";
+import { FilterBar, FilterSelect, SearchInput } from "@/components/ui/FilterBar";
+import { ListPageShell, PageHeader } from "@/components/ui/PageHeader";
+import { Pagination } from "@/components/ui/Pagination";
+import { useDebouncedValue, usePaginationState } from "@/hooks/useListState";
+import { paginatedCount } from "@/lib/pagination";
 
 export function Onboarding() {
   const [q, setQ] = useState("");
+  const [status, setStatus] = useState("");
+  const debouncedQ = useDebouncedValue(q);
+  const { page, setPage, offset, pageSize, resetPage } = usePaginationState(25);
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
-    queryKey: ["onboarding-jobs", q],
-    queryFn: () => adminApi.onboardingJobs({ q }),
+    queryKey: ["onboarding-jobs", debouncedQ, status, page],
+    queryFn: () =>
+      adminApi.onboardingJobs({
+        q: debouncedQ || undefined,
+        limit: pageSize,
+        offset,
+        ordering: "-started_at",
+      }),
   });
 
   const retryMutation = useMutation({
@@ -18,30 +32,46 @@ export function Onboarding() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["onboarding-jobs"] }),
   });
 
-  const jobs = data?.results || [];
+  const jobs = (data?.results || []).filter((job) => !status || job.status === status);
+  const total = status ? jobs.length : paginatedCount(data);
 
   return (
-    <div className="grid gap-6">
-      <header className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Onboarding Pipeline</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400">Suivi du déploiement et de la configuration initiale des tenants.</p>
-        </div>
-        <div className="rounded-full bg-brand-purple-50 px-4 py-1.5 text-xs font-bold text-brand-purple-600 dark:bg-brand-purple-900/20 dark:text-brand-purple-400">
-          {data?.count || 0} Jobs au total
-        </div>
-      </header>
+    <ListPageShell>
+      <PageHeader
+        title="Onboarding"
+        description="Pipeline de déploiement des nouveaux tenants."
+        actions={
+          <span className="rounded-full bg-primary-5 px-3 py-1 text-xs font-bold text-primary-1">
+            {paginatedCount(data)} jobs
+          </span>
+        }
+      />
 
-      <div className="flex items-center gap-3 rounded-2xl border border-border-soft bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <Search className="text-slate-400" size={18} />
-        <input
-          type="text"
-          placeholder="Rechercher une organisation, un stage ou un statut..."
-          className="flex-1 bg-transparent text-sm outline-none dark:text-slate-200"
+      <FilterBar>
+        <SearchInput
           value={q}
-          onChange={(e) => setQ(e.target.value)}
+          onChange={(v) => {
+            setQ(v);
+            resetPage();
+          }}
+          placeholder="Organisation, étape, statut…"
         />
-      </div>
+        <FilterSelect
+          value={status}
+          onChange={(v) => {
+            setStatus(v);
+            resetPage();
+          }}
+          placeholder="Tous les statuts"
+          options={[
+            { value: "pending", label: "pending" },
+            { value: "running", label: "running" },
+            { value: "completed", label: "completed" },
+            { value: "failed", label: "failed" },
+          ]}
+          className="min-w-[140px]"
+        />
+      </FilterBar>
 
       <div className="overflow-hidden rounded-2xl border border-border-soft bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <table className="w-full text-left text-sm">
@@ -103,7 +133,10 @@ export function Onboarding() {
           </tbody>
         </table>
       </div>
-    </div>
+      {!status ? (
+        <Pagination page={page} pageSize={pageSize} total={total} onPageChange={setPage} />
+      ) : null}
+    </ListPageShell>
   );
 }
 

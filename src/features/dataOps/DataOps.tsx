@@ -8,6 +8,11 @@ import {
   type PaginatedResponse,
 } from "../../lib/adminApi";
 import { getErrorMessage } from "../../lib/ui";
+import { FilterBar, SearchInput } from "@/components/ui/FilterBar";
+import { ListPageShell, PageHeader } from "@/components/ui/PageHeader";
+import { Pagination } from "@/components/ui/Pagination";
+import { useDebouncedValue, usePaginationState } from "@/hooks/useListState";
+import { paginatedCount } from "@/lib/pagination";
 
 type DataView = "imports" | "exports";
 
@@ -27,14 +32,30 @@ function formatDate(value: string | undefined | null): string {
 export function DataOps() {
   const [view, setView] = useState<DataView>("imports");
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search);
+  const { page, setPage, offset, pageSize, resetPage } = usePaginationState(25);
 
   const importsQuery = useQuery({
-    queryKey: ["data-imports", search],
-    queryFn: () => adminApi.importJobs({ q: search || undefined, limit: 80, offset: 0, sort: "-created_at" }),
+    queryKey: ["data-imports", debouncedSearch, page],
+    queryFn: () =>
+      adminApi.importJobs({
+        q: debouncedSearch || undefined,
+        limit: pageSize,
+        offset,
+        sort: "-created_at",
+      }),
+    enabled: view === "imports",
   });
   const exportsQuery = useQuery({
-    queryKey: ["data-exports", search],
-    queryFn: () => adminApi.exportJobs({ q: search || undefined, limit: 80, offset: 0, sort: "-created_at" }),
+    queryKey: ["data-exports", debouncedSearch, page],
+    queryFn: () =>
+      adminApi.exportJobs({
+        q: debouncedSearch || undefined,
+        limit: pageSize,
+        offset,
+        sort: "-created_at",
+      }),
+    enabled: view === "exports",
   });
 
   const importRows = useMemo(() => normalizeList(importsQuery.data), [importsQuery.data]);
@@ -65,41 +86,47 @@ export function DataOps() {
   const loading = (view === "imports" && importsQuery.isLoading) || (view === "exports" && exportsQuery.isLoading);
   const error = (view === "imports" && importsQuery.error) || (view === "exports" && exportsQuery.error);
 
-  return (
-    <section className="rounded-2xl border border-border-soft bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-      <h2 className="m-0 text-xl font-semibold text-slate-900 dark:text-slate-100">Data Ops</h2>
-      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-        Pilotage des jobs d&apos;import/export via <code>/api/io/imports</code> et <code>/api/io/exports</code>.
-      </p>
+  const activeData = view === "imports" ? importsQuery.data : exportsQuery.data;
+  const total = paginatedCount(activeData as Parameters<typeof paginatedCount>[0]);
 
-      <div className="mt-4 flex flex-wrap items-end gap-3">
-        <div className="inline-flex rounded-xl border border-slate-200 p-1 dark:border-slate-700">
+  return (
+    <ListPageShell>
+      <PageHeader
+        title="Jobs import / export"
+        description="Pilotage des tâches IO (imports et exports)."
+      />
+      <FilterBar>
+        <div className="inline-flex rounded-xl border border-neutral-4 p-1">
           <button
-            className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition-all duration-200 ${
-              view === "imports" 
-                ? "bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white" 
-                : "text-slate-500 hover:bg-white/50 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-700/50 dark:hover:text-slate-200"
-            }`}
-            onClick={() => setView("imports")}
+            type="button"
+            className={`rounded-lg px-3 py-1.5 text-sm font-semibold ${view === "imports" ? "bg-neutral-0 shadow-sm" : "text-neutral-6"}`}
+            onClick={() => {
+              setView("imports");
+              resetPage();
+            }}
           >
             Imports
           </button>
           <button
-            className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition-all duration-200 ${
-              view === "exports" 
-                ? "bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white" 
-                : "text-slate-500 hover:bg-white/50 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-700/50 dark:hover:text-slate-200"
-            }`}
-            onClick={() => setView("exports")}
+            type="button"
+            className={`rounded-lg px-3 py-1.5 text-sm font-semibold ${view === "exports" ? "bg-neutral-0 shadow-sm" : "text-neutral-6"}`}
+            onClick={() => {
+              setView("exports");
+              resetPage();
+            }}
           >
             Exports
           </button>
         </div>
-        <label className="grid gap-1 text-sm">
-          <span className="text-slate-600 dark:text-slate-300">Recherche</span>
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="module, statut, fichier..." className="w-72" />
-        </label>
-      </div>
+        <SearchInput
+          value={search}
+          onChange={(v) => {
+            setSearch(v);
+            resetPage();
+          }}
+          placeholder="Module, statut, fichier…"
+        />
+      </FilterBar>
 
       {loading ? <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">Chargement...</p> : null}
       {error ? <p className="mt-4 text-sm text-red-600">{getErrorMessage(error)}</p> : null}
@@ -219,6 +246,7 @@ export function DataOps() {
           </table>
         </div>
       ) : null}
-    </section>
+      <Pagination page={page} pageSize={pageSize} total={total} onPageChange={setPage} />
+    </ListPageShell>
   );
 }

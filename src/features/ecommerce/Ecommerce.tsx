@@ -6,6 +6,10 @@ import {
 } from "lucide-react";
 import { adminApi, type EcommerceOrder } from "../../lib/adminApi";
 import { formatIsoDate, getErrorMessage, normalizeList } from "../../lib/ui";
+import { FilterBar, FilterSelect, SearchInput } from "@/components/ui/FilterBar";
+import { Pagination } from "@/components/ui/Pagination";
+import { useDebouncedValue, usePaginationState } from "@/hooks/useListState";
+import { clientPageSlice } from "@/lib/pagination";
 
 type Tab = "orders" | "storefronts" | "analytics";
 
@@ -34,7 +38,13 @@ function statusIcon(status: string) {
 export function Ecommerce() {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<Tab>("orders");
-  const [showAll, setShowAll] = useState(false);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const debouncedSearch = useDebouncedValue(search);
+  const { page, setPage, pageSize, resetPage } = usePaginationState(15);
+  const [storeSearch, setStoreSearch] = useState("");
+  const debouncedStoreSearch = useDebouncedValue(storeSearch);
+  const storePagination = usePaginationState(12);
   const [selectedOrder, setSelectedOrder] = useState<EcommerceOrder | null>(null);
   const [orderStatus, setOrderStatus] = useState("");
   const [orderError, setOrderError] = useState("");
@@ -53,7 +63,36 @@ export function Ecommerce() {
   const orders = useMemo(() => normalizeList<EcommerceOrder>(ordersData), [ordersData]);
   const storefronts = useMemo(() => normalizeList<any>(storefrontsData), [storefrontsData]);
 
-  const displayedOrders = showAll ? orders : orders.slice(0, 5);
+  const filteredOrders = useMemo(() => {
+    const q = debouncedSearch.trim().toLowerCase();
+    return orders.filter((o) => {
+      if (statusFilter && o.status?.toLowerCase() !== statusFilter) return false;
+      if (!q) return true;
+      return (
+        String(o.order_number ?? "").toLowerCase().includes(q) ||
+        String(o.id).toLowerCase().includes(q)
+      );
+    });
+  }, [orders, debouncedSearch, statusFilter]);
+
+  const { items: pagedOrders, total: ordersTotal } = useMemo(
+    () => clientPageSlice(filteredOrders, page, pageSize),
+    [filteredOrders, page, pageSize],
+  );
+
+  const filteredStorefronts = useMemo(() => {
+    const q = debouncedStoreSearch.trim().toLowerCase();
+    if (!q) return storefronts;
+    return storefronts.filter((sf) =>
+      String(sf.name ?? "").toLowerCase().includes(q) ||
+      String(sf.domain ?? "").toLowerCase().includes(q),
+    );
+  }, [storefronts, debouncedStoreSearch]);
+
+  const { items: pagedStorefronts, total: storefrontsTotal } = useMemo(
+    () => clientPageSlice(filteredStorefronts, storePagination.page, storePagination.pageSize),
+    [filteredStorefronts, storePagination.page, storePagination.pageSize],
+  );
 
   const totalRevenue = useMemo(
     () => orders.reduce((sum, o) => sum + (parseFloat(o.total) || 0), 0).toFixed(2),
@@ -126,27 +165,43 @@ export function Ecommerce() {
 
       {/* ── ORDERS TAB ── */}
       {activeTab === "orders" && (
+        <>
+          <FilterBar>
+            <SearchInput
+              value={search}
+              onChange={(v) => {
+                setSearch(v);
+                resetPage();
+              }}
+              placeholder="N° commande…"
+            />
+            <FilterSelect
+              value={statusFilter}
+              onChange={(v) => {
+                setStatusFilter(v);
+                resetPage();
+              }}
+              placeholder="Tous les statuts"
+              options={[
+                { value: "pending", label: "En attente" },
+                { value: "processing", label: "En traitement" },
+                { value: "paid", label: "Payée" },
+                { value: "completed", label: "Complétée" },
+                { value: "cancelled", label: "Annulée" },
+              ]}
+            />
+          </FilterBar>
         <div className="rounded-2xl border border-border-soft bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <div className="flex items-center justify-between border-b border-border-soft p-5 dark:border-slate-800">
-            <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-              {showAll ? "Toutes les commandes" : "Dernières commandes"}
-            </h3>
-            {orders.length > 5 && (
-              <button
-                onClick={() => setShowAll((v) => !v)}
-                className="btn-ghost px-2 py-1 text-xs font-bold text-brand-purple-600 dark:text-brand-magenta-500"
-              >
-                {showAll ? "Réduire" : `Voir tout (${orders.length})`}
-              </button>
-            )}
+          <div className="border-b border-border-soft p-5 dark:border-slate-800">
+            <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Commandes</h3>
           </div>
           <div className="divide-y divide-border-soft dark:divide-slate-800">
             {isOrdersLoading ? (
               <div className="p-8 text-center text-slate-400">Chargement des commandes...</div>
-            ) : orders.length === 0 ? (
-              <div className="p-8 text-center text-slate-400">Aucune commande récente.</div>
+            ) : pagedOrders.length === 0 ? (
+              <div className="p-8 text-center text-slate-400">Aucune commande trouvée.</div>
             ) : (
-              displayedOrders.map((order) => (
+              pagedOrders.map((order) => (
                 <div key={order.id} className="flex items-center justify-between p-5 transition hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
                   <div className="flex items-center gap-4">
                     <div className="rounded-xl bg-slate-50 p-2 dark:bg-slate-800">
@@ -179,11 +234,26 @@ export function Ecommerce() {
               ))
             )}
           </div>
+          <div className="border-t border-border-soft p-4 dark:border-slate-800">
+            <Pagination page={page} pageSize={pageSize} total={ordersTotal} onPageChange={setPage} />
+          </div>
         </div>
+        </>
       )}
 
       {/* ── STOREFRONTS TAB ── */}
       {activeTab === "storefronts" && (
+        <>
+          <FilterBar>
+            <SearchInput
+              value={storeSearch}
+              onChange={(v) => {
+                setStoreSearch(v);
+                storePagination.resetPage();
+              }}
+              placeholder="Nom ou domaine…"
+            />
+          </FilterBar>
         <div className="rounded-2xl border border-border-soft bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <div className="border-b border-border-soft p-5 dark:border-slate-800">
             <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Vitrines actives</h3>
@@ -191,10 +261,10 @@ export function Ecommerce() {
           <div className="divide-y divide-border-soft dark:divide-slate-800">
             {isStorefrontsLoading ? (
               <div className="p-8 text-center text-slate-400">Chargement des storefronts...</div>
-            ) : storefronts.length === 0 ? (
-              <div className="p-8 text-center text-slate-400">Aucun storefront configuré.</div>
+            ) : pagedStorefronts.length === 0 ? (
+              <div className="p-8 text-center text-slate-400">Aucun storefront trouvé.</div>
             ) : (
-              storefronts.map((sf) => (
+              pagedStorefronts.map((sf) => (
                 <div key={sf.id} className="flex items-center justify-between p-5 transition hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
                   <div className="flex items-center gap-4">
                     <div className="rounded-xl bg-brand-purple-50 p-2 dark:bg-brand-purple-900/20">
@@ -212,7 +282,16 @@ export function Ecommerce() {
               ))
             )}
           </div>
+          <div className="border-t border-border-soft p-4 dark:border-slate-800">
+            <Pagination
+              page={storePagination.page}
+              pageSize={storePagination.pageSize}
+              total={storefrontsTotal}
+              onPageChange={storePagination.setPage}
+            />
+          </div>
         </div>
+        </>
       )}
 
       {/* ── ANALYTICS TAB ── */}
