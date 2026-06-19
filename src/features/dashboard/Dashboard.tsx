@@ -23,9 +23,9 @@ import { paginatedCount } from "@/lib/pagination";
 import {
   aggregateByField,
   countryFlag,
-  formatMoney,
   formatPercent,
 } from "./dashboardUtils";
+import { formatMoney } from "@/lib/money";
 import {
   AlertPill,
   DashboardSection,
@@ -284,7 +284,7 @@ export function Dashboard({ onOpenOrgSubscriptions, onOpenOrganizationsList }: D
       </header>
 
       {/* Revenus & croissance */}
-      <DashboardSection title="Revenus & croissance" description="Indicateurs SaaS internationaux (EUR)">
+      <DashboardSection title="Revenus & croissance" description="Indicateurs SaaS (Franc CFA — XOF)">
         <div className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-3">
           <KpiCard
             label="MRR"

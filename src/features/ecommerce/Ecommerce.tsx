@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { adminApi, type EcommerceOrder } from "../../lib/adminApi";
 import { formatIsoDate, getErrorMessage, normalizeList } from "../../lib/ui";
+import { formatMoneyFromApi } from "@/lib/money";
 import { FilterBar, FilterSelect, SearchInput } from "@/components/ui/FilterBar";
 import { Pagination } from "@/components/ui/Pagination";
 import { useDebouncedValue, usePaginationState } from "@/hooks/useListState";
@@ -158,7 +159,7 @@ export function Ecommerce() {
       {/* ── KPI row ── */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCard title="Commandes (Total)" value={orders.length} icon={<ShoppingCart className="text-blue-500" size={20} />} />
-        <MetricCard title="Ventes Brutes" value={`${totalRevenue} €`} icon={<CreditCard className="text-emerald-500" size={20} />} />
+        <MetricCard title="Ventes Brutes" value={formatMoneyFromApi(totalRevenue)} icon={<CreditCard className="text-emerald-500" size={20} />} />
         <MetricCard title="Complétées" value={completedCount} icon={<CheckCircle2 className="text-emerald-500" size={20} />} />
         <MetricCard title="En attente" value={pendingCount} icon={<Clock className="text-amber-500" size={20} />} />
       </div>
@@ -219,7 +220,7 @@ export function Ecommerce() {
                   </div>
                   <div className="flex items-center gap-6">
                     <div className="text-right">
-                      <p className="text-sm font-bold text-slate-900 dark:text-slate-100">{order.total} €</p>
+                      <p className="text-sm font-bold text-slate-900 dark:text-slate-100">{formatMoneyFromApi(order.total)}</p>
                       <p className="text-[10px] text-slate-400 uppercase tracking-wide">Total</p>
                     </div>
                     <button
@@ -333,7 +334,7 @@ export function Ecommerce() {
             <div className="rounded-2xl border border-border-soft bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
               <p className="mb-1 text-xs font-bold uppercase tracking-wider text-slate-400">Panier Moyen</p>
               <p className="text-3xl font-black text-slate-900 dark:text-slate-100">
-                {orders.length > 0 ? `${(parseFloat(totalRevenue) / orders.length).toFixed(2)} €` : "—"}
+                {orders.length > 0 ? formatMoneyFromApi(parseFloat(totalRevenue) / orders.length) : "—"}
               </p>
             </div>
             <div className="rounded-2xl border border-border-soft bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
@@ -363,7 +364,7 @@ export function Ecommerce() {
             <div className="grid grid-cols-2 gap-4 border-b border-slate-100 px-6 py-4 dark:border-slate-800">
               <div>
                 <p className="text-[10px] font-bold uppercase text-slate-400">Total</p>
-                <p className="text-lg font-black text-slate-900 dark:text-slate-100">{selectedOrder.total} €</p>
+                <p className="text-lg font-black text-slate-900 dark:text-slate-100">{formatMoneyFromApi(selectedOrder.total)}</p>
               </div>
               <div>
                 <p className="text-[10px] font-bold uppercase text-slate-400">Créé le</p>

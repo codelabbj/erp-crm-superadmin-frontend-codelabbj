@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { TrendingUp, Users, DollarSign, PieChart, ArrowUpRight, ArrowDownRight, Calendar } from "lucide-react";
 import { useState } from "react";
 import { adminApi } from "../../lib/adminApi";
+import { formatMoney } from "@/lib/money";
 
 export function BusinessMetrics() {
   const [period, setPeriod] = useState("30d");
@@ -42,14 +43,14 @@ export function BusinessMetrics() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <MetricCard
           title="MRR (Revenu Mensuel)"
-          value={metrics?.mrr !== undefined ? `${metrics.mrr.toLocaleString()} €` : "—"}
+          value={metrics?.mrr !== undefined ? formatMoney(metrics.mrr) : "—"}
           change="+12.5%"
           trend="up"
           icon={<DollarSign size={20} className="text-emerald-500" />}
         />
         <MetricCard
           title="ARR (Revenu Annuel)"
-          value={metrics?.arr !== undefined ? `${metrics.arr.toLocaleString()} €` : "—"}
+          value={metrics?.arr !== undefined ? formatMoney(metrics.arr) : "—"}
           change="+8.2%"
           trend="up"
           icon={<TrendingUp size={20} className="text-blue-500" />}

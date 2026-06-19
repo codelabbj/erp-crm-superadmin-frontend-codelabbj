@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { adminApi, type AssignPlanPayload } from "../../lib/adminApi";
 import { formatIsoDate } from "../../lib/ui";
+import { formatMoneyFromApi } from "@/lib/money";
 
 type OrganizationDetailProps = {
   orgId: string;
@@ -256,7 +257,7 @@ export function OrganizationDetail({ orgId, onBack }: OrganizationDetailProps) {
                     <p className="text-xs font-medium text-slate-500">{plan.description || `Inclus ${plan.limits.included_seats} sièges.`}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-xl font-black text-brand-purple-600">€{plan.price_monthly}</p>
+                    <p className="text-xl font-black text-brand-purple-600">{formatMoneyFromApi(plan.price_monthly)}</p>
                     <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">/ mois</p>
                   </div>
                 </button>

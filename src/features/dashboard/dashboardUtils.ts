@@ -1,16 +1,3 @@
-export function formatMoney(
-  value: number | undefined | null,
-  currency = "EUR",
-  locale = "fr-FR",
-): string {
-  if (value === undefined || value === null || Number.isNaN(value)) return "—";
-  return new Intl.NumberFormat(locale, {
-    style: "currency",
-    currency,
-    maximumFractionDigits: 0,
-  }).format(value);
-}
-
 export function formatPercent(value: number | undefined | null, digits = 1): string {
   if (value === undefined || value === null || Number.isNaN(value)) return "—";
   return `${value.toFixed(digits)} %`;
