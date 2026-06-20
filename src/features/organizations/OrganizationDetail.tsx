@@ -26,6 +26,7 @@ import { formatIsoDate } from "../../lib/ui";
 import { formatMoneyFromApi } from "@/lib/money";
 import { KpiCard, DistributionBars } from "@/features/dashboard/components/DashboardWidgets";
 import { OrgBusinessInvoicesPanel } from "@/features/organizations/components/OrgBusinessInvoicesPanel";
+import { OrgBusinessPlanRequestsPanel } from "@/features/organizations/components/OrgBusinessPlanRequestsPanel";
 import { OrgDedicatedInstancePanel } from "@/features/organizations/components/OrgDedicatedInstancePanel";
 import { OrgDetailTabBar } from "@/features/organizations/components/OrgDetailTabBar";
 import { OrgTeamTab } from "@/features/organizations/components/tabs/OrgTeamTab";
@@ -241,11 +242,14 @@ export function OrganizationDetail({
       {activeTab === "team" ? <OrgTeamTab orgId={orgId} owner={owner} users={users} /> : null}
 
       {activeTab === "billing" ? (
-        <OrgBusinessInvoicesPanel
-          orgId={orgId}
-          orgName={org.name}
-          defaultRecipientEmail={ownerEmail}
-        />
+        <>
+          <OrgBusinessPlanRequestsPanel orgId={orgId} orgName={org.name} />
+          <OrgBusinessInvoicesPanel
+            orgId={orgId}
+            orgName={org.name}
+            defaultRecipientEmail={ownerEmail}
+          />
+        </>
       ) : null}
 
       {activeTab === "deployment" ? <OrgDedicatedInstancePanel orgId={orgId} /> : null}

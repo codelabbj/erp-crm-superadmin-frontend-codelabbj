@@ -176,6 +176,25 @@ export interface CreateBusinessInvoicePayload {
   amount_total: string;
   send_email?: boolean;
   notes?: string;
+  business_plan_request_id?: string;
+}
+
+export interface BusinessPlanRequestItem {
+  id: string;
+  reference: string;
+  status: string;
+  org_id: string;
+  org_name: string;
+  contact_name: string;
+  contact_email: string;
+  contact_phone: string;
+  deployment_type: "platform" | "dedicated";
+  billing_cycle: "monthly" | "yearly";
+  estimated_seats: number;
+  message: string;
+  business_invoice_id: string | null;
+  invoice_number: string | null;
+  created_at: string;
 }
 
 export interface DedicatedInstanceItem {
@@ -732,6 +751,27 @@ export const adminApi = {
       )
     ).data;
   },
+
+  businessPlanRequests: async (params?: {
+    org_id?: string;
+    status?: string;
+    limit?: number;
+    offset?: number;
+  }) =>
+    (
+      await api.get<PaginatedResponse<BusinessPlanRequestItem>>(
+        "/api/admin/business-plan-requests/",
+        { params },
+      )
+    ).data,
+
+  updateBusinessPlanRequest: async (
+    id: string,
+    payload: { status?: string; admin_notes?: string },
+  ) =>
+    (
+      await api.patch<BusinessPlanRequestItem>(`/api/admin/business-plan-requests/${id}/`, payload)
+    ).data,
 
   dedicatedInstances: async (params?: { status?: string; limit?: number; offset?: number }) =>
     (

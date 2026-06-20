@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { OrgContextBanner } from "@/components/OrgContextBanner";
 import { ListPageShell, PageHeader } from "@/components/ui/PageHeader";
 import { OrgBusinessInvoicesPanel } from "@/features/organizations/components/OrgBusinessInvoicesPanel";
+import { OrgBusinessPlanRequestsPanel } from "@/features/organizations/components/OrgBusinessPlanRequestsPanel";
 import { adminApi } from "@/lib/adminApi";
 import { ORG_QUERY_KEY } from "@/lib/orgNavigation";
 
@@ -31,16 +32,19 @@ export function BusinessInvoicesOrgPage() {
       <OrgContextBanner orgId={orgId} label={orgName} />
       <PageHeader
         title="Facturation Business"
-        description={`Factures PAL et virements pour ${orgName}.`}
+        description={`Demandes portail, factures et paiements pour ${orgName}.`}
       />
       {isLoading ? (
         <p className="text-sm text-neutral-6">Chargement…</p>
       ) : (
-        <OrgBusinessInvoicesPanel
-          orgId={orgId}
-          orgName={orgName}
-          defaultRecipientEmail={ownerEmail}
-        />
+        <>
+          <OrgBusinessPlanRequestsPanel orgId={orgId} orgName={orgName} alwaysVisible />
+          <OrgBusinessInvoicesPanel
+            orgId={orgId}
+            orgName={orgName}
+            defaultRecipientEmail={ownerEmail}
+          />
+        </>
       )}
     </ListPageShell>
   );

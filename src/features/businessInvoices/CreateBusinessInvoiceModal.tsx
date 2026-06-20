@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { adminApi } from "@/lib/adminApi";
+import { adminApi, type BusinessPlanRequestItem } from "@/lib/adminApi";
 import { getErrorMessage } from "@/lib/ui";
 
 type Props = {
   orgId: string;
   orgName: string;
   defaultRecipientEmail?: string;
+  sourceRequest?: BusinessPlanRequestItem;
   onClose: () => void;
   onCreated: () => void;
   onError: (msg: string) => void;
@@ -16,18 +17,25 @@ export function CreateBusinessInvoiceModal({
   orgId,
   orgName,
   defaultRecipientEmail = "",
+  sourceRequest,
   onClose,
   onCreated,
   onError,
 }: Props) {
-  const [recipientEmail, setRecipientEmail] = useState(defaultRecipientEmail);
-  const [recipientName, setRecipientName] = useState(orgName);
-  const [deploymentType, setDeploymentType] = useState<"platform" | "dedicated">("platform");
-  const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("yearly");
-  const [includedSeats, setIncludedSeats] = useState(25);
+  const [recipientEmail, setRecipientEmail] = useState(
+    sourceRequest?.contact_email || defaultRecipientEmail,
+  );
+  const [recipientName, setRecipientName] = useState(sourceRequest?.contact_name || orgName);
+  const [deploymentType, setDeploymentType] = useState<"platform" | "dedicated">(
+    sourceRequest?.deployment_type || "platform",
+  );
+  const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">(
+    sourceRequest?.billing_cycle || "yearly",
+  );
+  const [includedSeats, setIncludedSeats] = useState(sourceRequest?.estimated_seats ?? 25);
   const [amountTotal, setAmountTotal] = useState("");
   const [sendEmail, setSendEmail] = useState(true);
-  const [notes, setNotes] = useState("");
+  const [notes, setNotes] = useState(sourceRequest?.message || "");
 
   const createMutation = useMutation({
     mutationFn: () =>
@@ -41,6 +49,7 @@ export function CreateBusinessInvoiceModal({
         amount_total: amountTotal,
         send_email: sendEmail,
         notes,
+        business_plan_request_id: sourceRequest?.id,
       }),
     onSuccess: onCreated,
     onError: (err) => onError(getErrorMessage(err)),
@@ -51,6 +60,16 @@ export function CreateBusinessInvoiceModal({
       <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl dark:bg-slate-900">
         <h2 className="mb-1 text-lg font-semibold">Facture Business</h2>
         <p className="mb-4 text-sm text-slate-500">{orgName}</p>
+        {sourceRequest ? (
+          <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
+            <strong>Demande {sourceRequest.reference}</strong>
+            <span className="block text-xs opacity-90">
+              {sourceRequest.estimated_seats} sièges ·{" "}
+              {sourceRequest.deployment_type === "platform" ? "Plateforme" : "Dédié"} ·{" "}
+              {sourceRequest.billing_cycle === "monthly" ? "Mensuel" : "Annuel"}
+            </span>
+          </div>
+        ) : null}
         <form
           className="flex flex-col gap-3"
           onSubmit={(e) => {
