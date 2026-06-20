@@ -6,6 +6,7 @@ import { formatIsoDate, getErrorMessage } from "@/lib/ui";
 import { formatMoneyFromApi } from "@/lib/money";
 import { CreateBusinessInvoiceModal } from "@/features/businessInvoices/CreateBusinessInvoiceModal";
 import { ConfirmBankPaymentModal } from "@/features/businessInvoices/ConfirmBankPaymentModal";
+import { RejectBankPaymentModal } from "@/features/businessInvoices/RejectBankPaymentModal";
 
 const STATUS_LABELS: Record<string, string> = {
   draft: "Brouillon",
@@ -39,6 +40,7 @@ type Props = {
 export function OrgBusinessInvoicesPanel({ orgId, orgName, defaultRecipientEmail }: Props) {
   const [showCreate, setShowCreate] = useState(false);
   const [confirmInvoice, setConfirmInvoice] = useState<BusinessInvoiceItem | null>(null);
+  const [rejectInvoice, setRejectInvoice] = useState<BusinessInvoiceItem | null>(null);
   const [feedback, setFeedback] = useState("");
   const qc = useQueryClient();
 
@@ -120,6 +122,12 @@ export function OrgBusinessInvoicesPanel({ orgId, orgName, defaultRecipientEmail
                     >
                       {STATUS_LABELS[inv.status] ?? inv.status}
                     </span>
+                    {inv.status === "pending_bank_transfer" &&
+                    inv.bank_transfer?.review_status === "pending_review" ? (
+                      <span className="ml-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-800">
+                        Reçu à valider
+                      </span>
+                    ) : null}
                   </td>
                   <td className="px-5 py-3 text-xs text-slate-500">
                     {formatIsoDate(inv.sent_at ?? undefined)}
@@ -146,7 +154,25 @@ export function OrgBusinessInvoicesPanel({ orgId, orgName, defaultRecipientEmail
                           Lien PAL
                         </a>
                       ) : null}
-                      {["sent", "pending_payment", "pending_bank_transfer"].includes(inv.status) ? (
+                      {inv.status === "pending_bank_transfer" &&
+                      inv.bank_transfer?.review_status === "pending_review" ? (
+                        <>
+                          <button
+                            type="button"
+                            className="btn-secondary px-2 py-1 text-[10px] text-emerald-800"
+                            onClick={() => setConfirmInvoice(inv)}
+                          >
+                            <Upload size={11} /> Valider
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-secondary px-2 py-1 text-[10px] text-red-700"
+                            onClick={() => setRejectInvoice(inv)}
+                          >
+                            <XCircle size={11} /> Rejeter
+                          </button>
+                        </>
+                      ) : ["sent", "pending_payment"].includes(inv.status) ? (
                         <button
                           type="button"
                           className="btn-secondary px-2 py-1 text-[10px] text-emerald-800"
@@ -187,7 +213,19 @@ export function OrgBusinessInvoicesPanel({ orgId, orgName, defaultRecipientEmail
           onClose={() => setConfirmInvoice(null)}
           onConfirmed={() => {
             setConfirmInvoice(null);
-            setFeedback("Virement confirmé — forfait activé.");
+            setFeedback("Virement validé — forfait activé.");
+            qc.invalidateQueries({ queryKey: ["business-invoices", orgId] });
+          }}
+        />
+      ) : null}
+
+      {rejectInvoice ? (
+        <RejectBankPaymentModal
+          invoice={rejectInvoice}
+          onClose={() => setRejectInvoice(null)}
+          onRejected={() => {
+            setRejectInvoice(null);
+            setFeedback("Virement rejeté — le client peut soumettre une nouvelle preuve.");
             qc.invalidateQueries({ queryKey: ["business-invoices", orgId] });
           }}
         />

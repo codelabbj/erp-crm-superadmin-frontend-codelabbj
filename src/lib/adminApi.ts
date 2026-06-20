@@ -158,7 +158,14 @@ export interface BusinessInvoiceItem {
   sent_at: string | null;
   paid_at: string | null;
   created_at: string;
-  bank_transfer?: { declared_at?: string; customer_note?: string } | null;
+  bank_transfer?: {
+    declared_at?: string;
+    customer_note?: string;
+    bank_reference?: string;
+    proof_url?: string;
+    review_status?: "pending_review" | "rejected" | "approved";
+    rejection_reason?: string;
+  } | null;
   bank_confirmation?: {
     confirmed_at?: string;
     proof_url?: string;
@@ -737,10 +744,10 @@ export const adminApi = {
 
   confirmBusinessInvoiceBankPayment: async (
     id: string,
-    payload: { proof: File; bank_reference?: string; admin_notes?: string },
+    payload: { proof?: File; bank_reference?: string; admin_notes?: string },
   ) => {
     const formData = new FormData();
-    formData.append("proof", payload.proof);
+    if (payload.proof) formData.append("proof", payload.proof);
     if (payload.bank_reference) formData.append("bank_reference", payload.bank_reference);
     if (payload.admin_notes) formData.append("admin_notes", payload.admin_notes);
     return (
@@ -751,6 +758,17 @@ export const adminApi = {
       )
     ).data;
   },
+
+  rejectBusinessInvoiceBankPayment: async (
+    id: string,
+    payload: { admin_notes?: string },
+  ) =>
+    (
+      await api.post<BusinessInvoiceItem>(
+        `/api/admin/business-invoices/${id}/reject-bank-payment/`,
+        payload,
+      )
+    ).data,
 
   businessPlanRequests: async (params?: {
     org_id?: string;
