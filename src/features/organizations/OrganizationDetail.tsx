@@ -363,6 +363,19 @@ function OverviewPanel({
   );
 }
 
+const MODULE_LABELS: Record<string, string> = {
+  crm: "CRM & ventes",
+  billing: "Facturation",
+  inventory: "Inventaire",
+  projects: "Projets",
+  support: "Support",
+  hr: "RH & paie",
+  accounting: "Comptabilité",
+  marketing: "Marketing",
+  pos: "Point de vente",
+  ecommerce: "E-commerce",
+};
+
 function SubscriptionsPanel({
   orgMeta,
   orgName,
@@ -380,6 +393,18 @@ function SubscriptionsPanel({
   subs: { id: string; status: string; ends_at?: string | null; module: { name: string } }[];
   onAssignPlan: () => void;
 }) {
+  const moduleRows = useMemo(() => {
+    if (orgMeta?.enabled_modules?.length) {
+      return orgMeta.enabled_modules.map((code) => ({
+        id: code,
+        status: orgMeta.status ?? orgMeta.plan_status ?? "active",
+        ends_at: orgMeta.plan_expires_at ?? null,
+        module: { name: MODULE_LABELS[code] ?? code.toUpperCase() },
+      }));
+    }
+    return subs;
+  }, [orgMeta, subs]);
+
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(280px,360px)_1fr]">
       <section className="rounded-2xl border border-border-soft bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
@@ -424,8 +449,8 @@ function SubscriptionsPanel({
           </h3>
         </div>
         <div className="divide-y divide-slate-100 dark:divide-slate-800">
-          {subs.length ? (
-            subs.map((sub) => (
+          {moduleRows.length ? (
+            moduleRows.map((sub) => (
               <div key={sub.id} className="flex items-center justify-between px-5 py-4">
                 <div>
                   <p className="m-0 text-sm font-semibold text-slate-900 dark:text-slate-100">{sub.module.name}</p>

@@ -124,7 +124,11 @@ export interface OrganizationSubscriptionOverview {
   created_at: string;
   is_active?: boolean;
   status?: "active" | "suspended" | "trial" | string;
+  plan_status?: string;
   plan_code?: string | null;
+  plan_name?: string | null;
+  plan_expires_at?: string | null;
+  enabled_modules?: string[];
   seats_used?: number;
   seats_included?: number;
   additional_seats?: number;
@@ -132,7 +136,7 @@ export interface OrganizationSubscriptionOverview {
 }
 
 export interface OrganizationDetail extends OrganizationSubscriptionOverview {
-  plan_name?: string | null;
+  plan?: { id: string; code: string; name: string } | null;
   seats_max_hard?: number;
 }
 
@@ -610,11 +614,26 @@ export const adminApi = {
 
   organizationsOverview: async (params?: { q?: string; plan?: string; status?: string; limit?: number; offset?: number; sort?: string }) =>
     (await api.get<PaginatedResponse<OrganizationSubscriptionOverview>>("/api/admin/organizations/", { params })).data,
-  organizationDetail: async (id: string) => (await api.get<OrganizationDetail>(`/api/admin/organizations/${id}/`)).data,
-  organizationRelatedData: async (id: string) => 
+  organizationDetail: async (id: string) => {
+    const data = (await api.get<OrganizationDetail>(`/api/admin/organizations/${id}/`)).data;
+    return {
+      ...data,
+      plan_code: data.plan_code ?? data.plan?.code ?? null,
+      plan_name: data.plan_name ?? data.plan?.name ?? null,
+      status: data.status ?? data.plan_status ?? undefined,
+    };
+  },
+  organizationRelatedData: async (id: string) =>
     (await api.get<OrganizationRelatedData>(`/api/admin/organizations/${id}/related/`)).data,
-  organizationSubscriptions: async (id: string, params?: { limit?: number; offset?: number; sort?: string }) =>
-    (await api.get<PaginatedResponse<OrganizationSubscriptionItem>>(`/api/admin/organizations/${id}/subscriptions/`, { params })).data,
+  organizationSubscriptions: async (id: string, params?: { limit?: number; offset?: number; sort?: string }) => {
+    const data = await api.get<
+      PaginatedResponse<OrganizationSubscriptionItem> & {
+        subscriptions?: OrganizationSubscriptionItem[];
+      }
+    >(`/api/admin/organizations/${id}/subscriptions/`, { params });
+    const results = data.data.results ?? data.data.subscriptions ?? [];
+    return { ...data.data, count: data.data.count ?? results.length, results };
+  },
   assignPlanToOrganization: async (id: string, payload: AssignPlanPayload) =>
     (await api.post(`/api/admin/organizations/${id}/assign-plan/`, payload)).data,
   addSeatsToOrganization: async (id: string, payload: AddSeatsPayload) =>
