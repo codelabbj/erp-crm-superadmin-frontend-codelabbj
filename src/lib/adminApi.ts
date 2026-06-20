@@ -260,11 +260,30 @@ export interface OrganizationSubscriptionItem {
   auto_renew?: boolean;
 }
 
+export type PlanDowngradeMember = {
+  id: string;
+  email: string;
+  full_name: string;
+  is_owner: boolean;
+  access_status: string;
+};
+
+export type PlanDowngradeSelection = {
+  code?: "PLAN_DOWNGRADE_SEAT_SELECTION";
+  message?: string;
+  seats_total: number;
+  active_members: number;
+  owner_id: string | null;
+  members: PlanDowngradeMember[];
+  is_downgrade?: boolean;
+};
+
 export type AssignPlanPayload = {
   plan_id: string;
   admin_notes: string;
   billing_cycle?: "monthly" | "yearly";
   trial?: boolean;
+  retained_user_ids?: string[];
 };
 
 export type AddSeatsPayload = {

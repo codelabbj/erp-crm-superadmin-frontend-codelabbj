@@ -22,7 +22,7 @@ import {
   Info,
 } from "lucide-react";
 import { adminApi, type AssignPlanPayload, type OrganizationDetail as OrgMeta } from "../../lib/adminApi";
-import { formatIsoDate, getErrorMessage } from "../../lib/ui";
+import { formatIsoDate } from "../../lib/ui";
 import { formatMoneyFromApi } from "@/lib/money";
 import { KpiCard, DistributionBars } from "@/features/dashboard/components/DashboardWidgets";
 import { OrgAssignPlanModal } from "@/features/organizations/components/OrgAssignPlanModal";
@@ -270,9 +270,8 @@ export function OrganizationDetail({ orgId, onBack, onOpenAudit }: OrganizationD
           currentPlanCode={orgMeta?.plan_code}
           plans={plans ?? []}
           isPending={assignPlanMutation.isPending}
-          error={assignPlanMutation.isError ? getErrorMessage(assignPlanMutation.error) : undefined}
           onClose={() => setIsPlanModalOpen(false)}
-          onSubmit={(payload) => assignPlanMutation.mutate(payload)}
+          onSubmit={(payload) => assignPlanMutation.mutateAsync(payload)}
         />
       ) : null}
     </div>
