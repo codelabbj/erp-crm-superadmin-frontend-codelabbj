@@ -12,7 +12,6 @@ export function OrganizationDetailPage() {
       orgId={orgId}
       onBack={() => navigate("/organizations")}
       onOpenSubscriptions={() => navigate("/subscriptions", { state: { focusOrgId: orgId } })}
-      onOpenBilling={() => navigate("/billing/invoices")}
       onOpenAudit={() => navigate("/security/audit-logs")}
     />
   );

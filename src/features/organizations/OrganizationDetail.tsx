@@ -26,12 +26,14 @@ import { adminApi, type AssignPlanPayload } from "../../lib/adminApi";
 import { formatIsoDate } from "../../lib/ui";
 import { formatMoneyFromApi } from "@/lib/money";
 import { KpiCard, DistributionBars } from "@/features/dashboard/components/DashboardWidgets";
+import { OrgBusinessInvoicesPanel } from "@/features/organizations/components/OrgBusinessInvoicesPanel";
+import { OrgDedicatedInstancePanel } from "@/features/organizations/components/OrgDedicatedInstancePanel";
+import { cn } from "@/lib/utils";
 
 type OrganizationDetailProps = {
   orgId: string;
   onBack: () => void;
   onOpenSubscriptions: () => void;
-  onOpenBilling: () => void;
   onOpenAudit: () => void;
 };
 
@@ -39,9 +41,9 @@ export function OrganizationDetail({
   orgId,
   onBack,
   onOpenSubscriptions,
-  onOpenBilling,
   onOpenAudit,
 }: OrganizationDetailProps) {
+  const [activeTab, setActiveTab] = useState<"overview" | "billing">("overview");
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
   const queryClient = useQueryClient();
 
@@ -123,6 +125,11 @@ export function OrganizationDetail({
   const planLabel = orgMeta?.plan_name || orgMeta?.plan_code || "Aucun plan";
   const statusLabel =
     orgMeta?.status === "trial" ? "Essai" : org.is_active ? "Actif" : "Suspendu";
+  const ownerEmail =
+    users.find((u: { is_owner?: boolean; email?: string }) => u.is_owner)?.email ??
+    users[0]?.email ??
+    org.email ??
+    "";
 
   return (
     <div className="grid animate-in fade-in slide-in-from-bottom-4 gap-6 duration-500">
@@ -181,12 +188,45 @@ export function OrganizationDetail({
             onClick={() => mut.mutate({ id: org.id, is_active: !org.is_active })}
             variant={org.is_active ? "danger" : "success"}
           />
-          <QuickAction icon={<Receipt size={15} />} label="Facturation" onClick={onOpenBilling} />
+          <QuickAction icon={<Receipt size={15} />} label="Facturation Business" onClick={() => setActiveTab("billing")} />
           <QuickAction icon={<History size={15} />} label="Journaux d'audit" onClick={onOpenAudit} />
+        </div>
+
+        <div className="mt-4 flex gap-1 border-t border-slate-100 pt-4 dark:border-slate-800">
+          {(
+            [
+              { id: "overview" as const, label: "Aperçu" },
+              { id: "billing" as const, label: "Facturation & déploiement" },
+            ] as const
+          ).map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              className={cn(
+                "rounded-lg px-4 py-2 text-xs font-semibold transition-colors",
+                activeTab === tab.id
+                  ? "bg-brand-purple-100 text-brand-purple-800 dark:bg-brand-purple-900/30 dark:text-brand-purple-200"
+                  : "text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800",
+              )}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
       </header>
 
-      {/* KPIs */}
+      {activeTab === "billing" ? (
+        <div className="grid gap-6">
+          <OrgBusinessInvoicesPanel
+            orgId={orgId}
+            orgName={org.name}
+            defaultRecipientEmail={ownerEmail}
+          />
+          <OrgDedicatedInstancePanel orgId={orgId} />
+        </div>
+      ) : (
+        <>
       <div className="grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-3">
         <KpiCard label="Utilisateurs" value={totals?.users ?? users.length} icon={<Users size={18} />} accent="purple" />
         <KpiCard label="Clients CRM" value={totals?.customers ?? 0} icon={<Users size={18} />} accent="blue" />
@@ -349,8 +389,8 @@ export function OrganizationDetail({
                 <h3 className="flex items-center gap-2 text-xs font-bold tracking-wider text-slate-500 uppercase">
                   <FileText size={14} /> Factures récentes
                 </h3>
-                <button type="button" className="btn-ghost px-2 py-1 text-[10px] font-bold" onClick={onOpenBilling}>
-                  Tout voir <ExternalLink size={12} className="ml-0.5 inline" />
+                <button type="button" className="btn-ghost px-2 py-1 text-[10px] font-bold" onClick={() => setActiveTab("billing")}>
+                  Facturation Business <ExternalLink size={12} className="ml-0.5 inline" />
                 </button>
               </div>
               <div className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -384,6 +424,8 @@ export function OrganizationDetail({
           </section>
         </div>
       </div>
+        </>
+      )}
 
       {isPlanModalOpen ? (
         <div className="fixed inset-0 z-50 grid place-items-center bg-slate-900/60 p-4 backdrop-blur-sm">

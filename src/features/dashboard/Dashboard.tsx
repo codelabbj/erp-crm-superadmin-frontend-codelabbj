@@ -275,7 +275,7 @@ export function Dashboard({ onOpenOrgSubscriptions, onOpenOrganizationsList }: D
               <strong>{criticalAlerts}</strong> alerte{criticalAlerts > 1 ? "s" : ""} abonnement nécessitent une
               attention.
             </span>
-            <Link to="/subscriptions/alerts" className="ml-auto font-semibold underline underline-offset-2">
+            <Link to="/subscriptions?tab=alerts" className="ml-auto font-semibold underline underline-offset-2">
               Voir les alertes
             </Link>
           </div>
@@ -462,9 +462,9 @@ export function Dashboard({ onOpenOrgSubscriptions, onOpenOrganizationsList }: D
       <div className="grid gap-5 lg:grid-cols-2">
         <DashboardSection title="Opérations" description="Files d'attente & support">
           <div className="grid gap-2 sm:grid-cols-2">
-            <AlertPill label="Abonnements expirés" count={alerts?.expired.count ?? 0} tone="rose" to="/subscriptions/alerts" />
-            <AlertPill label="Sans plan assigné" count={alerts?.no_plan.count ?? 0} tone="amber" to="/subscriptions/alerts" />
-            <AlertPill label="Essais bientôt terminés" count={alerts?.trial_ending_soon.count ?? 0} tone="blue" to="/subscriptions/alerts" />
+            <AlertPill label="Abonnements expirés" count={alerts?.expired.count ?? 0} tone="rose" to="/subscriptions?tab=alerts" />
+            <AlertPill label="Sans plan assigné" count={alerts?.no_plan.count ?? 0} tone="amber" to="/subscriptions?tab=alerts" />
+            <AlertPill label="Essais bientôt terminés" count={alerts?.trial_ending_soon.count ?? 0} tone="blue" to="/subscriptions?tab=alerts" />
             <AlertPill label="Tickets support ouverts" count={openTickets} tone="blue" to="/business/support" />
           </div>
           <div className="mt-4 grid grid-cols-2 gap-3">
@@ -521,14 +521,14 @@ export function Dashboard({ onOpenOrgSubscriptions, onOpenOrganizationsList }: D
             </div>
           </div>
           <div className="mt-4 flex flex-wrap gap-2">
-            <Link to="/subscriptions/stats" className="btn-secondary px-3 py-1.5 text-xs">
+            <Link to="/subscriptions?tab=stats" className="btn-secondary px-3 py-1.5 text-xs">
               Stats abonnements
             </Link>
             <Link to="/onboarding" className="btn-secondary px-3 py-1.5 text-xs">
               Onboarding
             </Link>
-            <Link to="/billing/invoices" className="btn-secondary px-3 py-1.5 text-xs">
-              Facturation
+            <Link to="/organizations" className="btn-secondary px-3 py-1.5 text-xs">
+              Organisations
             </Link>
           </div>
         </DashboardSection>

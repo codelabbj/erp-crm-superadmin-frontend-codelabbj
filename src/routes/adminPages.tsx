@@ -5,12 +5,11 @@ import { BusinessMetrics } from "@/features/dashboard/BusinessMetrics";
 import { Organizations } from "@/features/organizations/Organizations";
 import { OrganizationDetailPage } from "@/features/organizations/OrganizationDetailPage";
 import { Onboarding } from "@/features/organizations/Onboarding";
-import { Subscriptions } from "@/features/subscriptions/Subscriptions";
-import { SubscriptionsStats } from "@/features/subscriptions/SubscriptionsStats";
-import { SubscriptionsAlerts } from "@/features/subscriptions/SubscriptionsAlerts";
+import { SubscriptionsHub, SubscriptionsStatsRedirect, SubscriptionsAlertsRedirect } from "@/features/subscriptions/SubscriptionsHub";
 import { Plans } from "@/features/plans/Plans";
 import { BillingOps } from "@/features/billingOps/BillingOps";
-import { BusinessInvoices } from "@/features/businessInvoices/BusinessInvoices";
+import { BusinessInvoicesRedirect } from "@/features/businessInvoices/BusinessInvoices";
+import { DedicatedInstancesRedirect } from "@/features/dedicatedInstances/DedicatedInstances";
 import { FeatureFlags } from "@/features/featureFlags/FeatureFlags";
 import { Modules } from "@/features/modules/Modules";
 import { DataOps } from "@/features/dataOps/DataOps";
@@ -40,7 +39,7 @@ export function SubscriptionsPage() {
   const focusOrgId = (location.state as { focusOrgId?: string } | null)?.focusOrgId ?? null;
 
   return (
-    <Subscriptions
+    <SubscriptionsHub
       focusOrgId={focusOrgId}
       onFocusOrgHandled={() => navigate(".", { replace: true, state: {} })}
     />
@@ -55,11 +54,12 @@ export const adminPages = {
   OrganizationDetailPage,
   Onboarding,
   SubscriptionsPage,
-  SubscriptionsStats,
-  SubscriptionsAlerts,
+  SubscriptionsStatsRedirect,
+  SubscriptionsAlertsRedirect,
   Plans,
   BillingOps,
-  BusinessInvoices,
+  BusinessInvoicesRedirect,
+  DedicatedInstancesRedirect,
   FeatureFlags,
   Modules,
   DataOps,

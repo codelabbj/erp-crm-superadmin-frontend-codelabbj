@@ -156,6 +156,12 @@ export interface BusinessInvoiceItem {
   sent_at: string | null;
   paid_at: string | null;
   created_at: string;
+  bank_transfer?: { declared_at?: string; customer_note?: string } | null;
+  bank_confirmation?: {
+    confirmed_at?: string;
+    proof_url?: string;
+    bank_reference?: string;
+  } | null;
 }
 
 export interface CreateBusinessInvoicePayload {
@@ -168,6 +174,24 @@ export interface CreateBusinessInvoicePayload {
   amount_total: string;
   send_email?: boolean;
   notes?: string;
+}
+
+export interface DedicatedInstanceItem {
+  id: string;
+  instance_id: string;
+  org_id: string;
+  org_name: string;
+  customer_name: string;
+  host_url: string;
+  current_version: string;
+  status: string;
+  license_expires_at: string | null;
+  last_heartbeat_at: string | null;
+  has_registry_token: boolean;
+  install_kit_sent_at: string | null;
+  plan_code: string | null;
+  plan_status: string | null;
+  created_at: string;
 }
 
 export interface OrganizationRelatedData {
@@ -681,6 +705,39 @@ export const adminApi = {
     (await api.post<BusinessInvoiceItem>(`/api/admin/business-invoices/${id}/send/`)).data,
   cancelBusinessInvoice: async (id: string) =>
     (await api.post<BusinessInvoiceItem>(`/api/admin/business-invoices/${id}/cancel/`)).data,
+
+  confirmBusinessInvoiceBankPayment: async (
+    id: string,
+    payload: { proof: File; bank_reference?: string; admin_notes?: string },
+  ) => {
+    const formData = new FormData();
+    formData.append("proof", payload.proof);
+    if (payload.bank_reference) formData.append("bank_reference", payload.bank_reference);
+    if (payload.admin_notes) formData.append("admin_notes", payload.admin_notes);
+    return (
+      await api.post<BusinessInvoiceItem>(
+        `/api/admin/business-invoices/${id}/confirm-bank-payment/`,
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } },
+      )
+    ).data;
+  },
+
+  dedicatedInstances: async (params?: { status?: string; limit?: number; offset?: number }) =>
+    (
+      await api.get<PaginatedResponse<DedicatedInstanceItem>>("/api/admin/dedicated-instances/", {
+        params,
+      })
+    ).data,
+  sendDedicatedInstallKit: async (instanceId: string) =>
+    (await api.post<{ detail: string }>(`/api/admin/dedicated-instances/${instanceId}/send-install-kit/`))
+      .data,
+  issueDedicatedLicense: async (instanceId: string) =>
+    (
+      await api.post<{ license: Record<string, unknown> }>(
+        `/api/admin/dedicated-instances/${instanceId}/issue-license/`,
+      )
+    ).data,
 
   // Billing Actions
   finalizeInvoice: async (id: string, payload: { invoice_type: string }) =>

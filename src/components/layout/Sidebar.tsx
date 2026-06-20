@@ -1,7 +1,7 @@
 import { ChevronLeft, ChevronRight, LogOut, RefreshCw } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { Logo } from "@/components/ui/Logo";
-import { NAV_SECTIONS_FOOTER, NAV_SECTIONS_MAIN, type NavSection } from "@/lib/navigation";
+import { NAV_SECTIONS, type NavSection } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
 type SidebarProps = {
@@ -88,15 +88,8 @@ export function Sidebar({
         <Logo isCollapsed={isCollapsed} />
       </div>
 
-      <nav className="min-h-0 flex-1 space-y-3 overflow-y-auto px-3 py-3">
-        <NavSections sections={NAV_SECTIONS_MAIN} isCollapsed={isCollapsed} />
-      </nav>
-
-      <nav className="max-h-[42vh] shrink-0 space-y-3 overflow-y-auto border-t border-neutral-4 px-3 py-3">
-        {!isCollapsed ? (
-          <p className="px-3 text-[10px] font-semibold uppercase tracking-wider text-neutral-5">Plus</p>
-        ) : null}
-        <NavSections sections={NAV_SECTIONS_FOOTER} isCollapsed={isCollapsed} />
+      <nav className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain px-3 py-3">
+        <NavSections sections={NAV_SECTIONS} isCollapsed={isCollapsed} />
       </nav>
 
       <div className="shrink-0 space-y-2 border-t border-neutral-4 p-3">

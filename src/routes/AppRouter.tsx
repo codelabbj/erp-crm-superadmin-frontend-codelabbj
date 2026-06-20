@@ -13,11 +13,12 @@ export function AppRouter() {
     OrganizationDetailPage,
     Onboarding,
     SubscriptionsPage,
-    SubscriptionsStats,
-    SubscriptionsAlerts,
+    SubscriptionsStatsRedirect,
+    SubscriptionsAlertsRedirect,
     Plans,
     BillingOps,
-    BusinessInvoices,
+    BusinessInvoicesRedirect,
+    DedicatedInstancesRedirect,
     FeatureFlags,
     Modules,
     DataOps,
@@ -46,11 +47,12 @@ export function AppRouter() {
               <Route path="organizations/:orgId" element={<OrganizationDetailPage />} />
               <Route path="onboarding" element={<Onboarding />} />
               <Route path="subscriptions" element={<SubscriptionsPage />} />
-              <Route path="subscriptions/stats" element={<SubscriptionsStats />} />
-              <Route path="subscriptions/alerts" element={<SubscriptionsAlerts />} />
+              <Route path="subscriptions/stats" element={<SubscriptionsStatsRedirect />} />
+              <Route path="subscriptions/alerts" element={<SubscriptionsAlertsRedirect />} />
               <Route path="plans" element={<Plans />} />
               <Route path="billing/invoices" element={<BillingOps />} />
-              <Route path="billing/business-invoices" element={<BusinessInvoices />} />
+              <Route path="billing/business-invoices" element={<BusinessInvoicesRedirect />} />
+              <Route path="billing/dedicated-instances" element={<DedicatedInstancesRedirect />} />
               <Route path="platform/feature-flags" element={<FeatureFlags />} />
               <Route path="platform/modules" element={<Modules />} />
               <Route path="platform/jobs" element={<DataOps />} />
