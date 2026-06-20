@@ -308,6 +308,7 @@ export interface AuditLogItem {
   entity_id: string;
   payload?: Record<string, unknown>;
   user_email?: string;
+  user_name?: string;
 }
 
 export interface BillingClientItem {
@@ -637,6 +638,12 @@ export const adminApi = {
 
   auditLogs: async (params?: { q?: string; action?: string; limit?: number; offset?: number; sort?: string }) =>
     (await api.get<PaginatedResponse<AuditLogItem>>("/api/audit-logs/", { params })).data,
+  organizationAuditLogs: async (
+    orgId: string,
+    params?: { q?: string; action?: string; limit?: number; offset?: number; sort?: string },
+  ) =>
+    (await api.get<PaginatedResponse<AuditLogItem>>(`/api/admin/organizations/${orgId}/audit-logs/`, { params }))
+      .data,
   billingClients: async (params?: { q?: string; limit?: number; offset?: number; sort?: string }) =>
     (await api.get<PaginatedResponse<BillingClientItem> | BillingClientItem[]>("/api/billing/clients/", { params })).data,
   billingInvoices: async (params?: { q?: string; limit?: number; offset?: number; sort?: string }) =>

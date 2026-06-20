@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { adminApi } from "../../lib/adminApi";
 import { formatIsoDate, getErrorMessage } from "../../lib/ui";
@@ -7,6 +8,8 @@ import { ListPageShell, PageHeader } from "@/components/ui/PageHeader";
 import { Pagination } from "@/components/ui/Pagination";
 import { useDebouncedValue, usePaginationState } from "@/hooks/useListState";
 import { paginatedCount } from "@/lib/pagination";
+import { OrgContextBanner } from "@/components/OrgContextBanner";
+import { readOrgActionFromSearch, readOrgIdFromSearch } from "@/lib/orgNavigation";
 
 type PendingAction =
   | { kind: "assign_plan"; planCode: string }
@@ -23,6 +26,12 @@ type SubscriptionsProps = {
 };
 
 export function Subscriptions({ focusOrgId, onFocusOrgHandled }: SubscriptionsProps) {
+  const location = useLocation();
+  const orgFromUrl = readOrgIdFromSearch(location.search);
+  const scopedOrgId = orgFromUrl || focusOrgId || null;
+  const assignPlanAction = readOrgActionFromSearch(location.search) === "assign-plan";
+  const assignPlanRef = useRef<HTMLDivElement>(null);
+
   const [q, setQ] = useState("");
   const debouncedQ = useDebouncedValue(q);
   const [statusFilter, setStatusFilter] = useState("");
@@ -54,21 +63,36 @@ export function Subscriptions({ focusOrgId, onFocusOrgHandled }: SubscriptionsPr
       }),
   });
 
-  const selectedOrg = useMemo(
-    () => (data?.results ?? []).find((org) => org.id === selectedOrgId) ?? null,
-    [data?.results, selectedOrgId],
-  );
+  const orgDetailQuery = useQuery({
+    queryKey: ["org-detail", selectedOrgId],
+    queryFn: () => adminApi.organizationDetail(selectedOrgId as string),
+    enabled: Boolean(selectedOrgId),
+  });
+
+  const selectedOrg = useMemo(() => {
+    const fromList = (data?.results ?? []).find((org) => org.id === selectedOrgId) ?? null;
+    if (fromList) return fromList;
+    const detail = orgDetailQuery.data;
+    if (detail && detail.id === selectedOrgId) return detail;
+    return null;
+  }, [data?.results, selectedOrgId, orgDetailQuery.data]);
 
   useEffect(() => {
-    if (selectedOrgId) return;
-    if (focusOrgId) {
-      setSelectedOrgId(focusOrgId);
-      onFocusOrgHandled?.();
-      return;
-    }
+    if (!scopedOrgId) return;
+    setSelectedOrgId(scopedOrgId);
+    onFocusOrgHandled?.();
+  }, [scopedOrgId, onFocusOrgHandled]);
+
+  useEffect(() => {
+    if (!assignPlanAction || !selectedOrgId) return;
+    assignPlanRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [assignPlanAction, selectedOrgId]);
+
+  useEffect(() => {
+    if (selectedOrgId || scopedOrgId) return;
     const firstOrgId = data?.results?.[0]?.id;
     if (firstOrgId) setSelectedOrgId(firstOrgId);
-  }, [data?.results, selectedOrgId, focusOrgId, onFocusOrgHandled]);
+  }, [data?.results, selectedOrgId, scopedOrgId]);
 
   useEffect(() => {
     if (!selectedOrg?.plan_code) {
@@ -77,12 +101,6 @@ export function Subscriptions({ focusOrgId, onFocusOrgHandled }: SubscriptionsPr
     }
     setSelectedPlanCode(selectedOrg.plan_code);
   }, [selectedOrg?.plan_code]);
-
-  const orgDetailQuery = useQuery({
-    queryKey: ["org-detail", selectedOrgId],
-    queryFn: () => adminApi.organizationDetail(selectedOrgId as string),
-    enabled: Boolean(selectedOrgId),
-  });
 
   const orgSubsQuery = useQuery({
     queryKey: ["org-subscriptions", selectedOrgId],
@@ -202,6 +220,7 @@ export function Subscriptions({ focusOrgId, onFocusOrgHandled }: SubscriptionsPr
 
   return (
     <ListPageShell>
+      {scopedOrgId ? <OrgContextBanner orgId={scopedOrgId} /> : null}
       <PageHeader title="Abonnements" description="Vue par organisation, plans et sièges." />
       <FilterBar>
         <SearchInput
@@ -307,8 +326,7 @@ export function Subscriptions({ focusOrgId, onFocusOrgHandled }: SubscriptionsPr
           </div>
 
           <div className="grid gap-3 md:grid-cols-2">
-            <div className="rounded-lg border border-slate-200 p-3 dark:border-slate-700">
-              <p className="m-0 mb-2 text-xs font-semibold text-slate-700 dark:text-slate-300">Plan</p>
+            <div ref={assignPlanRef} className="rounded-lg border border-slate-200 p-3 dark:border-slate-700">
               <p className="m-0 mb-2 text-sm text-slate-700 dark:text-slate-300">
                 Actuel: <strong>{orgDetailQuery.data?.plan_code ?? selectedOrg?.plan_code ?? "Aucun"}</strong>
               </p>

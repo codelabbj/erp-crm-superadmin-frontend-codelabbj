@@ -132,9 +132,14 @@ export function CreateBusinessInvoiceModal({
               onChange={(e) => setNotes(e.target.value)}
             />
           </label>
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={sendEmail} onChange={(e) => setSendEmail(e.target.checked)} />
-            Envoyer la facture par e-mail immédiatement
+          <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+            <input
+              type="checkbox"
+              className="size-4 shrink-0"
+              checked={sendEmail}
+              onChange={(e) => setSendEmail(e.target.checked)}
+            />
+            <span>Envoyer la facture par e-mail immédiatement</span>
           </label>
           <div className="mt-2 flex justify-end gap-2">
             <button type="button" className="btn-secondary" onClick={onClose}>

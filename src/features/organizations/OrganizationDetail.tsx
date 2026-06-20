@@ -34,6 +34,8 @@ type OrganizationDetailProps = {
   orgId: string;
   onBack: () => void;
   onOpenSubscriptions: () => void;
+  onOpenAssignPlan: () => void;
+  onOpenBilling: () => void;
   onOpenAudit: () => void;
 };
 
@@ -41,6 +43,8 @@ export function OrganizationDetail({
   orgId,
   onBack,
   onOpenSubscriptions,
+  onOpenAssignPlan,
+  onOpenBilling,
   onOpenAudit,
 }: OrganizationDetailProps) {
   const [activeTab, setActiveTab] = useState<"overview" | "billing">("overview");
@@ -181,14 +185,14 @@ export function OrganizationDetail({
         {/* Actions rapides */}
         <div className="mt-5 flex flex-wrap gap-2 border-t border-slate-100 pt-4 dark:border-slate-800">
           <QuickAction icon={<WalletCards size={15} />} label="Abonnements" onClick={onOpenSubscriptions} />
-          <QuickAction icon={<Plus size={15} />} label="Assigner un plan" onClick={() => setIsPlanModalOpen(true)} />
+          <QuickAction icon={<Plus size={15} />} label="Assigner un plan" onClick={onOpenAssignPlan} />
           <QuickAction
             icon={org.is_active ? <ShieldAlert size={15} /> : <CheckCircle2 size={15} />}
             label={org.is_active ? "Suspendre" : "Réactiver"}
             onClick={() => mut.mutate({ id: org.id, is_active: !org.is_active })}
             variant={org.is_active ? "danger" : "success"}
           />
-          <QuickAction icon={<Receipt size={15} />} label="Facturation Business" onClick={() => setActiveTab("billing")} />
+          <QuickAction icon={<Receipt size={15} />} label="Facturation Business" onClick={onOpenBilling} />
           <QuickAction icon={<History size={15} />} label="Journaux d'audit" onClick={onOpenAudit} />
         </div>
 

@@ -6,6 +6,7 @@ import { paginatedCount } from "@/lib/pagination";
 import { FilterBar, FilterSelect, SearchInput } from "@/components/ui/FilterBar";
 import { ListPageShell, PageHeader } from "@/components/ui/PageHeader";
 import { Pagination } from "@/components/ui/Pagination";
+import { OrgContextBanner } from "@/components/OrgContextBanner";
 import { useState } from "react";
 
 function formatDate(value: string | undefined): string {
@@ -23,7 +24,12 @@ const ACTION_OPTIONS = [
   { value: "logout", label: "logout" },
 ];
 
-export function AuditLogs() {
+type AuditLogsProps = {
+  /** Filtre par organisation (depuis fiche org : ?org=uuid). */
+  orgId?: string | null;
+};
+
+export function AuditLogs({ orgId }: AuditLogsProps) {
   const [search, setSearch] = useState("");
   const [actionFilter, setActionFilter] = useState("");
   const [sort, setSort] = useState("-created_at");
@@ -31,15 +37,23 @@ export function AuditLogs() {
   const { page, setPage, offset, pageSize, resetPage } = usePaginationState(25);
 
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ["audit-logs", debouncedSearch, actionFilter, sort, page],
+    queryKey: ["audit-logs", orgId, debouncedSearch, actionFilter, sort, page],
     queryFn: () =>
-      adminApi.auditLogs({
-        q: debouncedSearch || undefined,
-        action: actionFilter || undefined,
-        limit: pageSize,
-        offset,
-        sort,
-      }),
+      orgId
+        ? adminApi.organizationAuditLogs(orgId, {
+            q: debouncedSearch || undefined,
+            action: actionFilter || undefined,
+            limit: pageSize,
+            offset,
+            sort,
+          })
+        : adminApi.auditLogs({
+            q: debouncedSearch || undefined,
+            action: actionFilter || undefined,
+            limit: pageSize,
+            offset,
+            sort,
+          }),
   });
 
   const total = paginatedCount(data);
@@ -47,9 +61,14 @@ export function AuditLogs() {
 
   return (
     <ListPageShell>
+      {orgId ? <OrgContextBanner orgId={orgId} /> : null}
       <PageHeader
         title="Journaux d'audit"
-        description="Historique des actions sensibles (filtrage et pagination côté serveur)."
+        description={
+          orgId
+            ? "Historique des actions pour cette organisation."
+            : "Historique des actions sensibles (filtrage et pagination côté serveur)."
+        }
       />
 
       <FilterBar>
@@ -118,7 +137,7 @@ export function AuditLogs() {
                       <td>
                         <code>{row.entity_id}</code>
                       </td>
-                      <td>{row.user_email || "—"}</td>
+                      <td>{row.user_email || row.user_name || "—"}</td>
                     </tr>
                   ))
                 )}

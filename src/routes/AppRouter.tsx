@@ -23,7 +23,7 @@ export function AppRouter() {
     Modules,
     DataOps,
     Users,
-    AuditLogs,
+    AuditLogsPage,
     Security,
     Marketing,
     Support,
@@ -57,7 +57,7 @@ export function AppRouter() {
               <Route path="platform/modules" element={<Modules />} />
               <Route path="platform/jobs" element={<DataOps />} />
               <Route path="platform/staff" element={<Users />} />
-              <Route path="security/audit-logs" element={<AuditLogs />} />
+              <Route path="security/audit-logs" element={<AuditLogsPage />} />
               <Route path="security/waf" element={<Security />} />
               <Route path="business/marketing" element={<Marketing />} />
               <Route path="business/support" element={<Support />} />

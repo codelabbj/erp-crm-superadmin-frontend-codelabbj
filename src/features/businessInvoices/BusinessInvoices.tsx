@@ -1,6 +1,6 @@
-import { Navigate } from "react-router-dom";
+import { BusinessInvoicesOrgPage } from "./BusinessInvoicesOrgPage";
 
-/** Ancienne route — les factures Business se gèrent depuis la fiche organisation. */
+/** Route facturation Business — requiert ?org=uuid (depuis fiche organisation). */
 export function BusinessInvoicesRedirect() {
-  return <Navigate to="/organizations" replace />;
+  return <BusinessInvoicesOrgPage />;
 }

@@ -22,12 +22,15 @@ import { Projects } from "@/features/projects/Projects";
 import { Ecommerce } from "@/features/ecommerce/Ecommerce";
 import { Fiscal } from "@/features/fiscal/Fiscal";
 import { AIAssistant } from "@/features/ai/AIAssistant";
+import { ORG_QUERY_KEY, readOrgIdFromSearch } from "@/lib/orgNavigation";
 
 export function DashboardPage() {
   const navigate = useNavigate();
   return (
     <Dashboard
-      onOpenOrgSubscriptions={(orgId) => navigate("/subscriptions", { state: { focusOrgId: orgId } })}
+      onOpenOrgSubscriptions={(orgId) =>
+        navigate(`/subscriptions?${ORG_QUERY_KEY}=${orgId}`)
+      }
       onOpenOrganizationsList={() => navigate("/organizations")}
     />
   );
@@ -36,14 +39,26 @@ export function DashboardPage() {
 export function SubscriptionsPage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const focusOrgId = (location.state as { focusOrgId?: string } | null)?.focusOrgId ?? null;
+  const orgFromUrl = readOrgIdFromSearch(location.search);
+  const focusOrgId =
+    orgFromUrl ||
+    (location.state as { focusOrgId?: string } | null)?.focusOrgId ||
+    null;
 
   return (
     <SubscriptionsHub
       focusOrgId={focusOrgId}
-      onFocusOrgHandled={() => navigate(".", { replace: true, state: {} })}
+      onFocusOrgHandled={() => {
+        if (!orgFromUrl) navigate(".", { replace: true, state: {} });
+      }}
     />
   );
+}
+
+export function AuditLogsPage() {
+  const location = useLocation();
+  const orgId = readOrgIdFromSearch(location.search);
+  return <AuditLogs orgId={orgId} />;
 }
 
 export const adminPages = {
@@ -65,6 +80,7 @@ export const adminPages = {
   DataOps,
   Users,
   AuditLogs,
+  AuditLogsPage,
   Security,
   Marketing,
   Support,

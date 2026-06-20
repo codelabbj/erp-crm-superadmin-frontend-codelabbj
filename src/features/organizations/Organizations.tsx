@@ -11,6 +11,7 @@ import {
   WalletCards,
 } from "lucide-react";
 import { adminApi, type AdminOrganization } from "../../lib/adminApi";
+import { orgSubscriptionsPath } from "@/lib/orgNavigation";
 import { formatIsoDate, getErrorMessage } from "../../lib/ui";
 import { FilterSelect, SearchInput } from "@/components/ui/FilterBar";
 import { ListPageShell, PageHeader } from "@/components/ui/PageHeader";
@@ -288,7 +289,7 @@ export function Organizations() {
                   <OrgRowActions
                     org={o}
                     onView={() => navigate(`/organizations/${o.id}`)}
-                    onSubscriptions={() => navigate("/subscriptions", { state: { focusOrgId: o.id } })}
+                    onSubscriptions={() => navigate(orgSubscriptionsPath(o.id))}
                     onToggleActive={() => mut.mutate({ id: o.id, is_active: !o.is_active })}
                   />
                 </td>
