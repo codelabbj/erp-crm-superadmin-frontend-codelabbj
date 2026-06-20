@@ -4,10 +4,12 @@ export const ORG_ACTION_KEY = "action";
 
 export type OrgScopedAction = "assign-plan";
 
-export function orgDetailPath(orgId: string, tab?: "billing") {
+export type OrgDetailTab = "overview" | "subscriptions" | "team" | "billing" | "deployment";
+
+export function orgDetailPath(orgId: string, tab?: OrgDetailTab) {
   const base = `/organizations/${orgId}`;
-  if (tab === "billing") return `${base}?tab=billing`;
-  return base;
+  if (!tab || tab === "overview") return base;
+  return `${base}?tab=${tab}`;
 }
 
 export function orgSubscriptionsPath(orgId: string, action?: OrgScopedAction) {
@@ -32,4 +34,10 @@ export function readOrgIdFromSearch(search: string): string | null {
 export function readOrgActionFromSearch(search: string): OrgScopedAction | null {
   const action = new URLSearchParams(search).get(ORG_ACTION_KEY)?.trim();
   return action === "assign-plan" ? action : null;
+}
+
+export function readOrgDetailTab(search: string): OrgDetailTab {
+  const tab = new URLSearchParams(search).get("tab")?.trim() as OrgDetailTab | undefined;
+  const allowed: OrgDetailTab[] = ["overview", "subscriptions", "team", "billing", "deployment"];
+  return tab && allowed.includes(tab) ? tab : "overview";
 }

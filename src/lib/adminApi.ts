@@ -30,6 +30,8 @@ export interface AdminUser {
   is_active: boolean;
   is_staff: boolean;
   is_superuser: boolean;
+  is_owner?: boolean;
+  is_approved_by_admin?: boolean;
   created_at: string;
 }
 
@@ -197,7 +199,8 @@ export interface DedicatedInstanceItem {
 export interface OrganizationRelatedData {
   success: boolean;
   data: {
-    organization: AdminOrganization & { email?: string };
+    organization: AdminOrganization & { email?: string; slug?: string; country?: string; currency?: string };
+    owner?: AdminUser | null;
     users: AdminUser[];
     customers: any[];
     products: any[];
@@ -555,7 +558,7 @@ export type AdminModuleUpdate = {
 
 export type AdminUserUpdate = {
   id: string;
-} & Partial<Pick<AdminUser, "is_active" | "is_staff" | "is_superuser">>;
+} & Partial<Pick<AdminUser, "is_active" | "is_staff" | "is_superuser" | "is_approved_by_admin">>;
 
 export type AdminModulePatchPayload = Partial<
   Pick<AdminModule, "name" | "description" | "price_monthly" | "price_yearly" | "trial_days" | "is_active" | "sort_order">
