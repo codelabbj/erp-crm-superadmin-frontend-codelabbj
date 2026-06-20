@@ -20,6 +20,12 @@ import { useDebouncedValue, usePaginationState } from "@/hooks/useListState";
 import { paginatedCount } from "@/lib/pagination";
 import { downloadCsv } from "@/lib/exportCsv";
 
+function ownerDisplayName(owner: AdminOrganization["owner"]): string {
+  if (!owner) return "Propriétaire inconnu";
+  const name = owner.full_name?.trim();
+  return name || owner.email || "Propriétaire inconnu";
+}
+
 function OrgRowActions({
   org,
   onView,
@@ -166,9 +172,10 @@ export function Organizations() {
 
       downloadCsv(
         `organisations-${new Date().toISOString().slice(0, 10)}.csv`,
-        ["Nom", "Slug", "Pays", "Devise", "Membres", "Créée le", "Actif"],
+        ["Nom", "Propriétaire", "Slug", "Pays", "Devise", "Membres", "Créée le", "Actif"],
         all.map((o) => [
           o.name,
+          ownerDisplayName(o.owner),
           o.slug,
           o.country,
           o.currency,
@@ -205,7 +212,7 @@ export function Organizations() {
             setQ(v);
             resetPage();
           }}
-          placeholder="Nom, slug…"
+          placeholder="Nom, slug, propriétaire…"
           className="min-w-[180px] flex-1"
         />
         <FilterSelect
@@ -266,6 +273,9 @@ export function Organizations() {
                     </span>
                     <div className="min-w-0">
                       <p className="m-0 truncate font-semibold text-slate-800 dark:text-slate-200">{o.name}</p>
+                      <p className="m-0 truncate text-xs text-slate-600 dark:text-slate-400">
+                        {ownerDisplayName(o.owner)}
+                      </p>
                       <code className="text-[11px] text-slate-500">{o.slug}</code>
                     </div>
                   </div>

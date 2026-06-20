@@ -11,6 +11,12 @@ export interface AdminOverview {
   total_orgs?: number;
 }
 
+export interface OrgOwnerSummary {
+  id: string;
+  full_name: string;
+  email: string;
+}
+
 export interface AdminOrganization {
   id: string;
   name: string;
@@ -21,6 +27,7 @@ export interface AdminOrganization {
   is_active: boolean;
   members_count: number;
   created_at: string;
+  owner?: OrgOwnerSummary | null;
 }
 
 export interface AdminUser {
