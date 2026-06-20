@@ -120,7 +120,11 @@ export function Subscriptions({ focusOrgId, onFocusOrgHandled }: SubscriptionsPr
     mutationFn: (plan_code: string) => {
       const plan = (plans ?? []).find((p) => p.code === plan_code);
       if (!plan) return Promise.reject(new Error(`Plan introuvable: ${plan_code}`));
-      return adminApi.assignPlanToOrganization(selectedOrgId as string, { plan_id: plan.id });
+      return adminApi.assignPlanToOrganization(selectedOrgId as string, {
+        plan_id: plan.id,
+        admin_notes: "Assignation depuis la page Abonnements (super-admin).",
+        billing_cycle: "yearly",
+      });
     },
     onSuccess: async () => {
       setFeedback("Plan assigne a l'organisation.");

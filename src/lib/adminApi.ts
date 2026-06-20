@@ -17,6 +17,7 @@ export interface AdminOrganization {
   slug: string;
   country: string;
   currency: string;
+  logo_url?: string;
   is_active: boolean;
   members_count: number;
   created_at: string;
@@ -128,9 +129,12 @@ export interface OrganizationSubscriptionOverview {
   plan_code?: string | null;
   plan_name?: string | null;
   plan_expires_at?: string | null;
+  plan_starts_at?: string | null;
+  plan_billing_cycle?: string | null;
   enabled_modules?: string[];
   seats_used?: number;
   seats_included?: number;
+  seats_total?: number;
   additional_seats?: number;
   active_modules_count?: number;
 }
@@ -258,6 +262,9 @@ export interface OrganizationSubscriptionItem {
 
 export type AssignPlanPayload = {
   plan_id: string;
+  admin_notes: string;
+  billing_cycle?: "monthly" | "yearly";
+  trial?: boolean;
 };
 
 export type AddSeatsPayload = {

@@ -63,7 +63,7 @@ export function KpiCard({
   };
 
   return (
-    <article className="rounded-xl border border-slate-100 bg-slate-50/80 p-4 dark:border-slate-700/80 dark:bg-slate-800/50">
+    <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-600 dark:bg-slate-800/80">
       <div className="mb-3 flex items-start justify-between gap-2">
         <div className={cn("inline-flex rounded-lg p-2", accents[accent])}>{icon}</div>
         {trendLabel ? (

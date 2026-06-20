@@ -85,8 +85,16 @@ describe("adminApi", () => {
       params: { limit: 5, offset: 0, sort: "-starts_at" },
     });
 
-    await adminApi.assignPlanToOrganization("oid", { plan_id: "pro-id" });
-    expect(post).toHaveBeenCalledWith("/api/admin/organizations/oid/assign-plan/", { plan_id: "pro-id" });
+    await adminApi.assignPlanToOrganization("oid", {
+      plan_id: "pro-id",
+      admin_notes: "Test assignation",
+      billing_cycle: "yearly",
+    });
+    expect(post).toHaveBeenCalledWith("/api/admin/organizations/oid/assign-plan/", {
+      plan_id: "pro-id",
+      admin_notes: "Test assignation",
+      billing_cycle: "yearly",
+    });
 
     await adminApi.addSeatsToOrganization("oid", { quantity: 2 });
     expect(post).toHaveBeenCalledWith("/api/admin/organizations/oid/add-seats/", { quantity: 2 });

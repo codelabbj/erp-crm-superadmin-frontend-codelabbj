@@ -14,39 +14,33 @@ import {
   Zap,
   Globe,
   Settings2,
-  WalletCards,
   FileText,
   ShoppingCart,
   Package,
   BarChart3,
-  Receipt,
+  CalendarDays,
+  Info,
 } from "lucide-react";
 import { adminApi, type AssignPlanPayload, type OrganizationDetail as OrgMeta } from "../../lib/adminApi";
-import { formatIsoDate } from "../../lib/ui";
+import { formatIsoDate, getErrorMessage } from "../../lib/ui";
 import { formatMoneyFromApi } from "@/lib/money";
 import { KpiCard, DistributionBars } from "@/features/dashboard/components/DashboardWidgets";
+import { OrgAssignPlanModal } from "@/features/organizations/components/OrgAssignPlanModal";
 import { OrgBusinessInvoicesPanel } from "@/features/organizations/components/OrgBusinessInvoicesPanel";
 import { OrgBusinessPlanRequestsPanel } from "@/features/organizations/components/OrgBusinessPlanRequestsPanel";
 import { OrgDedicatedInstancePanel } from "@/features/organizations/components/OrgDedicatedInstancePanel";
 import { OrgDetailTabBar } from "@/features/organizations/components/OrgDetailTabBar";
 import { OrgTeamTab } from "@/features/organizations/components/tabs/OrgTeamTab";
 import { type OrgDetailTab, readOrgDetailTab } from "@/lib/orgNavigation";
+import { MODULE_LABELS, planPeriodProgress, resolveMediaUrl } from "@/features/organizations/orgPlanUtils";
 
 type OrganizationDetailProps = {
   orgId: string;
   onBack: () => void;
-  onOpenSubscriptions: () => void;
-  onOpenAssignPlan: () => void;
   onOpenAudit: () => void;
 };
 
-export function OrganizationDetail({
-  orgId,
-  onBack,
-  onOpenSubscriptions,
-  onOpenAssignPlan,
-  onOpenAudit,
-}: OrganizationDetailProps) {
+export function OrganizationDetail({ orgId, onBack, onOpenAudit }: OrganizationDetailProps) {
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = readOrgDetailTab(`?${searchParams.toString()}`);
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
@@ -112,22 +106,24 @@ export function OrganizationDetail({
         { label: "Produits", count: totals?.products ?? 0 },
         { label: "Commandes", count: totals?.orders ?? 0 },
         { label: "Factures", count: totals?.invoices ?? 0 },
-        { label: "Utilisateurs", count: totals?.users ?? users.length },
       ].filter((i) => i.count > 0),
-    [totals, users.length],
+    [totals],
   );
 
   const seatsUsed = orgMeta?.seats_used ?? users.length;
   const seatsIncluded = orgMeta?.seats_included ?? 0;
+  const additionalSeats = orgMeta?.additional_seats ?? 0;
+  const seatsTotal = orgMeta?.seats_total ?? (seatsIncluded > 0 ? seatsIncluded + additionalSeats : 0);
   const seatPct =
-    seatsIncluded > 0 ? Math.min(100, Math.round((seatsUsed / seatsIncluded) * 100)) : null;
+    seatsTotal > 0 ? Math.min(100, Math.round((seatsUsed / seatsTotal) * 100)) : null;
+  const modulesCount = orgMeta?.enabled_modules?.length ?? orgMeta?.active_modules_count ?? 0;
 
   const tabCounts = useMemo(
     () => ({
-      subscriptions: subs?.results?.length ?? 0,
+      subscriptions: orgMeta?.plan_code ? 1 : 0,
       team: users.length,
     }),
-    [subs?.results?.length, users.length],
+    [orgMeta?.plan_code, users.length],
   );
 
   if (isRelatedLoading || isSubsLoading || isMetaLoading) {
@@ -149,6 +145,12 @@ export function OrganizationDetail({
     orgMeta?.status === "trial" ? "Essai" : org.is_active ? "Actif" : "Suspendu";
   const ownerEmail =
     owner?.email ?? users.find((u) => u.is_owner)?.email ?? users[0]?.email ?? org.email ?? "";
+  const logoUrl = resolveMediaUrl(org.logo_url);
+
+  const openAssignPlan = () => {
+    assignPlanMutation.reset();
+    setIsPlanModalOpen(true);
+  };
 
   return (
     <div className="grid animate-in fade-in slide-in-from-bottom-4 gap-6 duration-500">
@@ -158,11 +160,7 @@ export function OrganizationDetail({
             <ArrowLeft size={20} />
           </button>
           <div className="flex min-w-0 flex-1 items-center gap-4">
-            <div className="h-14 w-14 shrink-0 rounded-2xl bg-gradient-to-tr from-brand-purple-600 to-brand-magenta-500 p-0.5 shadow-lg">
-              <div className="flex h-full w-full items-center justify-center rounded-[calc(1rem-2px)] bg-white dark:bg-slate-900">
-                <Building2 size={26} className="text-brand-purple-600" />
-              </div>
-            </div>
+            <OrgAvatar name={org.name} logoUrl={logoUrl} />
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="m-0 truncate text-2xl font-bold text-slate-900 dark:text-slate-100">{org.name}</h1>
@@ -197,15 +195,18 @@ export function OrganizationDetail({
         </div>
 
         <div className="mt-5 flex flex-wrap gap-2 border-t border-slate-100 pt-4 dark:border-slate-800">
-          <QuickAction icon={<WalletCards size={15} />} label="Abonnements" onClick={onOpenSubscriptions} />
-          <QuickAction icon={<Plus size={15} />} label="Assigner un plan" onClick={onOpenAssignPlan} />
+          <QuickAction icon={<Plus size={15} />} label="Assigner un plan" onClick={openAssignPlan} />
           <QuickAction
             icon={org.is_active ? <ShieldAlert size={15} /> : <CheckCircle2 size={15} />}
             label={org.is_active ? "Suspendre" : "Réactiver"}
+            title={
+              org.is_active
+                ? "Désactive l'accès à l'organisation (connexion bloquée). Ne résilie pas le plan ni les modules."
+                : "Réactive l'accès à l'organisation."
+            }
             onClick={() => mut.mutate({ id: org.id, is_active: !org.is_active })}
             variant={org.is_active ? "danger" : "success"}
           />
-          <QuickAction icon={<Receipt size={15} />} label="Facturation Business" onClick={() => setActiveTab("billing")} />
           <QuickAction icon={<History size={15} />} label="Journaux d'audit" onClick={onOpenAudit} />
         </div>
 
@@ -218,24 +219,33 @@ export function OrganizationDetail({
           planLabel={planLabel}
           totals={totals}
           usersCount={users.length}
-          subsCount={subs?.results?.length ?? 0}
+          modulesCount={modulesCount}
+          seatsUsed={seatsUsed}
+          seatsTotal={seatsTotal}
+          seatsIncluded={seatsIncluded}
+          additionalSeats={additionalSeats}
+          seatPct={seatPct}
           orders={orders}
           invoices={invoices}
           usageChart={usageChart}
           onOpenTeam={() => setActiveTab("team")}
           onOpenBilling={() => setActiveTab("billing")}
+          onOpenSubscription={() => setActiveTab("subscriptions")}
         />
       ) : null}
 
       {activeTab === "subscriptions" ? (
-        <SubscriptionsPanel
+        <SubscriptionPanel
           orgMeta={orgMeta}
           orgName={org.name}
           seatPct={seatPct}
           seatsUsed={seatsUsed}
+          seatsTotal={seatsTotal}
           seatsIncluded={seatsIncluded}
+          additionalSeats={additionalSeats}
           subs={subs?.results ?? []}
-          onAssignPlan={() => setIsPlanModalOpen(true)}
+          onAssignPlan={openAssignPlan}
+          onOpenBilling={() => setActiveTab("billing")}
         />
       ) : null}
 
@@ -255,14 +265,41 @@ export function OrganizationDetail({
       {activeTab === "deployment" ? <OrgDedicatedInstancePanel orgId={orgId} /> : null}
 
       {isPlanModalOpen ? (
-        <PlanModal
+        <OrgAssignPlanModal
           orgName={org.name}
+          currentPlanCode={orgMeta?.plan_code}
           plans={plans ?? []}
           isPending={assignPlanMutation.isPending}
+          error={assignPlanMutation.isError ? getErrorMessage(assignPlanMutation.error) : undefined}
           onClose={() => setIsPlanModalOpen(false)}
-          onSelect={(planId) => assignPlanMutation.mutate({ plan_id: planId })}
+          onSubmit={(payload) => assignPlanMutation.mutate(payload)}
         />
       ) : null}
+    </div>
+  );
+}
+
+function OrgAvatar({ name, logoUrl }: { name: string; logoUrl: string }) {
+  const [failed, setFailed] = useState(false);
+
+  if (logoUrl && !failed) {
+    return (
+      <div className="h-14 w-14 shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-md dark:border-slate-700 dark:bg-slate-900">
+        <img
+          src={logoUrl}
+          alt={`Logo ${name}`}
+          className="h-full w-full object-contain p-1"
+          onError={() => setFailed(true)}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-14 w-14 shrink-0 rounded-2xl bg-gradient-to-tr from-brand-purple-600 to-brand-magenta-500 p-0.5 shadow-lg">
+      <div className="flex h-full w-full items-center justify-center rounded-[calc(1rem-2px)] bg-white dark:bg-slate-900">
+        <Building2 size={26} className="text-brand-purple-600" />
+      </div>
     </div>
   );
 }
@@ -272,12 +309,18 @@ function OverviewPanel({
   planLabel,
   totals,
   usersCount,
-  subsCount,
+  modulesCount,
+  seatsUsed,
+  seatsTotal,
+  seatsIncluded,
+  additionalSeats,
+  seatPct,
   orders,
   invoices,
   usageChart,
   onOpenTeam,
   onOpenBilling,
+  onOpenSubscription,
 }: {
   orgMeta?: OrgMeta;
   planLabel: string;
@@ -289,32 +332,94 @@ function OverviewPanel({
     users?: number;
   };
   usersCount: number;
-  subsCount: number;
+  modulesCount: number;
+  seatsUsed: number;
+  seatsTotal: number;
+  seatsIncluded: number;
+  additionalSeats: number;
+  seatPct: number | null;
   orders: { id: string; order_number?: string; status?: string }[];
   invoices: { id: string; invoice_number?: string; total?: string; status?: string }[];
   usageChart: { label: string; count: number }[];
   onOpenTeam: () => void;
   onOpenBilling: () => void;
+  onOpenSubscription: () => void;
 }) {
   const t = totals;
+  const period = planPeriodProgress(orgMeta?.plan_starts_at, orgMeta?.plan_expires_at);
 
   return (
     <>
       <div className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-3">
         <KpiCard label="Utilisateurs" value={t?.users ?? usersCount} icon={<Users size={18} />} accent="purple" />
+        <KpiCard
+          label="Sièges"
+          value={seatsTotal > 0 ? `${seatsUsed} / ${seatsTotal}` : seatsUsed}
+          hint={
+            seatsTotal > 0
+              ? `${seatPct ?? 0} % utilisés${additionalSeats ? ` · +${additionalSeats} add-on` : ""}`
+              : "Capacité non définie"
+          }
+          icon={<Users size={18} />}
+          accent={seatPct != null && seatPct >= 90 ? "rose" : "blue"}
+        />
         <KpiCard label="Clients CRM" value={t?.customers ?? 0} icon={<Users size={18} />} accent="blue" />
         <KpiCard label="Commandes" value={t?.orders ?? 0} icon={<ShoppingCart size={18} />} accent="emerald" />
         <KpiCard label="Factures" value={t?.invoices ?? 0} icon={<FileText size={18} />} accent="amber" />
-        <KpiCard label="Modules actifs" value={orgMeta?.active_modules_count ?? subsCount} icon={<Zap size={18} />} accent="purple" />
-        <KpiCard label="Plan" value={planLabel} hint={orgMeta?.plan_code ? undefined : "Aucun plan"} icon={<WalletCards size={18} />} accent="slate" />
+        <KpiCard label="Modules actifs" value={modulesCount} icon={<Zap size={18} />} accent="purple" />
+        <KpiCard label="Plan" value={planLabel} hint={orgMeta?.plan_code ? undefined : "Aucun plan"} icon={<Settings2 size={18} />} accent="slate" />
       </div>
+
+      {orgMeta?.plan_code ? (
+        <section className="rounded-2xl border border-border-soft bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h3 className="m-0 flex items-center gap-2 text-xs font-bold tracking-wider text-slate-500 uppercase">
+                <CalendarDays size={14} /> Abonnement
+              </h3>
+              <p className="m-0 mt-2 text-sm text-slate-700 dark:text-slate-300">
+                <strong>{orgMeta.plan_name ?? orgMeta.plan_code}</strong>
+                {orgMeta.plan_billing_cycle ? ` · ${orgMeta.plan_billing_cycle === "yearly" ? "Annuel" : "Mensuel"}` : ""}
+                {period ? (
+                  <span className="text-slate-500">
+                    {" "}
+                    — {period.daysElapsed} j consommés · {period.daysRemaining} j restants
+                  </span>
+                ) : null}
+              </p>
+            </div>
+            <button type="button" className="btn-secondary text-xs" onClick={onOpenSubscription}>
+              Voir le détail
+            </button>
+          </div>
+          {period ? (
+            <div className="mt-4">
+              <div className="mb-1 flex justify-between text-xs text-slate-500">
+                <span>{formatIsoDate(orgMeta.plan_starts_at ?? undefined)}</span>
+                <span>{formatIsoDate(orgMeta.plan_expires_at ?? undefined)}</span>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                <div
+                  className="h-full rounded-full bg-brand-purple-500 transition-all"
+                  style={{ width: `${period.elapsedPct}%` }}
+                />
+              </div>
+            </div>
+          ) : null}
+        </section>
+      ) : null}
 
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="rounded-2xl border border-border-soft bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <h3 className="mb-4 flex items-center gap-2 text-xs font-bold tracking-wider text-slate-500 uppercase">
+          <h3 className="mb-1 flex items-center gap-2 text-xs font-bold tracking-wider text-slate-500 uppercase">
             <BarChart3 size={14} /> Volume métier
           </h3>
-          {usageChart.length ? <DistributionBars items={usageChart} /> : (
+          <p className="mb-4 text-[11px] text-slate-400">
+            Répartition relative des enregistrements (pas l&apos;occupation des sièges).
+          </p>
+          {usageChart.length ? (
+            <DistributionBars items={usageChart} />
+          ) : (
             <p className="py-6 text-center text-xs text-slate-400">Pas encore de données métier.</p>
           )}
         </section>
@@ -329,6 +434,25 @@ function OverviewPanel({
             <StatTile label="Commandes" value={t?.orders ?? 0} />
             <StatTile label="Factures" value={t?.invoices ?? 0} />
           </div>
+          {seatPct != null ? (
+            <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/50">
+              <div className="mb-1 flex justify-between text-xs">
+                <span className="font-medium text-slate-600 dark:text-slate-300">Sièges utilisés</span>
+                <span className="font-bold tabular-nums text-slate-800 dark:text-slate-200">
+                  {seatsUsed} / {seatsTotal}
+                  {additionalSeats ? ` (${seatsIncluded} + ${additionalSeats})` : ""}
+                </span>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+                <div
+                  className={`h-full rounded-full ${
+                    seatPct >= 90 ? "bg-rose-500" : seatPct >= 70 ? "bg-amber-500" : "bg-emerald-500"
+                  }`}
+                  style={{ width: `${seatPct}%` }}
+                />
+              </div>
+            </div>
+          ) : null}
           <button type="button" className="btn-secondary mt-4 w-full text-xs" onClick={onOpenTeam}>
             Voir l&apos;équipe ({usersCount})
           </button>
@@ -350,7 +474,7 @@ function OverviewPanel({
           title="Factures récentes"
           icon={<FileText size={14} />}
           empty="Aucune facture."
-          linkLabel="Facturation Business"
+          linkLabel="Facturation"
           onLink={onOpenBilling}
           items={invoices.slice(0, 5).map((inv) => ({
             id: inv.id,
@@ -363,35 +487,28 @@ function OverviewPanel({
   );
 }
 
-const MODULE_LABELS: Record<string, string> = {
-  crm: "CRM & ventes",
-  billing: "Facturation",
-  inventory: "Inventaire",
-  projects: "Projets",
-  support: "Support",
-  hr: "RH & paie",
-  accounting: "Comptabilité",
-  marketing: "Marketing",
-  pos: "Point de vente",
-  ecommerce: "E-commerce",
-};
-
-function SubscriptionsPanel({
+function SubscriptionPanel({
   orgMeta,
   orgName,
   seatPct,
   seatsUsed,
+  seatsTotal,
   seatsIncluded,
+  additionalSeats,
   subs,
   onAssignPlan,
+  onOpenBilling,
 }: {
   orgMeta?: OrgMeta;
   orgName: string;
   seatPct: number | null;
   seatsUsed: number;
+  seatsTotal: number;
   seatsIncluded: number;
+  additionalSeats: number;
   subs: { id: string; status: string; ends_at?: string | null; module: { name: string } }[];
   onAssignPlan: () => void;
+  onOpenBilling: () => void;
 }) {
   const moduleRows = useMemo(() => {
     if (orgMeta?.enabled_modules?.length) {
@@ -405,68 +522,167 @@ function SubscriptionsPanel({
     return subs;
   }, [orgMeta, subs]);
 
+  const period = planPeriodProgress(orgMeta?.plan_starts_at, orgMeta?.plan_expires_at);
+  const isBusiness = orgMeta?.plan_code === "business";
+
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(280px,360px)_1fr]">
-      <section className="rounded-2xl border border-border-soft bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <h3 className="mb-4 flex items-center gap-2 text-xs font-bold tracking-wider text-slate-500 uppercase">
-          <Settings2 size={14} /> Plan & sièges
-        </h3>
-        <p className="m-0 mb-3 text-sm text-slate-700 dark:text-slate-300">
-          Plan actuel : <strong>{orgMeta?.plan_code ?? "Aucun"}</strong>
-          {orgMeta?.plan_name ? ` (${orgMeta.plan_name})` : ""}
-        </p>
-        {seatPct != null ? (
-          <div className="mb-4">
-            <div className="mb-1 flex justify-between text-xs">
-              <span className="text-slate-500">Sièges utilisés</span>
-              <span className="font-bold text-slate-800 dark:text-slate-200">
-                {seatsUsed} / {seatsIncluded}
-                {orgMeta?.additional_seats ? ` (+${orgMeta.additional_seats})` : ""}
-              </span>
+    <div className="grid gap-6 lg:grid-cols-[minmax(300px,380px)_1fr]">
+      <div className="grid gap-4">
+        <section className="rounded-2xl border border-border-soft bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <h3 className="mb-4 flex items-center gap-2 text-xs font-bold tracking-wider text-slate-500 uppercase">
+            <Settings2 size={14} /> Plan & sièges
+          </h3>
+          <div className="mb-4 rounded-xl bg-gradient-to-br from-brand-purple-50 to-white p-4 dark:from-brand-purple-950/30 dark:to-slate-900">
+            <p className="m-0 text-[10px] font-bold uppercase tracking-wider text-slate-400">Plan actuel</p>
+            <p className="m-0 mt-1 text-lg font-bold text-slate-900 dark:text-slate-100">
+              {orgMeta?.plan_code ?? "Aucun"}
+              {orgMeta?.plan_name ? (
+                <span className="ml-1 text-sm font-medium text-slate-500">({orgMeta.plan_name})</span>
+              ) : null}
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <StatusPill label={orgMeta?.plan_status ?? orgMeta?.status ?? "—"} />
+              {orgMeta?.plan_billing_cycle ? (
+                <StatusPill label={orgMeta.plan_billing_cycle === "yearly" ? "Annuel" : "Mensuel"} muted />
+              ) : null}
             </div>
-            <div className="h-2.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-              <div
-                className={`h-full rounded-full transition-all ${
-                  seatPct >= 90 ? "bg-rose-500" : seatPct >= 70 ? "bg-amber-500" : "bg-emerald-500"
-                }`}
-                style={{ width: `${seatPct}%` }}
-              />
-            </div>
-            <p className="mt-1 text-[11px] text-slate-500">{seatPct} % de capacité</p>
           </div>
-        ) : (
-          <p className="mb-4 text-xs text-slate-400">Capacité sièges non configurée.</p>
-        )}
-        <button type="button" className="btn-magenta w-full text-xs" onClick={onAssignPlan}>
-          <Plus size={14} className="mr-1 inline" /> Assigner un plan
-        </button>
-      </section>
+
+          {period ? (
+            <div className="mb-4">
+              <div className="mb-2 flex items-center justify-between text-xs">
+                <span className="font-medium text-slate-600 dark:text-slate-300">Période d&apos;abonnement</span>
+                <span className="tabular-nums text-slate-500">
+                  {period.daysElapsed} j / {period.daysTotal} j
+                </span>
+              </div>
+              <div className="h-2.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                <div
+                  className="h-full rounded-full bg-brand-purple-500 transition-all"
+                  style={{ width: `${period.elapsedPct}%` }}
+                />
+              </div>
+              <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+                <div className="rounded-lg bg-slate-50 p-2 dark:bg-slate-800/50">
+                  <p className="m-0 text-[10px] uppercase text-slate-400">Consommé</p>
+                  <p className="m-0 font-bold text-slate-800 dark:text-slate-200">{period.daysElapsed} j</p>
+                  <p className="m-0 text-[10px] text-slate-500">{formatIsoDate(orgMeta?.plan_starts_at ?? undefined)}</p>
+                </div>
+                <div className="rounded-lg bg-slate-50 p-2 dark:bg-slate-800/50">
+                  <p className="m-0 text-[10px] uppercase text-slate-400">Restant</p>
+                  <p className="m-0 font-bold text-slate-800 dark:text-slate-200">{period.daysRemaining} j</p>
+                  <p className="m-0 text-[10px] text-slate-500">{formatIsoDate(orgMeta?.plan_expires_at ?? undefined)}</p>
+                </div>
+              </div>
+            </div>
+          ) : orgMeta?.plan_expires_at ? (
+            <p className="mb-4 text-xs text-slate-500">
+              Expire le {formatIsoDate(orgMeta.plan_expires_at)}
+            </p>
+          ) : null}
+
+          {seatPct != null ? (
+            <div className="mb-4">
+              <div className="mb-1 flex justify-between text-xs">
+                <span className="text-slate-500">Sièges utilisés</span>
+                <span className="font-bold text-slate-800 dark:text-slate-200">
+                  {seatsUsed} / {seatsTotal}
+                  {additionalSeats ? ` (${seatsIncluded} inclus + ${additionalSeats} add-on)` : ""}
+                </span>
+              </div>
+              <div className="h-2.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                <div
+                  className={`h-full rounded-full transition-all ${
+                    seatPct >= 90 ? "bg-rose-500" : seatPct >= 70 ? "bg-amber-500" : "bg-emerald-500"
+                  }`}
+                  style={{ width: `${seatPct}%` }}
+                />
+              </div>
+              <p className="mt-1 text-[11px] text-slate-500">{seatPct} % de la capacité</p>
+            </div>
+          ) : (
+            <p className="mb-4 text-xs text-slate-400">Capacité sièges non configurée.</p>
+          )}
+
+          <button type="button" className="btn-magenta mb-3 w-full text-xs" onClick={onAssignPlan}>
+            <Plus size={14} className="mr-1 inline" /> Assigner / migrer un plan
+          </button>
+
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-800/40 dark:text-slate-300">
+            <p className="m-0 flex items-start gap-2">
+              <Info size={14} className="mt-0.5 shrink-0 text-brand-purple-500" />
+              <span>
+                <strong>Starter / Pro</strong> : migration manuelle via ce formulaire (audit obligatoire).
+                <br />
+                <strong>Business</strong> : activation et renouvellement via facture + paiement (onglet Facturation).
+                Une nouvelle facture payée prolonge la période et met à jour sièges / add-ons.
+              </span>
+            </p>
+            {isBusiness ? (
+              <button type="button" className="btn-secondary mt-3 w-full text-[11px]" onClick={onOpenBilling}>
+                Émettre une facture Business
+              </button>
+            ) : null}
+          </div>
+        </section>
+      </div>
 
       <section className="rounded-2xl border border-border-soft bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <div className="border-b border-slate-100 px-5 py-4 dark:border-slate-800">
           <h3 className="m-0 text-xs font-bold tracking-wider text-slate-500 uppercase">
-            Modules souscrits — {orgName}
+            Modules inclus — {orgName}
           </h3>
+          <p className="m-0 mt-1 text-[11px] text-slate-400">
+            {moduleRows.length} module{moduleRows.length > 1 ? "s" : ""} actif{moduleRows.length > 1 ? "s" : ""} sur le plan{" "}
+            {orgMeta?.plan_code ?? "—"}
+          </p>
         </div>
-        <div className="divide-y divide-slate-100 dark:divide-slate-800">
+        <div className="grid gap-3 p-4 sm:grid-cols-2">
           {moduleRows.length ? (
             moduleRows.map((sub) => (
-              <div key={sub.id} className="flex items-center justify-between px-5 py-4">
-                <div>
+              <article
+                key={sub.id}
+                className="rounded-xl border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-700 dark:bg-slate-800/40"
+              >
+                <div className="flex items-start justify-between gap-2">
                   <p className="m-0 text-sm font-semibold text-slate-900 dark:text-slate-100">{sub.module.name}</p>
-                  <p className="m-0 text-[10px] font-bold uppercase text-slate-400">{sub.status}</p>
+                  <StatusPill label={sub.status} />
                 </div>
                 {sub.ends_at ? (
-                  <span className="text-xs text-slate-500">Expire {formatIsoDate(sub.ends_at)}</span>
+                  <p className="m-0 mt-2 text-[11px] text-slate-500">
+                    Valide jusqu&apos;au {formatIsoDate(sub.ends_at)}
+                  </p>
                 ) : null}
-              </div>
+              </article>
             ))
           ) : (
-            <p className="px-5 py-10 text-center text-sm text-slate-400 italic">Aucun module souscrit.</p>
+            <p className="col-span-full px-1 py-10 text-center text-sm text-slate-400 italic">Aucun module actif.</p>
           )}
         </div>
       </section>
     </div>
+  );
+}
+
+function StatusPill({ label, muted }: { label: string; muted?: boolean }) {
+  const normalized = label.toLowerCase();
+  const active = normalized === "active" || normalized === "actif";
+  const trial = normalized === "trial" || normalized === "essai";
+
+  return (
+    <span
+      className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
+        muted
+          ? "bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300"
+          : active
+            ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300"
+            : trial
+              ? "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
+              : "bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300"
+      }`}
+    >
+      {label}
+    </span>
   );
 }
 
@@ -510,62 +726,17 @@ function RecentList({
   );
 }
 
-function PlanModal({
-  orgName,
-  plans,
-  isPending,
-  onClose,
-  onSelect,
-}: {
-  orgName: string;
-  plans: { id: string; name: string; limits: { included_seats: number }; price_monthly: string | number }[];
-  isPending: boolean;
-  onClose: () => void;
-  onSelect: (planId: string) => void;
-}) {
-  return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-slate-900/60 p-4 backdrop-blur-sm">
-      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl border border-border-soft bg-white p-8 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
-        <div className="mb-6 flex items-start justify-between gap-4">
-          <div>
-            <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100">Assigner un plan</h3>
-            <p className="text-sm text-slate-500">Offre pour {orgName}</p>
-          </div>
-          <button type="button" onClick={onClose} className="btn-ghost h-9 w-9 p-0">
-            ×
-          </button>
-        </div>
-        <div className="grid gap-3">
-          {plans.map((plan) => (
-            <button
-              key={plan.id}
-              type="button"
-              onClick={() => onSelect(plan.id)}
-              disabled={isPending}
-              className="flex items-center justify-between rounded-xl border border-slate-200 p-4 text-left transition hover:border-brand-purple-400 hover:bg-brand-purple-50/50 dark:border-slate-700 dark:hover:bg-brand-purple-900/10"
-            >
-              <div>
-                <h4 className="font-bold text-slate-900 dark:text-slate-100">{plan.name}</h4>
-                <p className="text-xs text-slate-500">{plan.limits.included_seats} sièges inclus</p>
-              </div>
-              <p className="text-lg font-bold text-brand-purple-600">{formatMoneyFromApi(plan.price_monthly)}</p>
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function QuickAction({
   icon,
   label,
   onClick,
+  title,
   variant = "default",
 }: {
   icon: ReactNode;
   label: string;
   onClick: () => void;
+  title?: string;
   variant?: "default" | "danger" | "success";
 }) {
   const styles = {
@@ -574,7 +745,12 @@ function QuickAction({
     success: "btn-secondary text-emerald-600 hover:text-emerald-700 dark:text-emerald-400",
   };
   return (
-    <button type="button" className={`inline-flex items-center gap-1.5 px-3 py-2 text-xs ${styles[variant]}`} onClick={onClick}>
+    <button
+      type="button"
+      title={title}
+      className={`inline-flex items-center gap-1.5 px-3 py-2 text-xs ${styles[variant]}`}
+      onClick={onClick}
+    >
       {icon}
       {label}
     </button>
@@ -583,7 +759,7 @@ function QuickAction({
 
 function StatTile({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-xl bg-slate-50 p-3 text-center dark:bg-slate-800/50">
+    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-center dark:border-slate-700 dark:bg-slate-800/50">
       <p className="m-0 text-2xl font-bold tabular-nums text-slate-900 dark:text-slate-100">{value}</p>
       <p className="m-0 mt-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">{label}</p>
     </div>

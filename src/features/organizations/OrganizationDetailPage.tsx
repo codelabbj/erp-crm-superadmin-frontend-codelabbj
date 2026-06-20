@@ -1,9 +1,6 @@
 import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { OrganizationDetail } from "./OrganizationDetail";
-import {
-  orgAuditLogsPath,
-  orgSubscriptionsPath,
-} from "@/lib/orgNavigation";
+import { orgAuditLogsPath } from "@/lib/orgNavigation";
 
 export function OrganizationDetailPage() {
   const { orgId } = useParams<{ orgId: string }>();
@@ -15,8 +12,6 @@ export function OrganizationDetailPage() {
     <OrganizationDetail
       orgId={orgId}
       onBack={() => navigate("/organizations")}
-      onOpenSubscriptions={() => navigate(orgSubscriptionsPath(orgId))}
-      onOpenAssignPlan={() => navigate(orgSubscriptionsPath(orgId, "assign-plan"))}
       onOpenAudit={() => navigate(orgAuditLogsPath(orgId))}
     />
   );

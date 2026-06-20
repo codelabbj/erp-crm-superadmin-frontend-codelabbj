@@ -16,7 +16,7 @@ export const ORG_DETAIL_TABS: {
   icon: LucideIcon;
 }[] = [
   { id: "overview", label: "Aperçu", shortLabel: "Aperçu", icon: LayoutDashboard },
-  { id: "subscriptions", label: "Abonnements", shortLabel: "Abonn.", icon: WalletCards },
+  { id: "subscriptions", label: "Abonnement", shortLabel: "Abonn.", icon: WalletCards },
   { id: "team", label: "Équipe & propriétaire", shortLabel: "Équipe", icon: Users },
   { id: "billing", label: "Facturation", shortLabel: "Factures", icon: Receipt },
   { id: "deployment", label: "Déploiement", shortLabel: "Déploi.", icon: Server },
