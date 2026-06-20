@@ -19,13 +19,15 @@ import {
   Package,
   BarChart3,
   CalendarDays,
+  CalendarPlus,
   Info,
 } from "lucide-react";
-import { adminApi, type AssignPlanPayload, type OrganizationDetail as OrgMeta } from "../../lib/adminApi";
+import { adminApi, type AssignPlanPayload, type ExtendPlanPayload, type OrganizationDetail as OrgMeta } from "../../lib/adminApi";
 import { formatIsoDate } from "../../lib/ui";
 import { formatMoneyFromApi } from "@/lib/money";
 import { KpiCard, DistributionBars } from "@/features/dashboard/components/DashboardWidgets";
 import { OrgAssignPlanModal } from "@/features/organizations/components/OrgAssignPlanModal";
+import { OrgExtendPlanModal } from "@/features/organizations/components/OrgExtendPlanModal";
 import { OrgBusinessInvoicesPanel } from "@/features/organizations/components/OrgBusinessInvoicesPanel";
 import { OrgBusinessPlanRequestsPanel } from "@/features/organizations/components/OrgBusinessPlanRequestsPanel";
 import { OrgDedicatedInstancePanel } from "@/features/organizations/components/OrgDedicatedInstancePanel";
@@ -44,6 +46,7 @@ export function OrganizationDetail({ orgId, onBack, onOpenAudit }: OrganizationD
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = readOrgDetailTab(`?${searchParams.toString()}`);
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
+  const [isExtendModalOpen, setIsExtendModalOpen] = useState(false);
   const queryClient = useQueryClient();
 
   const setActiveTab = (tab: OrgDetailTab) => {
@@ -81,6 +84,16 @@ export function OrganizationDetail({ orgId, onBack, onOpenAudit }: OrganizationD
       queryClient.invalidateQueries({ queryKey: ["org-subs", orgId] });
       queryClient.invalidateQueries({ queryKey: ["org-detail", orgId] });
       setIsPlanModalOpen(false);
+    },
+  });
+
+  const extendPlanMutation = useMutation({
+    mutationFn: (payload: ExtendPlanPayload) => adminApi.extendOrganizationPlan(orgId, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["org-related", orgId] });
+      queryClient.invalidateQueries({ queryKey: ["org-subs", orgId] });
+      queryClient.invalidateQueries({ queryKey: ["org-detail", orgId] });
+      setIsExtendModalOpen(false);
     },
   });
 
@@ -245,6 +258,7 @@ export function OrganizationDetail({ orgId, onBack, onOpenAudit }: OrganizationD
           additionalSeats={additionalSeats}
           subs={subs?.results ?? []}
           onAssignPlan={openAssignPlan}
+          onExtendPlan={() => setIsExtendModalOpen(true)}
           onOpenBilling={() => setActiveTab("billing")}
         />
       ) : null}
@@ -263,6 +277,17 @@ export function OrganizationDetail({ orgId, onBack, onOpenAudit }: OrganizationD
       ) : null}
 
       {activeTab === "deployment" ? <OrgDedicatedInstancePanel orgId={orgId} /> : null}
+
+      {isExtendModalOpen && orgMeta?.plan_code ? (
+        <OrgExtendPlanModal
+          orgName={org.name}
+          planCode={orgMeta.plan_code}
+          currentExpiresAt={orgMeta.plan_expires_at}
+          isPending={extendPlanMutation.isPending}
+          onClose={() => setIsExtendModalOpen(false)}
+          onSubmit={(payload) => extendPlanMutation.mutateAsync(payload)}
+        />
+      ) : null}
 
       {isPlanModalOpen ? (
         <OrgAssignPlanModal
@@ -496,6 +521,7 @@ function SubscriptionPanel({
   additionalSeats,
   subs,
   onAssignPlan,
+  onExtendPlan,
   onOpenBilling,
 }: {
   orgMeta?: OrgMeta;
@@ -507,6 +533,7 @@ function SubscriptionPanel({
   additionalSeats: number;
   subs: { id: string; status: string; ends_at?: string | null; module: { name: string } }[];
   onAssignPlan: () => void;
+  onExtendPlan: () => void;
   onOpenBilling: () => void;
 }) {
   const moduleRows = useMemo(() => {
@@ -603,9 +630,15 @@ function SubscriptionPanel({
             <p className="mb-4 text-xs text-slate-400">Capacité sièges non configurée.</p>
           )}
 
-          <button type="button" className="btn-magenta mb-3 w-full text-xs" onClick={onAssignPlan}>
+          <button type="button" className="btn-magenta mb-2 w-full text-xs" onClick={onAssignPlan}>
             <Plus size={14} className="mr-1 inline" /> Assigner / migrer un plan
           </button>
+
+          {orgMeta?.plan_code ? (
+            <button type="button" className="btn-secondary mb-3 w-full text-xs" onClick={onExtendPlan}>
+              <CalendarPlus size={14} className="mr-1 inline" /> Prolonger la durée
+            </button>
+          ) : null}
 
           <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-800/40 dark:text-slate-300">
             <p className="m-0 flex items-start gap-2">

@@ -278,6 +278,12 @@ export type PlanDowngradeSelection = {
   is_downgrade?: boolean;
 };
 
+export type ExtendPlanPayload = {
+  admin_notes: string;
+  extend_days?: number;
+  new_end_date?: string;
+};
+
 export type AssignPlanPayload = {
   plan_id: string;
   admin_notes: string;
@@ -662,6 +668,8 @@ export const adminApi = {
   },
   assignPlanToOrganization: async (id: string, payload: AssignPlanPayload) =>
     (await api.post(`/api/admin/organizations/${id}/assign-plan/`, payload)).data,
+  extendOrganizationPlan: async (id: string, payload: ExtendPlanPayload) =>
+    (await api.post(`/api/admin/organizations/${id}/extend-plan/`, payload)).data,
   addSeatsToOrganization: async (id: string, payload: AddSeatsPayload) =>
     (await api.post(`/api/admin/organizations/${id}/add-seats/`, payload)).data,
 
