@@ -107,8 +107,9 @@ export interface PlatformPlan {
   description?: string;
   price_monthly: string | number;
   price_yearly: string | number;
+  trial_days?: number;
   limits: PlatformPlanLimits;
-  enabled_modules: string[];
+  enabled_modules: (string | { code: string; name?: string })[];
   is_active: boolean;
   created_at?: string;
   updated_at?: string;
@@ -120,6 +121,7 @@ export type PlatformPlanUpsert = {
   description?: string;
   price_monthly: string | number;
   price_yearly: string | number;
+  trial_days?: number;
   limits: PlatformPlanLimits;
   enabled_modules: string[];
   is_active?: boolean;
@@ -636,7 +638,10 @@ export type AdminModulePatchPayload = Partial<
 export const adminApi = {
   overview: async () => (await api.get<AdminOverview>("/api/admin/overview/")).data,
 
-  licensingPlans: async () => (await api.get<PlatformPlan[]>("/api/licensing/plans/")).data,
+  licensingPlans: async () => {
+    const { data } = await api.get<PlatformPlan[] | { results?: PlatformPlan[] }>("/api/licensing/plans/");
+    return Array.isArray(data) ? data : (data.results ?? []);
+  },
   createLicensingPlan: async (payload: PlatformPlanUpsert) =>
     (await api.post<PlatformPlan>("/api/licensing/plans/", payload)).data,
   updateLicensingPlan: async (id: string, payload: PlatformPlanUpsert) =>

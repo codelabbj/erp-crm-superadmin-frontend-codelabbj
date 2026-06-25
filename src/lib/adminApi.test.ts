@@ -20,6 +20,7 @@ const planUpsert = {
   description: "",
   price_monthly: 1,
   price_yearly: 10,
+  trial_days: 7,
   limits: { included_seats: 1, max_users_hard: 2, additional_seats_allowed: false },
   enabled_modules: [] as string[],
 };

@@ -8,6 +8,27 @@ import { Pagination } from "@/components/ui/Pagination";
 import { useDebouncedValue, usePaginationState } from "@/hooks/useListState";
 import { clientPageSlice } from "@/lib/pagination";
 
+type EnabledModuleRef = string | { code?: string | null };
+
+function normalizeEnabledModuleCodes(modules: EnabledModuleRef[] | undefined): string[] {
+  if (!modules?.length) return [];
+  const codes: string[] = [];
+  const seen = new Set<string>();
+  for (const item of modules) {
+    const code = typeof item === "string" ? item : item?.code;
+    if (typeof code === "string" && code && !seen.has(code)) {
+      seen.add(code);
+      codes.push(code);
+    }
+  }
+  return codes;
+}
+
+function formatEnabledModulesLabel(modules: EnabledModuleRef[] | undefined): string {
+  const codes = normalizeEnabledModuleCodes(modules);
+  return codes.length ? codes.join(", ") : "—";
+}
+
 type PlanFormState = {
   name: string;
   code: string;
@@ -19,6 +40,8 @@ type PlanFormState = {
   additional_seats_allowed: boolean;
   enabled_modules: string[];
   is_active: boolean;
+  trial_enabled: boolean;
+  trial_days: string;
 };
 
 const emptyForm: PlanFormState = {
@@ -32,9 +55,20 @@ const emptyForm: PlanFormState = {
   additional_seats_allowed: false,
   enabled_modules: [],
   is_active: true,
+  trial_enabled: true,
+  trial_days: "7",
 };
 
+function resolveTrialDays(form: PlanFormState): number {
+  const parsed = Number(form.trial_days);
+  if (!form.trial_enabled) return 0;
+  if (!Number.isFinite(parsed) || parsed <= 0) return 0;
+  return Math.floor(parsed);
+}
+
 function toFormState(plan: PlatformPlan): PlanFormState {
+  const trialDays = plan.trial_days ?? 0;
+  const trialEnabled = trialDays > 0;
   return {
     name: plan.name ?? "",
     code: plan.code ?? "",
@@ -44,18 +78,22 @@ function toFormState(plan: PlatformPlan): PlanFormState {
     included_seats: String(plan.limits?.included_seats ?? 1),
     max_users_hard: String(plan.limits?.max_users_hard ?? 1),
     additional_seats_allowed: Boolean(plan.limits?.additional_seats_allowed),
-    enabled_modules: plan.enabled_modules ?? [],
+    enabled_modules: normalizeEnabledModuleCodes(plan.enabled_modules),
     is_active: Boolean(plan.is_active),
+    trial_enabled: trialEnabled,
+    trial_days: trialEnabled ? String(trialDays) : "0",
   };
 }
 
 function toPayload(form: PlanFormState): PlatformPlanUpsert {
+  const trialDays = resolveTrialDays(form);
   return {
     name: form.name.trim(),
     code: form.code.trim().toLowerCase(),
     description: form.description.trim(),
     price_monthly: form.price_monthly.trim(),
     price_yearly: form.price_yearly.trim(),
+    trial_days: trialDays,
     limits: {
       included_seats: Number(form.included_seats),
       max_users_hard: Number(form.max_users_hard),
@@ -100,11 +138,17 @@ export function Plans() {
   });
 
   const updateMut = useMutation({
-    mutationFn: (args: { id: string; payload: PlatformPlanUpsert }) => adminApi.updateLicensingPlan(args.id, args.payload),
-    onSuccess: async () => {
+    mutationFn: (args: { id: string; payload: PlatformPlanUpsert }) => adminApi.patchLicensingPlan(args.id, args.payload),
+    onSuccess: async (updatedPlan) => {
       setFeedback("Plan mis a jour.");
       setIsFormOpen(false);
       setEditingPlan(null);
+      qc.setQueryData<PlatformPlan[]>(["platform-plans"], (current) => {
+        if (!current?.length) return current;
+        return current.map((plan) =>
+          plan.id === updatedPlan.id ? { ...plan, ...updatedPlan, trial_days: updatedPlan.trial_days ?? 0 } : plan,
+        );
+      });
       await qc.invalidateQueries({ queryKey: ["platform-plans"] });
     },
     onError: (error) => setFeedback(getErrorMessage(error)),
@@ -219,6 +263,7 @@ export function Plans() {
               <th className="px-2 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Code</th>
               <th className="px-2 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Mensuel</th>
               <th className="px-2 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Annuel</th>
+              <th className="px-2 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Essai</th>
               <th className="px-2 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Sieges inclus</th>
               <th className="px-2 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Sieges max</th>
               <th className="px-2 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Sieges additionnels</th>
@@ -236,10 +281,13 @@ export function Plans() {
                 </td>
                 <td className="px-2 py-2 text-slate-700 dark:text-slate-300">{String(plan.price_monthly)}</td>
                 <td className="px-2 py-2 text-slate-700 dark:text-slate-300">{String(plan.price_yearly)}</td>
+                <td className="px-2 py-2 text-slate-700 dark:text-slate-300">
+                  {(plan.trial_days ?? 0) > 0 ? `${plan.trial_days} j` : "Non"}
+                </td>
                 <td className="px-2 py-2 text-slate-700 dark:text-slate-300">{plan.limits?.included_seats ?? "—"}</td>
                 <td className="px-2 py-2 text-slate-700 dark:text-slate-300">{plan.limits?.max_users_hard ?? "—"}</td>
                 <td className="px-2 py-2 text-slate-700 dark:text-slate-300">{plan.limits?.additional_seats_allowed ? "Oui" : "Non"}</td>
-                <td className="px-2 py-2 text-slate-700 dark:text-slate-300">{(plan.enabled_modules ?? []).join(", ") || "—"}</td>
+                <td className="px-2 py-2 text-slate-700 dark:text-slate-300">{formatEnabledModulesLabel(plan.enabled_modules)}</td>
                 <td className="px-2 py-2">
                   <span
                     className={`rounded-md px-2 py-0.5 text-[11px] font-semibold ${
@@ -322,6 +370,25 @@ export function Plans() {
                 Sieges max (hard) *
                 <input type="number" className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100" value={form.max_users_hard} onChange={(e) => setForm((v) => ({ ...v, max_users_hard: e.target.value }))} />
               </label>
+              <label className="grid gap-1 text-xs text-slate-700 dark:text-slate-300">
+                Jours d&apos;essai
+                <input
+                  type="number"
+                  min={0}
+                  disabled={!form.trial_enabled}
+                  className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                  value={form.trial_days}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    const parsed = Number(value);
+                    setForm((v) => ({
+                      ...v,
+                      trial_days: value,
+                      trial_enabled: Number.isFinite(parsed) && parsed > 0 ? true : false,
+                    }));
+                  }}
+                />
+              </label>
             </div>
 
             <div className="grid gap-2">
@@ -351,6 +418,20 @@ export function Plans() {
             </div>
 
             <div className="flex flex-wrap gap-4">
+              <label className="inline-flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+                <input
+                  type="checkbox"
+                  checked={form.trial_enabled}
+                  onChange={(e) =>
+                    setForm((v) => ({
+                      ...v,
+                      trial_enabled: e.target.checked,
+                      trial_days: e.target.checked ? (Number(v.trial_days) > 0 ? v.trial_days : "7") : "0",
+                    }))
+                  }
+                />
+                Essai gratuit active
+              </label>
               <label className="inline-flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
                 <input
                   type="checkbox"
