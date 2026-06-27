@@ -11,6 +11,7 @@ import { FilterBar, FilterSelect, SearchInput } from "@/components/ui/FilterBar"
 import { Pagination } from "@/components/ui/Pagination";
 import { useDebouncedValue, usePaginationState } from "@/hooks/useListState";
 import { clientPageSlice } from "@/lib/pagination";
+import { useConfirmDialog } from "@/hooks/useConfirmDialog";
 
 type Tab = "orders" | "storefronts" | "analytics";
 
@@ -49,6 +50,7 @@ export function Ecommerce() {
   const [selectedOrder, setSelectedOrder] = useState<EcommerceOrder | null>(null);
   const [orderStatus, setOrderStatus] = useState("");
   const [orderError, setOrderError] = useState("");
+  const { ask, close, renderDialog } = useConfirmDialog();
 
   const { data: ordersData, isLoading: isOrdersLoading } = useQuery({
     queryKey: ["admin-ecommerce-orders"],
@@ -117,6 +119,7 @@ export function Ecommerce() {
       setOrderError("");
     },
     onError: (e: unknown) => setOrderError(getErrorMessage(e)),
+    onSettled: () => close(),
   });
 
   const openOrder = (order: EcommerceOrder) => {
@@ -399,7 +402,16 @@ export function Ecommerce() {
               <button onClick={() => setSelectedOrder(null)} className="btn-secondary px-6">Annuler</button>
               <button
                 disabled={updateMut.isPending}
-                onClick={() => { setOrderError(""); updateMut.mutate({ id: selectedOrder.id, status: orderStatus }); }}
+                onClick={() => {
+                  if (!selectedOrder) return;
+                  setOrderError("");
+                  ask({
+                    description: `Modifier le statut de la commande #${selectedOrder.order_number ?? selectedOrder.id.slice(0, 8)} en « ${orderStatus} » ?`,
+                    danger: orderStatus === "cancelled" || orderStatus === "refunded",
+                    confirmText: "Enregistrer",
+                    action: () => updateMut.mutate({ id: selectedOrder.id, status: orderStatus }),
+                  });
+                }}
                 className="btn-primary px-6"
               >
                 {updateMut.isPending ? "Enregistrement..." : "Enregistrer"}
@@ -408,6 +420,7 @@ export function Ecommerce() {
           </div>
         </div>
       )}
+      {renderDialog(updateMut.isPending)}
     </div>
   );
 }

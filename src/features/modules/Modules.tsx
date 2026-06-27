@@ -7,6 +7,7 @@ import { ListPageShell, PageHeader } from "@/components/ui/PageHeader";
 import { Pagination } from "@/components/ui/Pagination";
 import { useDebouncedValue, usePaginationState } from "@/hooks/useListState";
 import { clientPageSlice } from "@/lib/pagination";
+import { useConfirmDialog } from "@/hooks/useConfirmDialog";
 
 export function Modules() {
   const [filter, setFilter] = useState("");
@@ -14,6 +15,7 @@ export function Modules() {
   const debouncedFilter = useDebouncedValue(filter);
   const { page, setPage, pageSize, resetPage } = usePaginationState(25);
   const [feedback, setFeedback] = useState("");
+  const { ask, close, renderDialog } = useConfirmDialog();
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["modules"],
     queryFn: () => adminApi.modules({ sort: "sort_order" }),
@@ -26,6 +28,9 @@ export function Modules() {
       await qc.invalidateQueries({ queryKey: ["modules"] });
     },
     onError: (e) => setFeedback(getErrorMessage(e)),
+    onSettled: (_data, _error, variables) => {
+      if (variables && typeof variables.is_active === "boolean") close();
+    },
   });
 
   const filteredRows = useMemo(() => {
@@ -146,7 +151,16 @@ export function Modules() {
                   <button
                     type="button"
                     className="btn-secondary px-2 py-1 text-xs"
-                    onClick={() => mut.mutate({ id: m.id, is_active: !m.is_active })}
+                    onClick={() =>
+                      ask({
+                        description: m.is_active
+                          ? `Désactiver le module « ${m.name} » ?`
+                          : `Activer le module « ${m.name} » ?`,
+                        danger: m.is_active,
+                        confirmText: m.is_active ? "Désactiver" : "Activer",
+                        action: () => mut.mutate({ id: m.id, is_active: !m.is_active }),
+                      })
+                    }
                   >
                     {m.is_active ? "Oui" : "Non"}
                   </button>
@@ -157,6 +171,7 @@ export function Modules() {
         </table>
       </div>
       <Pagination page={page} pageSize={pageSize} total={total} onPageChange={setPage} />
+      {renderDialog(mut.isPending)}
     </ListPageShell>
   );
 }

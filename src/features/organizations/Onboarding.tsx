@@ -8,6 +8,7 @@ import { ListPageShell, PageHeader } from "@/components/ui/PageHeader";
 import { Pagination } from "@/components/ui/Pagination";
 import { useDebouncedValue, usePaginationState } from "@/hooks/useListState";
 import { paginatedCount } from "@/lib/pagination";
+import { useConfirmDialog } from "@/hooks/useConfirmDialog";
 
 export function Onboarding() {
   const [q, setQ] = useState("");
@@ -15,6 +16,7 @@ export function Onboarding() {
   const debouncedQ = useDebouncedValue(q);
   const { page, setPage, offset, pageSize, resetPage } = usePaginationState(25);
   const queryClient = useQueryClient();
+  const { ask, close, renderDialog } = useConfirmDialog();
 
   const { data, isLoading } = useQuery({
     queryKey: ["onboarding-jobs", debouncedQ, status, page],
@@ -30,6 +32,7 @@ export function Onboarding() {
   const retryMutation = useMutation({
     mutationFn: (id: string) => adminApi.retryOnboardingJob(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["onboarding-jobs"] }),
+    onSettled: () => close(),
   });
 
   const jobs = (data?.results || []).filter((job) => !status || job.status === status);
@@ -114,7 +117,13 @@ export function Onboarding() {
                   <td className="px-6 py-4 text-right">
                     {job.status === "failed" && (
                       <button
-                        onClick={() => retryMutation.mutate(job.id)}
+                        onClick={() =>
+                          ask({
+                            description: `Relancer le job d'onboarding pour « ${job.tenant_name} » ?`,
+                            confirmText: "Relancer",
+                            action: () => retryMutation.mutate(job.id),
+                          })
+                        }
                         disabled={retryMutation.isPending}
                         className="btn-ghost h-9 w-9 p-0 text-rose-500 hover:text-rose-600 dark:hover:bg-rose-900/20"
                         title="Relancer le job"
@@ -136,6 +145,7 @@ export function Onboarding() {
       {!status ? (
         <Pagination page={page} pageSize={pageSize} total={total} onPageChange={setPage} />
       ) : null}
+      {renderDialog(retryMutation.isPending)}
     </ListPageShell>
   );
 }

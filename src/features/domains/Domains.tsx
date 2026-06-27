@@ -3,6 +3,7 @@ import { Globe, Plus, CheckCircle2, ShieldCheck, AlertCircle, RefreshCw, Search 
 import { useState } from "react";
 import { adminApi, type AdminDomain } from "../../lib/adminApi";
 import { getErrorMessage } from "../../lib/ui";
+import { useConfirmDialog } from "@/hooks/useConfirmDialog";
 
 export function Domains() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -10,6 +11,7 @@ export function Domains() {
   const [newDomain, setNewDomain] = useState({ tenant_id: "", domain: "", cname_target: "" });
   const [q, setQ] = useState("");
   const queryClient = useQueryClient();
+  const { ask, close, renderDialog } = useConfirmDialog();
 
   const { data, isLoading } = useQuery({
     queryKey: ["admin-domains", q],
@@ -31,12 +33,16 @@ export function Domains() {
   const verifyMutation = useMutation({
     mutationFn: (id: string) => adminApi.verifyDomain(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-domains"] }),
+    onSettled: () => close(),
   });
 
   const renewMutation = useMutation({
     mutationFn: (id: string) => adminApi.renewDomainCertificate(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-domains"] }),
+    onSettled: () => close(),
   });
+
+  const isMutating = verifyMutation.isPending || renewMutation.isPending;
 
   const domains = data?.results || [];
 
@@ -116,7 +122,13 @@ export function Domains() {
                     <div className="flex justify-end gap-2">
                       {!domain.dns_verified && (
                         <button
-                          onClick={() => verifyMutation.mutate(domain.id)}
+                          onClick={() =>
+                            ask({
+                              description: `Lancer la vérification DNS pour « ${domain.domain} » ?`,
+                              confirmText: "Vérifier",
+                              action: () => verifyMutation.mutate(domain.id),
+                            })
+                          }
                           className="btn-ghost h-9 w-9 p-0 text-slate-400 hover:text-emerald-600 dark:hover:bg-emerald-900/20"
                           title="Vérifier DNS"
                         >
@@ -124,7 +136,13 @@ export function Domains() {
                         </button>
                       )}
                       <button
-                        onClick={() => renewMutation.mutate(domain.id)}
+                        onClick={() =>
+                          ask({
+                            description: `Renouveler le certificat SSL pour « ${domain.domain} » ?`,
+                            confirmText: "Renouveler",
+                            action: () => renewMutation.mutate(domain.id),
+                          })
+                        }
                         className="btn-ghost h-9 w-9 p-0 text-slate-400 hover:text-brand-purple-600 dark:hover:bg-brand-purple-900/20"
                         title="Renouveler SSL"
                       >
@@ -201,6 +219,7 @@ export function Domains() {
           </div>
         </div>
       )}
+      {renderDialog(isMutating)}
     </div>
   );
 }

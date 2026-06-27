@@ -14,6 +14,7 @@ import { ListPageShell, PageHeader } from "@/components/ui/PageHeader";
 import { Pagination } from "@/components/ui/Pagination";
 import { useDebouncedValue, usePaginationState } from "@/hooks/useListState";
 import { paginatedCount } from "@/lib/pagination";
+import { useConfirmDialog } from "@/hooks/useConfirmDialog";
 
 type BillingView = "clients" | "invoices" | "payments";
 
@@ -68,21 +69,28 @@ export function BillingOps() {
   const payments = useMemo(() => normalizeList(paymentsQuery.data), [paymentsQuery.data]);
 
   const queryClient = useQueryClient();
+  const { ask, close, renderDialog } = useConfirmDialog();
 
   const finalizeMutation = useMutation({
     mutationFn: ({ id, type }: { id: string; type: string }) => adminApi.finalizeInvoice(id, { invoice_type: type }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["billing-invoices"] }),
+    onSettled: () => close(),
   });
 
   const cancelMutation = useMutation({
     mutationFn: (id: string) => adminApi.cancelInvoice(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["billing-invoices"] }),
+    onSettled: () => close(),
   });
 
   const confirmPaymentMutation = useMutation({
     mutationFn: (id: string) => adminApi.confirmPayment(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["billing-payments"] }),
+    onSettled: () => close(),
   });
+
+  const isMutating =
+    finalizeMutation.isPending || cancelMutation.isPending || confirmPaymentMutation.isPending;
 
   const loading =
     (view === "clients" && clientsQuery.isLoading) ||
@@ -184,7 +192,13 @@ export function BillingOps() {
                     <div className="flex justify-end gap-2">
                       {inv.status === "draft" && (
                         <button
-                          onClick={() => finalizeMutation.mutate({ id: inv.id, type: "simple" })}
+                          onClick={() =>
+                            ask({
+                              description: `Finaliser la facture ${inv.invoice_number} ?`,
+                              confirmText: "Finaliser",
+                              action: () => finalizeMutation.mutate({ id: inv.id, type: "simple" }),
+                            })
+                          }
                           className="btn-ghost h-8 w-8 p-0 text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:bg-emerald-900/30"
                           title="Finaliser"
                         >
@@ -197,7 +211,14 @@ export function BillingOps() {
                       )}
                       {inv.status !== "cancelled" && (
                         <button
-                          onClick={() => cancelMutation.mutate(inv.id)}
+                          onClick={() =>
+                            ask({
+                              description: `Annuler la facture ${inv.invoice_number} ?`,
+                              danger: true,
+                              confirmText: "Annuler",
+                              action: () => cancelMutation.mutate(inv.id),
+                            })
+                          }
                           className="btn-ghost h-8 w-8 p-0 text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:bg-rose-900/30"
                           title="Annuler"
                         >
@@ -243,7 +264,13 @@ export function BillingOps() {
                   <td className="text-right">
                     {p.status !== "confirmed" && (
                       <button
-                        onClick={() => confirmPaymentMutation.mutate(p.id)}
+                        onClick={() =>
+                          ask({
+                            description: `Confirmer le paiement de ${p.amount || "ce montant"} ?`,
+                            confirmText: "Confirmer",
+                            action: () => confirmPaymentMutation.mutate(p.id),
+                          })
+                        }
                         className="btn-ghost h-8 w-8 p-0 text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:bg-emerald-900/30"
                         title="Confirmer"
                       >
@@ -262,6 +289,7 @@ export function BillingOps() {
         </div>
       ) : null}
       <Pagination page={page} pageSize={pageSize} total={total} onPageChange={setPage} />
+      {renderDialog(isMutating)}
     </ListPageShell>
   );
 }

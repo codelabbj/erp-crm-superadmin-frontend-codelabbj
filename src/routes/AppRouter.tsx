@@ -21,6 +21,7 @@ export function AppRouter() {
     DedicatedInstancesRedirect,
     FeatureFlags,
     Modules,
+    Products,
     DataOps,
     Users,
     AuditLogsPage,
@@ -53,6 +54,7 @@ export function AppRouter() {
               <Route path="billing/invoices" element={<BillingOps />} />
               <Route path="billing/business-invoices" element={<BusinessInvoicesRedirect />} />
               <Route path="billing/dedicated-instances" element={<DedicatedInstancesRedirect />} />
+              <Route path="catalog/products" element={<Products />} />
               <Route path="platform/feature-flags" element={<FeatureFlags />} />
               <Route path="platform/modules" element={<Modules />} />
               <Route path="platform/jobs" element={<DataOps />} />

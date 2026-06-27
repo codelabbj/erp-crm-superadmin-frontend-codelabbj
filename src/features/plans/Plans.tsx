@@ -7,6 +7,7 @@ import { ListPageShell, PageHeader } from "@/components/ui/PageHeader";
 import { Pagination } from "@/components/ui/Pagination";
 import { useDebouncedValue, usePaginationState } from "@/hooks/useListState";
 import { clientPageSlice } from "@/lib/pagination";
+import { useConfirmDialog } from "@/hooks/useConfirmDialog";
 
 type EnabledModuleRef = string | { code?: string | null };
 
@@ -113,8 +114,8 @@ export function Plans() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<PlatformPlan | null>(null);
   const [form, setForm] = useState<PlanFormState>(emptyForm);
-  const [deletingPlan, setDeletingPlan] = useState<PlatformPlan | null>(null);
   const qc = useQueryClient();
+  const { ask, close, renderDialog } = useConfirmDialog();
 
   const plansQuery = useQuery({
     queryKey: ["platform-plans"],
@@ -161,16 +162,17 @@ export function Plans() {
       await qc.invalidateQueries({ queryKey: ["platform-plans"] });
     },
     onError: (error) => setFeedback(getErrorMessage(error)),
+    onSettled: () => close(),
   });
 
   const deleteMut = useMutation({
     mutationFn: (id: string) => adminApi.deleteLicensingPlan(id),
     onSuccess: async () => {
       setFeedback("Plan supprime.");
-      setDeletingPlan(null);
       await qc.invalidateQueries({ queryKey: ["platform-plans"] });
     },
     onError: (error) => setFeedback(getErrorMessage(error)),
+    onSettled: () => close(),
   });
 
   const isMutating = createMut.isPending || updateMut.isPending || toggleMut.isPending || deleteMut.isPending;
@@ -312,7 +314,16 @@ export function Plans() {
                     <button
                       type="button"
                       className="btn-secondary px-2 py-1 text-xs"
-                      onClick={() => toggleMut.mutate({ id: plan.id, is_active: !plan.is_active })}
+                      onClick={() =>
+                        ask({
+                          description: plan.is_active
+                            ? `Désactiver le plan « ${plan.name} » ?`
+                            : `Activer le plan « ${plan.name} » ?`,
+                          danger: plan.is_active,
+                          confirmText: plan.is_active ? "Désactiver" : "Activer",
+                          action: () => toggleMut.mutate({ id: plan.id, is_active: !plan.is_active }),
+                        })
+                      }
                       disabled={isMutating}
                     >
                       {plan.is_active ? "Desactiver" : "Activer"}
@@ -320,7 +331,20 @@ export function Plans() {
                     <button
                       type="button"
                       className="btn-danger px-2 py-1 text-xs"
-                      onClick={() => setDeletingPlan(plan)}
+                      onClick={() =>
+                        ask({
+                          title: "Supprimer ce plan ?",
+                          description: (
+                            <>
+                              Cette action supprimera le plan <strong>{plan.name}</strong>. Vérifiez qu&apos;aucune
+                              organisation n&apos;est encore dessus.
+                            </>
+                          ),
+                          danger: true,
+                          confirmText: "Supprimer",
+                          action: () => deleteMut.mutate(plan.id),
+                        })
+                      }
                       disabled={isMutating}
                     >
                       Supprimer
@@ -472,34 +496,7 @@ export function Plans() {
         </div>
       ) : null}
 
-      {deletingPlan ? (
-        <div className="fixed inset-0 z-30 grid place-items-center bg-gray-900/55 p-4">
-          <div className="grid w-[min(92vw,420px)] gap-3 rounded-xl border border-border-soft bg-white p-4 shadow-xl dark:border-slate-700 dark:bg-slate-900">
-            <h4 className="m-0 text-base font-semibold text-brand-purple-900 dark:text-slate-100">Supprimer ce plan ?</h4>
-            <p className="m-0 text-sm text-gray-700 dark:text-slate-300">
-              Cette action supprimera le plan <strong>{deletingPlan.name}</strong>. Verifie d&apos;abord qu&apos;aucune organisation n&apos;est encore dessus.
-            </p>
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={() => setDeletingPlan(null)}
-                disabled={deleteMut.isPending}
-              >
-                Annuler
-              </button>
-              <button
-                type="button"
-                className="btn-danger"
-                onClick={() => deleteMut.mutate(deletingPlan.id)}
-                disabled={deleteMut.isPending}
-              >
-                {deleteMut.isPending ? "Suppression..." : "Confirmer"}
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      {renderDialog(toggleMut.isPending || deleteMut.isPending)}
     </ListPageShell>
   );
 }

@@ -12,6 +12,7 @@ import { BusinessInvoicesRedirect } from "@/features/businessInvoices/BusinessIn
 import { DedicatedInstancesRedirect } from "@/features/dedicatedInstances/DedicatedInstances";
 import { FeatureFlags } from "@/features/featureFlags/FeatureFlags";
 import { Modules } from "@/features/modules/Modules";
+import { Products } from "@/features/products/Products";
 import { DataOps } from "@/features/dataOps/DataOps";
 import { Users } from "@/features/users/Users";
 import { AuditLogs } from "@/features/auditLogs/AuditLogs";
@@ -77,6 +78,7 @@ export const adminPages = {
   DedicatedInstancesRedirect,
   FeatureFlags,
   Modules,
+  Products,
   DataOps,
   Users,
   AuditLogs,

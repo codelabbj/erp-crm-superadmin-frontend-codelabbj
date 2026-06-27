@@ -4,6 +4,7 @@ import {
   FileSearch,
   Flag,
   LayoutDashboard,
+  Package,
   Puzzle,
   Rocket,
   ShieldBan,
@@ -53,6 +54,7 @@ export const NAV_SECTIONS: NavSection[] = [
     sectionKey: "platform",
     title: "Plateforme",
     items: [
+      { icon: Package, label: "Produits", path: "/catalog/products" },
       { icon: Puzzle, label: "Modules", path: "/platform/modules" },
       { icon: Users2, label: "Utilisateurs staff", path: "/platform/staff" },
       { icon: Flag, label: "Feature flags", path: "/platform/feature-flags" },

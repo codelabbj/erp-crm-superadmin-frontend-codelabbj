@@ -7,6 +7,7 @@ import { FilterBar, SearchInput } from "@/components/ui/FilterBar";
 import { Pagination } from "@/components/ui/Pagination";
 import { useDebouncedValue, usePaginationState } from "@/hooks/useListState";
 import { clientPageSlice } from "@/lib/pagination";
+import { useConfirmDialog } from "@/hooks/useConfirmDialog";
 
 export function Security() {
   const [activeTab, setActiveTab] = useState<"banned" | "waf">("banned");
@@ -15,6 +16,7 @@ export function Security() {
   const bannedPagination = usePaginationState(20);
   const wafPagination = usePaginationState(9);
   const queryClient = useQueryClient();
+  const { ask, close, renderDialog } = useConfirmDialog();
 
   const { data: bannedIps, isLoading: isBannedLoading } = useQuery({
     queryKey: ["admin-banned-ips"],
@@ -45,12 +47,16 @@ export function Security() {
   const unbanMutation = useMutation({
     mutationFn: (id: string) => adminApi.unbanIp(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-banned-ips"] }),
+    onSettled: () => close(),
   });
 
   const patchWafMutation = useMutation({
     mutationFn: ({ id, payload }: { id: string; payload: any }) => adminApi.patchWafRule(id, payload),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-waf-rules"] }),
+    onSettled: () => close(),
   });
+
+  const isMutating = unbanMutation.isPending || patchWafMutation.isPending;
 
   const filteredBanned = useMemo(() => {
     const q = debouncedSearch.trim().toLowerCase();
@@ -172,7 +178,13 @@ export function Security() {
                     </td>
                     <td className="px-6 py-4 text-right">
                        <button
-                        onClick={() => unbanMutation.mutate(ip.id)}
+                        onClick={() =>
+                          ask({
+                            description: `Débannir l'adresse IP ${ip.ip_address} ?`,
+                            confirmText: "Débannir",
+                            action: () => unbanMutation.mutate(ip.id),
+                          })
+                        }
                         className="btn-ghost h-9 w-9 p-0 text-slate-400 hover:text-emerald-600 dark:hover:bg-emerald-900/20"
                         title="Débannir"
                       >
@@ -205,7 +217,17 @@ export function Security() {
                     <Shield className={rule.is_enabled ? "text-emerald-500" : "text-slate-400"} size={20} />
                   </div>
                   <button
-                    onClick={() => patchWafMutation.mutate({ id: rule.id, payload: { is_enabled: !rule.is_enabled } })}
+                    onClick={() =>
+                      ask({
+                        description: rule.is_enabled
+                          ? `Désactiver la règle WAF « ${rule.key} » ?`
+                          : `Activer la règle WAF « ${rule.key} » ?`,
+                        danger: rule.is_enabled,
+                        confirmText: rule.is_enabled ? "Désactiver" : "Activer",
+                        action: () =>
+                          patchWafMutation.mutate({ id: rule.id, payload: { is_enabled: !rule.is_enabled } }),
+                      })
+                    }
                     className="text-slate-400 transition hover:text-brand-purple-600"
                   >
                     {rule.is_enabled ? <ToggleRight size={32} className="text-emerald-500" /> : <ToggleLeft size={32} />}
@@ -311,6 +333,7 @@ export function Security() {
           </div>
         </div>
       )}
+      {renderDialog(isMutating)}
     </div>
   );
 }

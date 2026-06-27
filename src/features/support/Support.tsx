@@ -8,6 +8,7 @@ import { ListPageShell, PageHeader } from "@/components/ui/PageHeader";
 import { Pagination } from "@/components/ui/Pagination";
 import { useDebouncedValue, usePaginationState } from "@/hooks/useListState";
 import { clientPageSlice } from "@/lib/pagination";
+import { useConfirmDialog } from "@/hooks/useConfirmDialog";
 
 export function Support() {
   const { data: ticketsData, isLoading } = useQuery({
@@ -28,6 +29,7 @@ export function Support() {
   const [managingTicket, setManagingTicket] = useState<SupportTicket | null>(null);
   const [manageForm, setManageForm] = useState({ status: "", priority: "" });
   const [manageError, setManageError] = useState("");
+  const { ask, close, renderDialog } = useConfirmDialog();
 
   const createMut = useMutation({
     mutationFn: adminApi.createSupportTicket,
@@ -49,6 +51,7 @@ export function Support() {
       setManageError("");
     },
     onError: (e) => setManageError(getErrorMessage(e)),
+    onSettled: () => close(),
   });
 
   const openManage = (ticket: SupportTicket) => {
@@ -323,8 +326,14 @@ export function Support() {
               <button
                 disabled={updateMut.isPending}
                 onClick={() => {
+                  if (!managingTicket) return;
                   setManageError("");
-                  updateMut.mutate({ id: managingTicket.id, payload: manageForm });
+                  ask({
+                    description: `Enregistrer les modifications du ticket « ${managingTicket.title} » ?`,
+                    confirmText: "Enregistrer",
+                    action: () =>
+                      updateMut.mutate({ id: managingTicket.id, payload: manageForm }),
+                  });
                 }}
                 className="btn-primary px-6"
               >
@@ -334,6 +343,7 @@ export function Support() {
           </div>
         </div>
       )}
+      {renderDialog(updateMut.isPending)}
     </ListPageShell>
   );
 }

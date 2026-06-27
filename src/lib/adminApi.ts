@@ -239,6 +239,40 @@ export interface DedicatedInstanceItem {
   created_at: string;
 }
 
+export interface AdminProduct {
+  id: string;
+  sku: string;
+  name: string;
+  description: string;
+  category: string;
+  unit: string;
+  purchase_price: string;
+  sale_price: string;
+  variants_count: number;
+  stock_qty: number;
+  org: {
+    id: string;
+    name: string;
+    slug: string;
+    currency: string;
+  };
+  created_at: string;
+  updated_at: string;
+}
+
+export type AdminProductUpdate = {
+  name?: string;
+  sku?: string;
+  description?: string;
+  unit?: string;
+  sale_price?: string;
+  purchase_price?: string;
+};
+
+export interface AdminProductsListResponse extends PaginatedResponse<AdminProduct> {
+  categories: string[];
+}
+
 export interface OrganizationRelatedData {
   success: boolean;
   data: {
@@ -710,6 +744,21 @@ export const adminApi = {
     (await api.get<UserRelatedData>(`/api/admin/users/${id}/related/`)).data,
   updateUser: async (payload: AdminUserUpdate) =>
     (await api.patch("/api/admin/users/", payload)).data,
+
+  products: async (params?: {
+    q?: string;
+    org_id?: string;
+    category?: string;
+    limit?: number;
+    offset?: number;
+    sort?: string;
+  }) => (await api.get<AdminProductsListResponse>("/api/admin/products/", { params })).data,
+
+  productDetail: async (id: string) =>
+    (await api.get<AdminProduct>(`/api/admin/products/${id}/`)).data,
+
+  updateProduct: async (id: string, payload: AdminProductUpdate) =>
+    (await api.patch<AdminProduct>(`/api/admin/products/${id}/`, payload)).data,
 
   modules: async (params?: { sort?: string }) =>
     (await api.get<AdminModule[]>("/api/admin/modules/", { params })).data,

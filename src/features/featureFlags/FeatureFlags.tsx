@@ -7,6 +7,7 @@ import { FilterBar, SearchInput } from "@/components/ui/FilterBar";
 import { Pagination } from "@/components/ui/Pagination";
 import { useDebouncedValue, usePaginationState } from "@/hooks/useListState";
 import { clientPageSlice } from "@/lib/pagination";
+import { useConfirmDialog } from "@/hooks/useConfirmDialog";
 
 export function FeatureFlags() {
   const [activeTab, setActiveTab] = useState<"global" | "overrides">("global");
@@ -15,6 +16,7 @@ export function FeatureFlags() {
   const flagsPagination = usePaginationState(15);
   const overridesPagination = usePaginationState(20);
   const queryClient = useQueryClient();
+  const { ask, close, renderDialog } = useConfirmDialog();
 
   const { data: globalFlags, isLoading: isFlagsLoading } = useQuery({
     queryKey: ["admin-feature-flags"],
@@ -45,6 +47,7 @@ export function FeatureFlags() {
   const patchFlagMutation = useMutation({
     mutationFn: ({ key, payload }: { key: string; payload: any }) => adminApi.patchFeatureFlag(key, payload),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-feature-flags"] }),
+    onSettled: () => close(),
   });
 
   const filteredFlags = useMemo(() => {
@@ -143,7 +146,20 @@ export function FeatureFlags() {
                 <p className="text-sm text-slate-500 dark:text-slate-400">{flag.description}</p>
               </div>
               <button
-                onClick={() => patchFlagMutation.mutate({ key: flag.flag_key, payload: { default_enabled: !flag.default_enabled } })}
+                onClick={() =>
+                  ask({
+                    description: flag.default_enabled
+                      ? `Désactiver le flag « ${flag.flag_key} » par défaut sur toute la plateforme ?`
+                      : `Activer le flag « ${flag.flag_key} » par défaut sur toute la plateforme ?`,
+                    danger: flag.default_enabled,
+                    confirmText: flag.default_enabled ? "Désactiver" : "Activer",
+                    action: () =>
+                      patchFlagMutation.mutate({
+                        key: flag.flag_key,
+                        payload: { default_enabled: !flag.default_enabled },
+                      }),
+                  })
+                }
                 className="text-slate-400 transition hover:text-brand-purple-600 dark:hover:text-brand-magenta-500"
               >
                 {flag.default_enabled ? <ToggleRight size={40} className="text-brand-purple-600 dark:text-brand-magenta-500" /> : <ToggleLeft size={40} />}
@@ -284,6 +300,7 @@ export function FeatureFlags() {
           </div>
         </div>
       )}
+      {renderDialog(patchFlagMutation.isPending)}
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Mail, RefreshCw, Server } from "lucide-react";
 import { adminApi, type DedicatedInstanceItem } from "@/lib/adminApi";
 import { formatIsoDate, getErrorMessage } from "@/lib/ui";
+import { useConfirmDialog } from "@/hooks/useConfirmDialog";
 
 function statusBadge(status: string) {
   const map: Record<string, string> = {
@@ -22,6 +23,7 @@ export function OrgDedicatedInstancePanel({ orgId }: Props) {
   const [feedback, setFeedback] = useState("");
   const [licenseJson, setLicenseJson] = useState<string | null>(null);
   const qc = useQueryClient();
+  const { ask, close, renderDialog } = useConfirmDialog();
 
   const query = useQuery({
     queryKey: ["dedicated-instances", orgId],
@@ -38,6 +40,7 @@ export function OrgDedicatedInstancePanel({ orgId }: Props) {
       qc.invalidateQueries({ queryKey: ["dedicated-instances", orgId] });
     },
     onError: (err) => setFeedback(getErrorMessage(err)),
+    onSettled: () => close(),
   });
 
   const issueLicenseMutation = useMutation({
@@ -47,6 +50,7 @@ export function OrgDedicatedInstancePanel({ orgId }: Props) {
       setFeedback("Licence générée.");
     },
     onError: (err) => setFeedback(getErrorMessage(err)),
+    onSettled: () => close(),
   });
 
   if (query.isLoading) {
@@ -109,7 +113,13 @@ export function OrgDedicatedInstancePanel({ orgId }: Props) {
           type="button"
           className="btn-secondary text-xs"
           disabled={sendKitMutation.isPending}
-          onClick={() => sendKitMutation.mutate(instance.instance_id)}
+          onClick={() =>
+            ask({
+              description: "Renvoyer le kit d'installation par e-mail au client ?",
+              confirmText: "Envoyer",
+              action: () => sendKitMutation.mutate(instance.instance_id),
+            })
+          }
         >
           <Mail size={14} className="mr-1 inline" /> Renvoyer kit install
         </button>
@@ -117,7 +127,13 @@ export function OrgDedicatedInstancePanel({ orgId }: Props) {
           type="button"
           className="btn-secondary text-xs"
           disabled={issueLicenseMutation.isPending}
-          onClick={() => issueLicenseMutation.mutate(instance.instance_id)}
+          onClick={() =>
+            ask({
+              description: "Générer une nouvelle licence pour cette instance ? L'ancienne sera invalidée.",
+              confirmText: "Générer",
+              action: () => issueLicenseMutation.mutate(instance.instance_id),
+            })
+          }
         >
           <RefreshCw size={14} className="mr-1 inline" /> Générer licence
         </button>
@@ -129,6 +145,8 @@ export function OrgDedicatedInstancePanel({ orgId }: Props) {
           <pre className="max-h-40 overflow-auto text-[10px]">{licenseJson}</pre>
         </div>
       ) : null}
+
+      {renderDialog(sendKitMutation.isPending || issueLicenseMutation.isPending)}
     </section>
   );
 }

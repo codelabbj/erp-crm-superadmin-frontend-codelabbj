@@ -4,6 +4,7 @@ import { ChevronDown, ChevronUp, FileText, Loader2 } from "lucide-react";
 import { adminApi, type BusinessPlanRequestItem } from "@/lib/adminApi";
 import { formatIsoDate, getErrorMessage } from "@/lib/ui";
 import { CreateBusinessInvoiceModal } from "@/features/businessInvoices/CreateBusinessInvoiceModal";
+import { useConfirmDialog } from "@/hooks/useConfirmDialog";
 
 const STATUS_LABELS: Record<string, string> = {
   submitted: "Reçue",
@@ -44,6 +45,7 @@ export function OrgBusinessPlanRequestsPanel({
   );
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState("");
+  const { ask, close, renderDialog } = useConfirmDialog();
 
   const requestsQuery = useQuery({
     queryKey: ["business-plan-requests", orgId],
@@ -58,6 +60,7 @@ export function OrgBusinessPlanRequestsPanel({
       qc.invalidateQueries({ queryKey: ["business-plan-requests", orgId] });
     },
     onError: (err) => setFeedback(getErrorMessage(err)),
+    onSettled: () => close(),
   });
 
   const requests = requestsQuery.data?.results ?? [];
@@ -176,9 +179,16 @@ export function OrgBusinessPlanRequestsPanel({
                                 className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs dark:border-slate-600 dark:bg-slate-900"
                                 value={req.status}
                                 disabled={updateMutation.isPending}
-                                onChange={(e) =>
-                                  updateMutation.mutate({ id: req.id, status: e.target.value })
-                                }
+                                onChange={(e) => {
+                                  const status = e.target.value;
+                                  if (status === req.status) return;
+                                  ask({
+                                    description: `Passer la demande ${req.reference} au statut « ${STATUS_LABELS[status] ?? status} » ?`,
+                                    danger: status === "cancelled",
+                                    confirmText: "Confirmer",
+                                    action: () => updateMutation.mutate({ id: req.id, status }),
+                                  });
+                                }}
                               >
                                 <option value="submitted">Reçue</option>
                                 <option value="in_review">En traitement</option>
@@ -233,6 +243,8 @@ export function OrgBusinessPlanRequestsPanel({
           onError={(msg) => setFeedback(msg)}
         />
       ) : null}
+
+      {renderDialog(updateMutation.isPending)}
     </>
   );
 }

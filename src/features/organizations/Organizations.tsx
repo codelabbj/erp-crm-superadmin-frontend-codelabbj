@@ -19,6 +19,7 @@ import { Pagination } from "@/components/ui/Pagination";
 import { useDebouncedValue, usePaginationState } from "@/hooks/useListState";
 import { paginatedCount } from "@/lib/pagination";
 import { downloadCsv } from "@/lib/exportCsv";
+import { useConfirmDialog } from "@/hooks/useConfirmDialog";
 
 function ownerDisplayName(owner: AdminOrganization["owner"]): string {
   if (!owner) return "Propriétaire inconnu";
@@ -129,6 +130,8 @@ export function Organizations() {
   const total = paginatedCount(data);
   const qc = useQueryClient();
 
+  const { ask, close, renderDialog } = useConfirmDialog();
+
   const mut = useMutation({
     mutationFn: adminApi.updateOrganization,
     onSuccess: async () => {
@@ -136,6 +139,7 @@ export function Organizations() {
       await qc.invalidateQueries({ queryKey: ["orgs"] });
     },
     onError: (e) => setFeedback(getErrorMessage(e)),
+    onSettled: () => close(),
   });
 
   const createMut = useMutation({
@@ -300,7 +304,16 @@ export function Organizations() {
                     org={o}
                     onView={() => navigate(`/organizations/${o.id}`)}
                     onSubscriptions={() => navigate(orgSubscriptionsPath(o.id))}
-                    onToggleActive={() => mut.mutate({ id: o.id, is_active: !o.is_active })}
+                    onToggleActive={() =>
+                      ask({
+                        description: o.is_active
+                          ? `Suspendre l'organisation « ${o.name} » ? L'accès sera bloqué pour tous les utilisateurs.`
+                          : `Réactiver l'organisation « ${o.name} » ?`,
+                        danger: o.is_active,
+                        confirmText: o.is_active ? "Suspendre" : "Réactiver",
+                        action: () => mut.mutate({ id: o.id, is_active: !o.is_active }),
+                      })
+                    }
                   />
                 </td>
               </tr>
@@ -363,6 +376,7 @@ export function Organizations() {
           </div>
         </div>
       )}
+      {renderDialog(mut.isPending)}
     </ListPageShell>
   );
 }

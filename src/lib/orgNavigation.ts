@@ -26,6 +26,10 @@ export function orgBusinessInvoicesPath(orgId: string) {
   return `/billing/business-invoices?${ORG_QUERY_KEY}=${orgId}`;
 }
 
+export function orgProductsPath(orgId: string) {
+  return `/catalog/products?${ORG_QUERY_KEY}=${orgId}`;
+}
+
 export function readOrgIdFromSearch(search: string): string | null {
   const id = new URLSearchParams(search).get(ORG_QUERY_KEY)?.trim();
   return id || null;

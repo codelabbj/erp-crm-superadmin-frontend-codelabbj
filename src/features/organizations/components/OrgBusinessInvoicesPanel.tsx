@@ -7,6 +7,7 @@ import { formatMoneyFromApi } from "@/lib/money";
 import { CreateBusinessInvoiceModal } from "@/features/businessInvoices/CreateBusinessInvoiceModal";
 import { ConfirmBankPaymentModal } from "@/features/businessInvoices/ConfirmBankPaymentModal";
 import { RejectBankPaymentModal } from "@/features/businessInvoices/RejectBankPaymentModal";
+import { useConfirmDialog } from "@/hooks/useConfirmDialog";
 
 const STATUS_LABELS: Record<string, string> = {
   draft: "Brouillon",
@@ -43,6 +44,7 @@ export function OrgBusinessInvoicesPanel({ orgId, orgName, defaultRecipientEmail
   const [rejectInvoice, setRejectInvoice] = useState<BusinessInvoiceItem | null>(null);
   const [feedback, setFeedback] = useState("");
   const qc = useQueryClient();
+  const { ask, close, renderDialog } = useConfirmDialog();
 
   const invoicesQuery = useQuery({
     queryKey: ["business-invoices", orgId],
@@ -58,6 +60,7 @@ export function OrgBusinessInvoicesPanel({ orgId, orgName, defaultRecipientEmail
       qc.invalidateQueries({ queryKey: ["business-invoices", orgId] });
     },
     onError: (err) => setFeedback(getErrorMessage(err)),
+    onSettled: () => close(),
   });
 
   const cancelMutation = useMutation({
@@ -67,6 +70,7 @@ export function OrgBusinessInvoicesPanel({ orgId, orgName, defaultRecipientEmail
       qc.invalidateQueries({ queryKey: ["business-invoices", orgId] });
     },
     onError: (err) => setFeedback(getErrorMessage(err)),
+    onSettled: () => close(),
   });
 
   return (
@@ -139,7 +143,13 @@ export function OrgBusinessInvoicesPanel({ orgId, orgName, defaultRecipientEmail
                           type="button"
                           className="btn-secondary px-2 py-1 text-[10px]"
                           disabled={sendMutation.isPending}
-                          onClick={() => sendMutation.mutate(inv.id)}
+                          onClick={() =>
+                            ask({
+                              description: `Envoyer la facture ${inv.invoice_number} par e-mail ?`,
+                              confirmText: "Envoyer",
+                              action: () => sendMutation.mutate(inv.id),
+                            })
+                          }
                         >
                           <Mail size={11} /> Envoyer
                         </button>
@@ -186,7 +196,14 @@ export function OrgBusinessInvoicesPanel({ orgId, orgName, defaultRecipientEmail
                           type="button"
                           className="btn-secondary px-2 py-1 text-[10px] text-red-700"
                           disabled={cancelMutation.isPending}
-                          onClick={() => cancelMutation.mutate(inv.id)}
+                          onClick={() =>
+                            ask({
+                              description: `Annuler la facture ${inv.invoice_number} ? Cette action est irréversible.`,
+                              danger: true,
+                              confirmText: "Annuler la facture",
+                              action: () => cancelMutation.mutate(inv.id),
+                            })
+                          }
                         >
                           <XCircle size={11} />
                         </button>
@@ -245,6 +262,8 @@ export function OrgBusinessInvoicesPanel({ orgId, orgName, defaultRecipientEmail
           onError={(msg) => setFeedback(msg)}
         />
       ) : null}
+
+      {renderDialog(sendMutation.isPending || cancelMutation.isPending)}
     </section>
   );
 }

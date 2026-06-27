@@ -13,6 +13,7 @@ import { ListPageShell, PageHeader } from "@/components/ui/PageHeader";
 import { Pagination } from "@/components/ui/Pagination";
 import { useDebouncedValue, usePaginationState } from "@/hooks/useListState";
 import { paginatedCount } from "@/lib/pagination";
+import { useConfirmDialog } from "@/hooks/useConfirmDialog";
 
 type DataView = "imports" | "exports";
 
@@ -62,26 +63,37 @@ export function DataOps() {
   const exportRows = useMemo(() => normalizeList(exportsQuery.data), [exportsQuery.data]);
 
   const queryClient = useQueryClient();
+  const { ask, close, renderDialog } = useConfirmDialog();
 
   const retryImportMutation = useMutation({
     mutationFn: (id: string) => adminApi.retryImport(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["data-imports"] }),
+    onSettled: () => close(),
   });
 
   const cancelImportMutation = useMutation({
     mutationFn: (id: string) => adminApi.cancelImport(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["data-imports"] }),
+    onSettled: () => close(),
   });
 
   const retryExportMutation = useMutation({
     mutationFn: (id: string) => adminApi.retryExport(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["data-exports"] }),
+    onSettled: () => close(),
   });
 
   const cancelExportMutation = useMutation({
     mutationFn: (id: string) => adminApi.cancelExport(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["data-exports"] }),
+    onSettled: () => close(),
   });
+
+  const isMutating =
+    retryImportMutation.isPending ||
+    cancelImportMutation.isPending ||
+    retryExportMutation.isPending ||
+    cancelExportMutation.isPending;
 
   const loading = (view === "imports" && importsQuery.isLoading) || (view === "exports" && exportsQuery.isLoading);
   const error = (view === "imports" && importsQuery.error) || (view === "exports" && exportsQuery.error);
@@ -156,7 +168,13 @@ export function DataOps() {
                     <div className="flex justify-end gap-2">
                       {job.status === "failed" && (
                         <button
-                          onClick={() => retryImportMutation.mutate(job.id)}
+                          onClick={() =>
+                            ask({
+                              description: `Relancer l'import « ${job.file_name || job.module_code} » ?`,
+                              confirmText: "Relancer",
+                              action: () => retryImportMutation.mutate(job.id),
+                            })
+                          }
                           className="btn-ghost h-8 w-8 p-0 text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:bg-emerald-900/30"
                           title="Relancer"
                         >
@@ -169,7 +187,14 @@ export function DataOps() {
                       )}
                       {(job.status === "pending" || job.status === "running") && (
                         <button
-                          onClick={() => cancelImportMutation.mutate(job.id)}
+                          onClick={() =>
+                            ask({
+                              description: `Annuler l'import « ${job.file_name || job.module_code} » en cours ?`,
+                              danger: true,
+                              confirmText: "Annuler le job",
+                              action: () => cancelImportMutation.mutate(job.id),
+                            })
+                          }
                           className="btn-ghost h-8 w-8 p-0 text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:bg-rose-900/30"
                           title="Annuler"
                         >
@@ -214,7 +239,13 @@ export function DataOps() {
                     <div className="flex justify-end gap-2">
                       {job.status === "failed" && (
                         <button
-                          onClick={() => retryExportMutation.mutate(job.id)}
+                          onClick={() =>
+                            ask({
+                              description: `Relancer l'export « ${job.module_code} » ?`,
+                              confirmText: "Relancer",
+                              action: () => retryExportMutation.mutate(job.id),
+                            })
+                          }
                           className="btn-ghost h-8 w-8 p-0 text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:bg-emerald-900/30"
                           title="Relancer"
                         >
@@ -227,7 +258,14 @@ export function DataOps() {
                       )}
                       {(job.status === "pending" || job.status === "running") && (
                         <button
-                          onClick={() => cancelExportMutation.mutate(job.id)}
+                          onClick={() =>
+                            ask({
+                              description: `Annuler l'export « ${job.module_code} » en cours ?`,
+                              danger: true,
+                              confirmText: "Annuler le job",
+                              action: () => cancelExportMutation.mutate(job.id),
+                            })
+                          }
                           className="btn-ghost h-8 w-8 p-0 text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:bg-rose-900/30"
                           title="Annuler"
                         >
@@ -247,6 +285,7 @@ export function DataOps() {
         </div>
       ) : null}
       <Pagination page={page} pageSize={pageSize} total={total} onPageChange={setPage} />
+      {renderDialog(isMutating)}
     </ListPageShell>
   );
 }

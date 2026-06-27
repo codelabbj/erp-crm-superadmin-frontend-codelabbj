@@ -1,5 +1,5 @@
 import { useMemo, useState, type ReactNode } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
@@ -10,13 +10,13 @@ import {
   Clock,
   CheckCircle2,
   Plus,
+  Package,
   RefreshCw,
   Zap,
   Globe,
   Settings2,
   FileText,
   ShoppingCart,
-  Package,
   BarChart3,
   CalendarDays,
   CalendarPlus,
@@ -31,10 +31,12 @@ import { OrgExtendPlanModal } from "@/features/organizations/components/OrgExten
 import { OrgBusinessInvoicesPanel } from "@/features/organizations/components/OrgBusinessInvoicesPanel";
 import { OrgBusinessPlanRequestsPanel } from "@/features/organizations/components/OrgBusinessPlanRequestsPanel";
 import { OrgDedicatedInstancePanel } from "@/features/organizations/components/OrgDedicatedInstancePanel";
+import { OrgProductsQuickPanel } from "@/features/organizations/components/OrgProductsQuickPanel";
 import { OrgDetailTabBar } from "@/features/organizations/components/OrgDetailTabBar";
 import { OrgTeamTab } from "@/features/organizations/components/tabs/OrgTeamTab";
-import { type OrgDetailTab, readOrgDetailTab } from "@/lib/orgNavigation";
+import { type OrgDetailTab, orgProductsPath, readOrgDetailTab } from "@/lib/orgNavigation";
 import { MODULE_LABELS, planPeriodProgress, resolveMediaUrl } from "@/features/organizations/orgPlanUtils";
+import { useConfirmDialog } from "@/hooks/useConfirmDialog";
 
 type OrganizationDetailProps = {
   orgId: string;
@@ -43,6 +45,7 @@ type OrganizationDetailProps = {
 };
 
 export function OrganizationDetail({ orgId, onBack, onOpenAudit }: OrganizationDetailProps) {
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = readOrgDetailTab(`?${searchParams.toString()}`);
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
@@ -97,6 +100,8 @@ export function OrganizationDetail({ orgId, onBack, onOpenAudit }: OrganizationD
     },
   });
 
+  const { ask, close, renderDialog } = useConfirmDialog();
+
   const mut = useMutation({
     mutationFn: adminApi.updateOrganization,
     onSuccess: () => {
@@ -104,6 +109,7 @@ export function OrganizationDetail({ orgId, onBack, onOpenAudit }: OrganizationD
       queryClient.invalidateQueries({ queryKey: ["org-detail", orgId] });
       queryClient.invalidateQueries({ queryKey: ["orgs"] });
     },
+    onSettled: () => close(),
   });
 
   const users = relatedData?.data?.users ?? [];
@@ -210,6 +216,12 @@ export function OrganizationDetail({ orgId, onBack, onOpenAudit }: OrganizationD
         <div className="mt-5 flex flex-wrap gap-2 border-t border-slate-100 pt-4 dark:border-slate-800">
           <QuickAction icon={<Plus size={15} />} label="Assigner un plan" onClick={openAssignPlan} />
           <QuickAction
+            icon={<Package size={15} />}
+            label="Voir les produits"
+            title="Catalogue inventaire de cette organisation"
+            onClick={() => navigate(orgProductsPath(org.id))}
+          />
+          <QuickAction
             icon={org.is_active ? <ShieldAlert size={15} /> : <CheckCircle2 size={15} />}
             label={org.is_active ? "Suspendre" : "Réactiver"}
             title={
@@ -217,7 +229,16 @@ export function OrganizationDetail({ orgId, onBack, onOpenAudit }: OrganizationD
                 ? "Désactive l'accès à l'organisation (connexion bloquée). Ne résilie pas le plan ni les modules."
                 : "Réactive l'accès à l'organisation."
             }
-            onClick={() => mut.mutate({ id: org.id, is_active: !org.is_active })}
+            onClick={() =>
+              ask({
+                description: org.is_active
+                  ? `Suspendre « ${org.name} » ? L'accès sera bloqué (le plan et les modules ne sont pas résiliés).`
+                  : `Réactiver « ${org.name} » ?`,
+                danger: org.is_active,
+                confirmText: org.is_active ? "Suspendre" : "Réactiver",
+                action: () => mut.mutate({ id: org.id, is_active: !org.is_active }),
+              })
+            }
             variant={org.is_active ? "danger" : "success"}
           />
           <QuickAction icon={<History size={15} />} label="Journaux d'audit" onClick={onOpenAudit} />
@@ -244,6 +265,7 @@ export function OrganizationDetail({ orgId, onBack, onOpenAudit }: OrganizationD
           onOpenTeam={() => setActiveTab("team")}
           onOpenBilling={() => setActiveTab("billing")}
           onOpenSubscription={() => setActiveTab("subscriptions")}
+          onOpenProducts={() => navigate(orgProductsPath(orgId))}
         />
       ) : null}
 
@@ -276,7 +298,16 @@ export function OrganizationDetail({ orgId, onBack, onOpenAudit }: OrganizationD
         </>
       ) : null}
 
-      {activeTab === "deployment" ? <OrgDedicatedInstancePanel orgId={orgId} /> : null}
+      {activeTab === "deployment" ? (
+        <div className="grid gap-6">
+          <OrgProductsQuickPanel
+            orgId={orgId}
+            orgName={org.name}
+            productsCount={totals?.products}
+          />
+          <OrgDedicatedInstancePanel orgId={orgId} />
+        </div>
+      ) : null}
 
       {isExtendModalOpen && orgMeta?.plan_code ? (
         <OrgExtendPlanModal
@@ -299,6 +330,7 @@ export function OrganizationDetail({ orgId, onBack, onOpenAudit }: OrganizationD
           onSubmit={(payload) => assignPlanMutation.mutateAsync(payload)}
         />
       ) : null}
+      {renderDialog(mut.isPending)}
     </div>
   );
 }
@@ -345,6 +377,7 @@ function OverviewPanel({
   onOpenTeam,
   onOpenBilling,
   onOpenSubscription,
+  onOpenProducts,
 }: {
   orgMeta?: OrgMeta;
   planLabel: string;
@@ -368,6 +401,7 @@ function OverviewPanel({
   onOpenTeam: () => void;
   onOpenBilling: () => void;
   onOpenSubscription: () => void;
+  onOpenProducts: () => void;
 }) {
   const t = totals;
   const period = planPeriodProgress(orgMeta?.plan_starts_at, orgMeta?.plan_expires_at);
@@ -453,7 +487,7 @@ function OverviewPanel({
             <Package size={14} /> Synthèse
           </h3>
           <div className="grid grid-cols-2 gap-3">
-            <StatTile label="Produits" value={t?.products ?? 0} />
+            <StatTile label="Produits" value={t?.products ?? 0} onClick={onOpenProducts} />
             <StatTile label="Clients" value={t?.customers ?? 0} />
             <StatTile label="Commandes" value={t?.orders ?? 0} />
             <StatTile label="Factures" value={t?.invoices ?? 0} />
@@ -789,11 +823,25 @@ function QuickAction({
   );
 }
 
-function StatTile({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-center dark:border-slate-700 dark:bg-slate-800/50">
+function StatTile({ label, value, onClick }: { label: string; value: number; onClick?: () => void }) {
+  const className =
+    "rounded-xl border border-slate-200 bg-slate-50 p-3 text-center dark:border-slate-700 dark:bg-slate-800/50" +
+    (onClick ? " cursor-pointer transition hover:border-brand-purple-300 hover:bg-brand-purple-50/50 dark:hover:border-brand-purple-800" : "");
+
+  const content = (
+    <>
       <p className="m-0 text-2xl font-bold tabular-nums text-slate-900 dark:text-slate-100">{value}</p>
       <p className="m-0 mt-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">{label}</p>
-    </div>
+    </>
   );
+
+  if (onClick) {
+    return (
+      <button type="button" className={className} onClick={onClick}>
+        {content}
+      </button>
+    );
+  }
+
+  return <div className={className}>{content}</div>;
 }
