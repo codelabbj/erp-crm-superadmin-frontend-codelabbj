@@ -2,6 +2,32 @@ import axios from "axios";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
 
+const SESSION_SUPERSEDED_CODE = "SESSION_SUPERSEDED";
+const LOGIN_NOTICE_KEY = "sa_login_notice";
+
+function readAuthErrorCode(err: unknown): string | undefined {
+  const data = (err as { response?: { data?: { code?: string } } })?.response?.data;
+  return typeof data?.code === "string" ? data.code : undefined;
+}
+
+function readAuthErrorDetail(err: unknown): string | undefined {
+  const data = (err as { response?: { data?: { detail?: string } } })?.response?.data;
+  return typeof data?.detail === "string" ? data.detail : undefined;
+}
+
+function redirectToLogin(notice?: string) {
+  if (notice) sessionStorage.setItem(LOGIN_NOTICE_KEY, notice);
+  localStorage.removeItem("sa_access");
+  localStorage.removeItem("sa_refresh");
+  window.location.href = "/login";
+}
+
+export function consumeSaLoginNotice(): string | null {
+  const notice = sessionStorage.getItem(LOGIN_NOTICE_KEY);
+  if (notice) sessionStorage.removeItem(LOGIN_NOTICE_KEY);
+  return notice;
+}
+
 export const api = axios.create({
   baseURL: API_BASE,
   timeout: 30000,
@@ -63,15 +89,21 @@ api.interceptors.response.use(
           return api(original);
         } catch (refreshError) {
           processQueue(refreshError, null);
-          localStorage.removeItem("sa_access");
-          localStorage.removeItem("sa_refresh");
-          window.location.href = "/login";
+          const notice =
+            readAuthErrorCode(refreshError) === SESSION_SUPERSEDED_CODE
+              ? readAuthErrorDetail(refreshError)
+              : readAuthErrorCode(err) === SESSION_SUPERSEDED_CODE
+                ? readAuthErrorDetail(err)
+                : undefined;
+          redirectToLogin(notice);
           return Promise.reject(refreshError);
         } finally {
           isRefreshing = false;
         }
       } else {
-        window.location.href = "/login";
+        const notice =
+          readAuthErrorCode(err) === SESSION_SUPERSEDED_CODE ? readAuthErrorDetail(err) : undefined;
+        redirectToLogin(notice);
         return Promise.reject(err);
       }
     }

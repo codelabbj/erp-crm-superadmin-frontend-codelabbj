@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { AlertTriangle, Eye, EyeOff, Lock, Mail, Moon, PanelsTopLeft, ShieldCheck, Sun, X } from "lucide-react";
-import { authApi } from "../../lib/api";
+import { authApi, consumeSaLoginNotice } from "../../lib/api";
 import { getErrorMessage } from "../../lib/ui";
 import { applyTheme, getInitialTheme, type ThemeMode } from "../../lib/theme";
 
@@ -12,7 +12,10 @@ export function LoginPage() {
   useEffect(() => {
     if (localStorage.getItem("sa_access")) {
       navigate("/", { replace: true });
+      return;
     }
+    const notice = consumeSaLoginNotice();
+    if (notice) setToastMessage(notice);
   }, [navigate]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
