@@ -38,6 +38,7 @@ type PlanFormState = {
   price_yearly: string;
   included_seats: string;
   max_users_hard: string;
+  included_credits: string;
   additional_seats_allowed: boolean;
   enabled_modules: string[];
   is_active: boolean;
@@ -53,6 +54,7 @@ const emptyForm: PlanFormState = {
   price_yearly: "",
   included_seats: "1",
   max_users_hard: "1",
+  included_credits: "0",
   additional_seats_allowed: false,
   enabled_modules: [],
   is_active: true,
@@ -78,6 +80,7 @@ function toFormState(plan: PlatformPlan): PlanFormState {
     price_yearly: String(plan.price_yearly ?? ""),
     included_seats: String(plan.limits?.included_seats ?? 1),
     max_users_hard: String(plan.limits?.max_users_hard ?? 1),
+    included_credits: String(plan.limits?.included_credits ?? 0),
     additional_seats_allowed: Boolean(plan.limits?.additional_seats_allowed),
     enabled_modules: normalizeEnabledModuleCodes(plan.enabled_modules),
     is_active: Boolean(plan.is_active),
@@ -86,8 +89,9 @@ function toFormState(plan: PlatformPlan): PlanFormState {
   };
 }
 
-function toPayload(form: PlanFormState): PlatformPlanUpsert {
+function toPayload(form: PlanFormState, existingLimits?: PlatformPlan["limits"]): PlatformPlanUpsert {
   const trialDays = resolveTrialDays(form);
+  const includedCredits = Number(form.included_credits);
   return {
     name: form.name.trim(),
     code: form.code.trim().toLowerCase(),
@@ -96,9 +100,11 @@ function toPayload(form: PlanFormState): PlatformPlanUpsert {
     price_yearly: form.price_yearly.trim(),
     trial_days: trialDays,
     limits: {
+      ...(existingLimits ?? {}),
       included_seats: Number(form.included_seats),
       max_users_hard: Number(form.max_users_hard),
       additional_seats_allowed: form.additional_seats_allowed,
+      included_credits: Number.isFinite(includedCredits) && includedCredits >= 0 ? Math.floor(includedCredits) : 0,
     },
     enabled_modules: form.enabled_modules,
     is_active: form.is_active,
@@ -211,7 +217,7 @@ export function Plans() {
       setFeedback("Merci de renseigner les champs obligatoires du plan.");
       return;
     }
-    const payload = toPayload(form);
+    const payload = toPayload(form, editingPlan?.limits);
     if (!editingPlan) {
       createMut.mutate(payload);
       return;
@@ -267,6 +273,7 @@ export function Plans() {
               <th className="px-2 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Annuel</th>
               <th className="px-2 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Essai</th>
               <th className="px-2 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Sieges inclus</th>
+              <th className="px-2 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Credits inclus</th>
               <th className="px-2 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Sieges max</th>
               <th className="px-2 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Sieges additionnels</th>
               <th className="px-2 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Modules</th>
@@ -287,6 +294,11 @@ export function Plans() {
                   {(plan.trial_days ?? 0) > 0 ? `${plan.trial_days} j` : "Non"}
                 </td>
                 <td className="px-2 py-2 text-slate-700 dark:text-slate-300">{plan.limits?.included_seats ?? "—"}</td>
+                <td className="px-2 py-2 text-slate-700 dark:text-slate-300">
+                  {plan.limits?.included_credits != null
+                    ? Number(plan.limits.included_credits).toLocaleString("fr-FR")
+                    : "—"}
+                </td>
                 <td className="px-2 py-2 text-slate-700 dark:text-slate-300">{plan.limits?.max_users_hard ?? "—"}</td>
                 <td className="px-2 py-2 text-slate-700 dark:text-slate-300">{plan.limits?.additional_seats_allowed ? "Oui" : "Non"}</td>
                 <td className="px-2 py-2 text-slate-700 dark:text-slate-300">{formatEnabledModulesLabel(plan.enabled_modules)}</td>
@@ -393,6 +405,17 @@ export function Plans() {
               <label className="grid gap-1 text-xs text-slate-700 dark:text-slate-300">
                 Sieges max (hard) *
                 <input type="number" className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100" value={form.max_users_hard} onChange={(e) => setForm((v) => ({ ...v, max_users_hard: e.target.value }))} />
+              </label>
+              <label className="grid gap-1 text-xs text-slate-700 dark:text-slate-300">
+                Credits inclus / periode
+                <input
+                  type="number"
+                  min={0}
+                  className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                  value={form.included_credits}
+                  onChange={(e) => setForm((v) => ({ ...v, included_credits: e.target.value }))}
+                />
+                <span className="text-[11px] text-slate-500">0 = aucun credit offert (achat obligatoire)</span>
               </label>
               <label className="grid gap-1 text-xs text-slate-700 dark:text-slate-300">
                 Jours d&apos;essai

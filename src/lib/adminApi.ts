@@ -98,6 +98,7 @@ export interface PlatformPlanLimits {
   included_seats: number;
   max_users_hard: number;
   additional_seats_allowed: boolean;
+  included_credits?: number;
 }
 
 export interface PlatformPlan {
@@ -151,6 +152,14 @@ export interface OrganizationSubscriptionOverview {
 export interface OrganizationDetail extends OrganizationSubscriptionOverview {
   plan?: { id: string; code: string; name: string } | null;
   seats_max_hard?: number;
+  referred_by_partner?: {
+    id: string;
+    name: string;
+    code: string;
+    commission_rate: string;
+  } | null;
+  referral_code_used?: string;
+  referred_at?: string | null;
 }
 
 export type OrganizationUpsert = {
@@ -339,6 +348,87 @@ export type AddSeatsPayload = {
   quantity: number;
 };
 
+export type CreditRates = {
+  email_credits_per_send: number;
+  whatsapp_credits_per_message: number;
+  sms_credits_per_message: number;
+  ai_weighted_tokens_per_credit: number;
+  ai_output_token_weight: number;
+};
+
+export type PlanCreditPolicy = {
+  included_credits_plan: number;
+  included_credits_override: number | null;
+  included_credits_effective: number;
+  plan_code: string | null;
+};
+
+export type OrgCreditsLedgerEntry = {
+  id: string;
+  delta: number;
+  balance_after: number;
+  channel: string;
+  credits_charged: number;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  created_by_email?: string | null;
+};
+
+export type OrgCreditsPayload = {
+  credits_balance: number;
+  credits_rates: CreditRates;
+  credits_low_balance: boolean;
+  credits_low_balance_threshold?: number | null;
+  credits_plan_policy?: PlanCreditPolicy;
+  plan_credit_policy?: PlanCreditPolicy;
+  effective_rates?: CreditRates;
+  rate_overrides?: Partial<CreditRates> & {
+    low_balance_threshold?: number | null;
+    included_credits_override?: number | null;
+  };
+  ledger?: { count: number; results: OrgCreditsLedgerEntry[] };
+};
+
+export type PatchOrgCreditsPayload = Partial<CreditRates> & {
+  low_balance_threshold?: number;
+  included_credits_override?: number;
+  clear_fields?: string[];
+};
+
+export type GrantOrgCreditsPayload = {
+  amount: number;
+  reason?: string;
+};
+
+export type CreditCatalogPack = {
+  code: string;
+  label: string;
+  credits: number;
+  price_xof: number;
+  unit_price_xof: number;
+  is_active: boolean;
+  sort_order: number;
+};
+
+export type CreditCatalogPayload = {
+  unit_price_xof: number;
+  purchase_enabled: boolean;
+  packs: CreditCatalogPack[];
+};
+
+export type PatchCreditCatalogPayload = {
+  unit_price_xof?: number;
+  purchase_enabled?: boolean;
+  packs?: Array<{
+    code: string;
+    label: string;
+    credits: number;
+    price_xof?: number | null;
+    is_active?: boolean;
+    sort_order?: number;
+  }>;
+};
+
 export type AdminSubscriptionPatchPayload = Partial<
   Pick<OrganizationSubscriptionItem, "status" | "billing_cycle" | "ends_at" | "auto_renew">
 >;
@@ -417,6 +507,114 @@ export interface AuditLogItem {
   payload?: Record<string, unknown>;
   user_email?: string;
   user_name?: string;
+}
+
+export interface PaymentTransactionItem {
+  transaction_id: string;
+  external_reference: string;
+  provider_ref?: string | null;
+  tenant_id: string;
+  organization_name?: string | null;
+  purpose: string;
+  direction: string;
+  amount: number;
+  currency: string;
+  status: string;
+  operator?: string | null;
+  phone?: string | null;
+  country_code?: string | null;
+  callback_url: string;
+  metadata?: Record<string, unknown>;
+  pal_response?: Record<string, unknown> | null;
+  webhook_payload?: Record<string, unknown> | null;
+  callback_dispatched: boolean;
+  created_at?: string | null;
+  updated_at?: string | null;
+  paid_at?: string | null;
+}
+
+export interface AdminPartnerItem {
+  id: string;
+  name: string;
+  email: string;
+  code: string;
+  commission_rate: string;
+  country: string;
+  status: string;
+  notes: string;
+  referral_link: string;
+  clients_count: number;
+  available_balance: string;
+  account_email?: string | null;
+  created_at: string;
+}
+
+export interface AdminPartnerCreatePayload {
+  name: string;
+  code: string;
+  email?: string;
+  commission_rate?: string | number;
+  country?: string;
+  notes?: string;
+  account_email?: string;
+  account_password?: string;
+  status?: string;
+}
+
+export interface AdminPartnerClientItem {
+  id: string;
+  name: string;
+  referred_at: string | null;
+  referral_code_used: string;
+  plan_status: string;
+  plan_code: string | null;
+  commission_amount: string | null;
+  commission_status: string | null;
+}
+
+export interface AdminPartnerCommissionItem {
+  id: string;
+  organization_id: string;
+  organization_name: string;
+  source_type: string;
+  payment_amount: string;
+  commission_rate: string;
+  commission_amount: string;
+  status: string;
+  created_at: string;
+}
+
+export interface AdminPartnerWithdrawalItem {
+  id: string;
+  partner_id: string;
+  partner_name: string;
+  partner_code: string;
+  amount: string;
+  status: string;
+  momo_country_code: string;
+  momo_operator: string;
+  momo_phone: string;
+  admin_notes: string;
+  created_at: string;
+  processed_at: string | null;
+}
+
+export interface AdminPartnerApplicationItem {
+  id: string;
+  reference: string;
+  status: string;
+  contact_name: string;
+  contact_email: string;
+  contact_phone: string;
+  company_name: string;
+  country: string;
+  preferred_code: string;
+  message: string;
+  admin_notes: string;
+  partner_id: string | null;
+  partner_code: string | null;
+  created_at: string;
+  processed_at: string | null;
 }
 
 export interface BillingClientItem {
@@ -718,6 +916,17 @@ export const adminApi = {
     (await api.post(`/api/admin/organizations/${id}/extend-plan/`, payload)).data,
   addSeatsToOrganization: async (id: string, payload: AddSeatsPayload) =>
     (await api.post(`/api/admin/organizations/${id}/add-seats/`, payload)).data,
+  organizationCredits: async (id: string, params?: { limit?: number; offset?: number; channel?: string }) =>
+    (await api.get<OrgCreditsPayload>(`/api/admin/organizations/${id}/credits/`, { params })).data,
+  patchOrganizationCredits: async (id: string, payload: PatchOrgCreditsPayload) =>
+    (await api.patch<OrgCreditsPayload>(`/api/admin/organizations/${id}/credits/`, payload)).data,
+  grantOrganizationCredits: async (id: string, payload: GrantOrgCreditsPayload) =>
+    (await api.post<OrgCreditsPayload>(`/api/admin/organizations/${id}/credits/grant/`, payload)).data,
+
+  creditCatalog: async () =>
+    (await api.get<CreditCatalogPayload>("/api/admin/credits/catalog/")).data,
+  patchCreditCatalog: async (payload: PatchCreditCatalogPayload) =>
+    (await api.patch<CreditCatalogPayload>("/api/admin/credits/catalog/", payload)).data,
 
   patchSubscription: async (id: string, payload: AdminSubscriptionPatchPayload) =>
     (await api.patch(`/api/admin/subscriptions/${id}/`, payload)).data,
@@ -787,6 +996,37 @@ export const adminApi = {
   ) =>
     (await api.get<PaginatedResponse<AuditLogItem>>(`/api/admin/organizations/${orgId}/audit-logs/`, { params }))
       .data,
+
+  paymentTransactions: async (params?: {
+    q?: string;
+    status?: string;
+    purpose?: string;
+    direction?: string;
+    limit?: number;
+    offset?: number;
+    sort?: string;
+  }) =>
+    (await api.get<PaginatedResponse<PaymentTransactionItem>>("/api/admin/payment-transactions/", { params })).data,
+
+  organizationPaymentTransactions: async (
+    orgId: string,
+    params?: {
+      q?: string;
+      status?: string;
+      purpose?: string;
+      direction?: string;
+      limit?: number;
+      offset?: number;
+      sort?: string;
+    },
+  ) =>
+    (
+      await api.get<PaginatedResponse<PaymentTransactionItem>>(
+        `/api/admin/organizations/${orgId}/payment-transactions/`,
+        { params },
+      )
+    ).data,
+
   billingClients: async (params?: { q?: string; limit?: number; offset?: number; sort?: string }) =>
     (await api.get<PaginatedResponse<BillingClientItem> | BillingClientItem[]>("/api/billing/clients/", { params })).data,
   billingInvoices: async (params?: { q?: string; limit?: number; offset?: number; sort?: string }) =>
@@ -990,14 +1230,23 @@ export const adminApi = {
   updatePartnerProgramSettings: async (payload: Partial<PartnerProgramSettings>) =>
     (await api.patch<PartnerProgramSettings>("/api/admin/partners/program/", payload)).data,
   partners: async (params?: { q?: string }) =>
-    (await api.get<{ count: number; results: AdminPartner[] }>("/api/admin/partners/", { params })).data,
+    (await api.get<PaginatedResponse<AdminPartnerItem>>("/api/admin/partners/", { params })).data,
   updatePartner: async (id: string, payload: Partial<{ status: string; commission_rate: string; notes: string }>) =>
     (await api.patch<AdminPartner>(`/api/admin/partners/${id}/`, payload)).data,
+  updatePartnerStatus: async (partnerId: string, status: "active" | "suspended") =>
+    (await api.patch<AdminPartnerItem>(`/api/admin/partners/${partnerId}/`, { status })).data,
+  partnerClients: async (partnerId: string) =>
+    (await api.get<PaginatedResponse<AdminPartnerClientItem>>(`/api/admin/partners/${partnerId}/clients/`)).data,
+  partnerCommissions: async (partnerId: string) =>
+    (await api.get<PaginatedResponse<AdminPartnerCommissionItem>>(`/api/admin/partners/${partnerId}/commissions/`)).data,
   partnerWithdrawals: async (params?: { status?: string; partner_id?: string }) =>
-    (await api.get<{ count: number; results: AdminPartnerWithdrawal[] }>("/api/admin/partners/withdrawals/", { params }))
+    (await api.get<PaginatedResponse<AdminPartnerWithdrawalItem>>("/api/admin/partners/withdrawals/", { params }))
       .data,
-  partnerWithdrawalAction: async (id: string, payload: { action: string; admin_notes?: string }) =>
-    (await api.post(`/api/admin/partners/withdrawals/${id}/action/`, payload)).data,
+  partnerWithdrawalAction: async (
+    withdrawalId: string,
+    payload: { action: "approve" | "reject" | "mark-paid"; admin_notes?: string },
+  ) =>
+    (await api.post(`/api/admin/partners/withdrawals/${withdrawalId}/action/`, payload)).data,
 };
 
 export interface PartnerProgramSettings {

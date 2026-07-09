@@ -4,7 +4,10 @@ import {
   WalletCards,
   Users,
   Receipt,
+  CreditCard,
   Server,
+  Handshake,
+  Coins,
 } from "lucide-react";
 import type { OrgDetailTab } from "@/lib/orgNavigation";
 import { cn } from "@/lib/utils";
@@ -19,6 +22,9 @@ export const ORG_DETAIL_TABS: {
   { id: "subscriptions", label: "Abonnement", shortLabel: "Abonn.", icon: WalletCards },
   { id: "team", label: "Équipe & propriétaire", shortLabel: "Équipe", icon: Users },
   { id: "billing", label: "Facturation", shortLabel: "Factures", icon: Receipt },
+  { id: "credits", label: "Crédits", shortLabel: "Crédits", icon: Coins },
+  { id: "payments", label: "Transactions PAL", shortLabel: "PAL", icon: CreditCard },
+  { id: "partner", label: "Partenaire", shortLabel: "Part.", icon: Handshake },
   { id: "deployment", label: "Déploiement", shortLabel: "Déploi.", icon: Server },
 ];
 

@@ -4,7 +4,15 @@ export const ORG_ACTION_KEY = "action";
 
 export type OrgScopedAction = "assign-plan";
 
-export type OrgDetailTab = "overview" | "subscriptions" | "team" | "billing" | "deployment";
+export type OrgDetailTab =
+  | "overview"
+  | "subscriptions"
+  | "team"
+  | "billing"
+  | "payments"
+  | "deployment"
+  | "partner"
+  | "credits";
 
 export function orgDetailPath(orgId: string, tab?: OrgDetailTab) {
   const base = `/organizations/${orgId}`;
@@ -42,6 +50,15 @@ export function readOrgActionFromSearch(search: string): OrgScopedAction | null 
 
 export function readOrgDetailTab(search: string): OrgDetailTab {
   const tab = new URLSearchParams(search).get("tab")?.trim() as OrgDetailTab | undefined;
-  const allowed: OrgDetailTab[] = ["overview", "subscriptions", "team", "billing", "deployment"];
+  const allowed: OrgDetailTab[] = [
+    "overview",
+    "subscriptions",
+    "team",
+    "billing",
+    "payments",
+    "deployment",
+    "partner",
+    "credits",
+  ];
   return tab && allowed.includes(tab) ? tab : "overview";
 }

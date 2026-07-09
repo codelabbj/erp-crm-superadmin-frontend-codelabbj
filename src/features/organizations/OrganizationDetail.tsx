@@ -32,8 +32,11 @@ import { OrgBusinessInvoicesPanel } from "@/features/organizations/components/Or
 import { OrgBusinessPlanRequestsPanel } from "@/features/organizations/components/OrgBusinessPlanRequestsPanel";
 import { OrgDedicatedInstancePanel } from "@/features/organizations/components/OrgDedicatedInstancePanel";
 import { OrgProductsQuickPanel } from "@/features/organizations/components/OrgProductsQuickPanel";
+import { PaymentTransactionsList } from "@/features/paymentTransactions/PaymentTransactionsList";
 import { OrgDetailTabBar } from "@/features/organizations/components/OrgDetailTabBar";
 import { OrgTeamTab } from "@/features/organizations/components/tabs/OrgTeamTab";
+import { OrgPartnerTab } from "@/features/organizations/components/tabs/OrgPartnerTab";
+import { OrgCreditsPanel } from "@/features/organizations/components/OrgCreditsPanel";
 import { type OrgDetailTab, orgProductsPath, readOrgDetailTab } from "@/lib/orgNavigation";
 import { MODULE_LABELS, planPeriodProgress, resolveMediaUrl } from "@/features/organizations/orgPlanUtils";
 import { useConfirmDialog } from "@/hooks/useConfirmDialog";
@@ -297,6 +300,12 @@ export function OrganizationDetail({ orgId, onBack, onOpenAudit }: OrganizationD
           />
         </>
       ) : null}
+
+      {activeTab === "payments" ? <PaymentTransactionsList orgId={orgId} embedded /> : null}
+
+      {activeTab === "partner" ? <OrgPartnerTab orgId={orgId} /> : null}
+
+      {activeTab === "credits" ? <OrgCreditsPanel orgId={orgId} /> : null}
 
       {activeTab === "deployment" ? (
         <div className="grid gap-6">

@@ -1,6 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import {
   Building2,
+  CreditCard,
   FileSearch,
   Flag,
   Handshake,
@@ -13,6 +14,7 @@ import {
   Upload,
   Users2,
   WalletCards,
+  Coins,
 } from "lucide-react";
 
 export interface NavItem {
@@ -48,8 +50,10 @@ export const NAV_SECTIONS: NavSection[] = [
     title: "Revenus",
     items: [
       { icon: WalletCards, label: "Abonnements", path: "/subscriptions" },
-      { icon: SlidersHorizontal, label: "Plans & fonctionnalités", path: "/plans" },
+      { icon: CreditCard, label: "Transactions PAL", path: "/payment-transactions" },
       { icon: Handshake, label: "Partenaires", path: "/partners" },
+      { icon: SlidersHorizontal, label: "Plans & fonctionnalités", path: "/plans" },
+      { icon: Coins, label: "Catalogue crédits", path: "/credits-catalog" },
     ],
   },
   {

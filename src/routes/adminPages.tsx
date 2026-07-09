@@ -6,8 +6,8 @@ import { Organizations } from "@/features/organizations/Organizations";
 import { OrganizationDetailPage } from "@/features/organizations/OrganizationDetailPage";
 import { Onboarding } from "@/features/organizations/Onboarding";
 import { SubscriptionsHub, SubscriptionsStatsRedirect, SubscriptionsAlertsRedirect } from "@/features/subscriptions/SubscriptionsHub";
-import { Partners } from "@/features/partners/Partners";
 import { Plans } from "@/features/plans/Plans";
+import { CreditsCatalog } from "@/features/credits/CreditsCatalog";
 import { BillingOps } from "@/features/billingOps/BillingOps";
 import { BusinessInvoicesRedirect } from "@/features/businessInvoices/BusinessInvoices";
 import { DedicatedInstancesRedirect } from "@/features/dedicatedInstances/DedicatedInstances";
@@ -24,6 +24,8 @@ import { Projects } from "@/features/projects/Projects";
 import { Ecommerce } from "@/features/ecommerce/Ecommerce";
 import { Fiscal } from "@/features/fiscal/Fiscal";
 import { AIAssistant } from "@/features/ai/AIAssistant";
+import { PaymentTransactionsPage } from "@/features/paymentTransactions/PaymentTransactionsPage";
+import { PartnersPage } from "@/features/partners/PartnersPage";
 import { ORG_QUERY_KEY, readOrgIdFromSearch } from "@/lib/orgNavigation";
 
 export function DashboardPage() {
@@ -74,7 +76,7 @@ export const adminPages = {
   SubscriptionsStatsRedirect,
   SubscriptionsAlertsRedirect,
   Plans,
-  Partners,
+  CreditsCatalog,
   BillingOps,
   BusinessInvoicesRedirect,
   DedicatedInstancesRedirect,
@@ -92,4 +94,6 @@ export const adminPages = {
   Ecommerce,
   Fiscal,
   AIAssistant,
+  PaymentTransactionsPage,
+  PartnersPage,
 };
