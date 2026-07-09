@@ -16,6 +16,7 @@ export function AppRouter() {
     SubscriptionsStatsRedirect,
     SubscriptionsAlertsRedirect,
     Plans,
+    Partners,
     BillingOps,
     BusinessInvoicesRedirect,
     DedicatedInstancesRedirect,
@@ -51,6 +52,7 @@ export function AppRouter() {
               <Route path="subscriptions/stats" element={<SubscriptionsStatsRedirect />} />
               <Route path="subscriptions/alerts" element={<SubscriptionsAlertsRedirect />} />
               <Route path="plans" element={<Plans />} />
+              <Route path="partners" element={<Partners />} />
               <Route path="billing/invoices" element={<BillingOps />} />
               <Route path="billing/business-invoices" element={<BusinessInvoicesRedirect />} />
               <Route path="billing/dedicated-instances" element={<DedicatedInstancesRedirect />} />

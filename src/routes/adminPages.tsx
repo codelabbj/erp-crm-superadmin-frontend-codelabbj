@@ -6,6 +6,7 @@ import { Organizations } from "@/features/organizations/Organizations";
 import { OrganizationDetailPage } from "@/features/organizations/OrganizationDetailPage";
 import { Onboarding } from "@/features/organizations/Onboarding";
 import { SubscriptionsHub, SubscriptionsStatsRedirect, SubscriptionsAlertsRedirect } from "@/features/subscriptions/SubscriptionsHub";
+import { Partners } from "@/features/partners/Partners";
 import { Plans } from "@/features/plans/Plans";
 import { BillingOps } from "@/features/billingOps/BillingOps";
 import { BusinessInvoicesRedirect } from "@/features/businessInvoices/BusinessInvoices";
@@ -73,6 +74,7 @@ export const adminPages = {
   SubscriptionsStatsRedirect,
   SubscriptionsAlertsRedirect,
   Plans,
+  Partners,
   BillingOps,
   BusinessInvoicesRedirect,
   DedicatedInstancesRedirect,

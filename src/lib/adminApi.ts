@@ -984,5 +984,62 @@ export const adminApi = {
   aiModels: async () => (await api.get<AIAssistantConfig>("/api/ai/assistant/models/")).data.models,
   askAssistant: async (payload: AIAssistantPayload) => 
     (await api.post<AIAssistantResponse>("/api/ai/assistant/ask/", payload)).data,
+
+  partnerProgramSettings: async () =>
+    (await api.get<PartnerProgramSettings>("/api/admin/partners/program/")).data,
+  updatePartnerProgramSettings: async (payload: Partial<PartnerProgramSettings>) =>
+    (await api.patch<PartnerProgramSettings>("/api/admin/partners/program/", payload)).data,
+  partners: async (params?: { q?: string }) =>
+    (await api.get<{ count: number; results: AdminPartner[] }>("/api/admin/partners/", { params })).data,
+  updatePartner: async (id: string, payload: Partial<{ status: string; commission_rate: string; notes: string }>) =>
+    (await api.patch<AdminPartner>(`/api/admin/partners/${id}/`, payload)).data,
+  partnerWithdrawals: async (params?: { status?: string; partner_id?: string }) =>
+    (await api.get<{ count: number; results: AdminPartnerWithdrawal[] }>("/api/admin/partners/withdrawals/", { params }))
+      .data,
+  partnerWithdrawalAction: async (id: string, payload: { action: string; admin_notes?: string }) =>
+    (await api.post(`/api/admin/partners/withdrawals/${id}/action/`, payload)).data,
 };
+
+export interface PartnerProgramSettings {
+  default_commission_rate: string;
+  payout_fee: string;
+  min_withdrawal_amount: string;
+  updated_at?: string;
+}
+
+export interface AdminPartner {
+  id: string;
+  name: string;
+  email: string;
+  contact_phone: string;
+  code: string;
+  commission_rate: string;
+  country: string;
+  status: string;
+  notes: string;
+  referral_link: string;
+  clients_count: number;
+  available_balance: string;
+  user_id: string | null;
+  user_email: string | null;
+  created_at: string;
+}
+
+export interface AdminPartnerWithdrawal {
+  id: string;
+  partner_id: string;
+  partner_name: string;
+  partner_code: string;
+  amount: string;
+  fee_amount: string;
+  net_amount: string;
+  status: string;
+  momo_country_code: string;
+  momo_operator: string;
+  momo_phone: string;
+  pal_reference: string;
+  admin_notes: string;
+  created_at: string;
+  processed_at: string | null;
+}
 

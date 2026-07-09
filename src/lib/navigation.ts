@@ -3,6 +3,7 @@ import {
   Building2,
   FileSearch,
   Flag,
+  Handshake,
   LayoutDashboard,
   Package,
   Puzzle,
@@ -48,6 +49,7 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { icon: WalletCards, label: "Abonnements", path: "/subscriptions" },
       { icon: SlidersHorizontal, label: "Plans & fonctionnalités", path: "/plans" },
+      { icon: Handshake, label: "Partenaires", path: "/partners" },
     ],
   },
   {
