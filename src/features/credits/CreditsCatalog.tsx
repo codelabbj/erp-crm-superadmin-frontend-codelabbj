@@ -105,7 +105,7 @@ export function CreditsCatalog() {
     <ListPageShell>
       <PageHeader
         title="Catalogue crédits"
-        subtitle="Prix unitaire et packs vendus via PAL (Mobile Money)."
+        description="Prix unitaire et packs vendus via PAL (Mobile Money)."
       />
 
       {catalogQuery.isLoading ? (

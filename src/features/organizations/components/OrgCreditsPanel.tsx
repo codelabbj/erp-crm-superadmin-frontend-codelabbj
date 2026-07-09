@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Coins, Plus, RefreshCw } from "lucide-react";
-import { adminApi, type OrgCreditsPayload } from "@/lib/adminApi";
+import { adminApi, type OrgCreditsLedgerEntry } from "@/lib/adminApi";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -315,7 +315,7 @@ function RateCard({ label, value, suffix }: { label: string; value?: number; suf
   );
 }
 
-function LedgerTable({ entries }: { entries: OrgCreditsPayload["ledger"]["results"] }) {
+function LedgerTable({ entries }: { entries: OrgCreditsLedgerEntry[] }) {
   if (!entries.length) {
     return <p className="text-sm text-slate-500">Aucun mouvement récent.</p>;
   }
