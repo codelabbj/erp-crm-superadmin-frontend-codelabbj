@@ -160,6 +160,9 @@ export interface OrganizationDetail extends OrganizationSubscriptionOverview {
   } | null;
   referral_code_used?: string;
   referred_at?: string | null;
+  allow_demo_payment?: boolean;
+  demo_payment_expires_at?: string | null;
+  demo_payment_active?: boolean;
 }
 
 export type OrganizationUpsert = {
@@ -899,6 +902,18 @@ export const adminApi = {
       status: data.status ?? data.plan_status ?? undefined,
     };
   },
+  patchOrganizationDemoPayment: async (
+    id: string,
+    payload: { allow_demo_payment: boolean; demo_payment_expires_at?: string | null },
+  ) =>
+    (
+      await api.patch<{
+        id: string;
+        allow_demo_payment: boolean;
+        demo_payment_expires_at: string | null;
+        demo_payment_active: boolean;
+      }>(`/api/admin/organizations/${id}/`, payload)
+    ).data,
   organizationRelatedData: async (id: string) =>
     (await api.get<OrganizationRelatedData>(`/api/admin/organizations/${id}/related/`)).data,
   organizationSubscriptions: async (id: string, params?: { limit?: number; offset?: number; sort?: string }) => {

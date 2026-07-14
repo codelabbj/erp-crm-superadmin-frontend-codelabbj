@@ -37,6 +37,7 @@ import { OrgDetailTabBar } from "@/features/organizations/components/OrgDetailTa
 import { OrgTeamTab } from "@/features/organizations/components/tabs/OrgTeamTab";
 import { OrgPartnerTab } from "@/features/organizations/components/tabs/OrgPartnerTab";
 import { OrgCreditsPanel } from "@/features/organizations/components/OrgCreditsPanel";
+import { OrgDemoPaymentPanel } from "@/features/organizations/components/OrgDemoPaymentPanel";
 import { type OrgDetailTab, orgProductsPath, readOrgDetailTab } from "@/lib/orgNavigation";
 import { MODULE_LABELS, planPeriodProgress, resolveMediaUrl } from "@/features/organizations/orgPlanUtils";
 import { useConfirmDialog } from "@/hooks/useConfirmDialog";
@@ -252,6 +253,7 @@ export function OrganizationDetail({ orgId, onBack, onOpenAudit }: OrganizationD
 
       {activeTab === "overview" ? (
         <OverviewPanel
+          orgId={orgId}
           orgMeta={orgMeta}
           planLabel={planLabel}
           totals={totals}
@@ -370,6 +372,7 @@ function OrgAvatar({ name, logoUrl }: { name: string; logoUrl: string }) {
 }
 
 function OverviewPanel({
+  orgId,
   orgMeta,
   planLabel,
   totals,
@@ -388,6 +391,7 @@ function OverviewPanel({
   onOpenSubscription,
   onOpenProducts,
 }: {
+  orgId: string;
   orgMeta?: OrgMeta;
   planLabel: string;
   totals?: {
@@ -475,6 +479,8 @@ function OverviewPanel({
           ) : null}
         </section>
       ) : null}
+
+      {orgMeta ? <OrgDemoPaymentPanel orgId={orgId} orgMeta={orgMeta} /> : null}
 
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="rounded-2xl border border-border-soft bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
