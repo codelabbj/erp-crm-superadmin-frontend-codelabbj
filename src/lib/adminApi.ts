@@ -233,6 +233,22 @@ export interface BusinessPlanRequestItem {
   created_at: string;
 }
 
+export interface AdminNotificationItem {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  payload: {
+    request_id?: string;
+    org_id?: string;
+    reference?: string;
+    org_name?: string;
+    [key: string]: unknown;
+  };
+  is_read: boolean;
+  created_at: string;
+}
+
 export interface DedicatedInstanceItem {
   id: string;
   instance_id: string;
@@ -1159,6 +1175,22 @@ export const adminApi = {
     (
       await api.patch<BusinessPlanRequestItem>(`/api/admin/business-plan-requests/${id}/`, payload)
     ).data,
+
+  notifications: async (params?: { unread?: boolean | number; limit?: number; offset?: number }) =>
+    (
+      await api.get<PaginatedResponse<AdminNotificationItem>>("/api/admin/notifications/", {
+        params: {
+          ...params,
+          unread: params?.unread ? 1 : undefined,
+        },
+      })
+    ).data,
+
+  notificationsUnreadCount: async () =>
+    (await api.get<{ count: number }>("/api/admin/notifications/unread-count/")).data,
+
+  markNotificationsRead: async (payload: { ids?: string[]; all?: boolean }) =>
+    (await api.post<{ marked: number }>("/api/admin/notifications/mark-read/", payload)).data,
 
   dedicatedInstances: async (params?: { status?: string; limit?: number; offset?: number }) =>
     (

@@ -1,6 +1,7 @@
 import { LogOut, Menu, Moon, Sun, User as UserIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { AdminNotificationsBell } from "@/components/layout/AdminNotificationsBell";
 import { authApi } from "@/lib/api";
 import { applyTheme, getInitialTheme, type ThemeMode } from "@/lib/theme";
 import { cn } from "@/lib/utils";
@@ -50,6 +51,8 @@ export function Topbar({ onMenuClick, onLogout }: TopbarProps) {
       <div className="flex-1" />
 
       <div className="flex items-center gap-1">
+        <AdminNotificationsBell />
+
         <button
           type="button"
           onClick={toggleTheme}
