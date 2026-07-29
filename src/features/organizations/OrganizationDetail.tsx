@@ -38,6 +38,7 @@ import { OrgTeamTab } from "@/features/organizations/components/tabs/OrgTeamTab"
 import { OrgPartnerTab } from "@/features/organizations/components/tabs/OrgPartnerTab";
 import { OrgCreditsPanel } from "@/features/organizations/components/OrgCreditsPanel";
 import { OrgDemoPaymentPanel } from "@/features/organizations/components/OrgDemoPaymentPanel";
+import { OrgProfileInfoPanel } from "@/features/organizations/components/OrgProfileInfoPanel";
 import { type OrgDetailTab, orgProductsPath, readOrgDetailTab } from "@/lib/orgNavigation";
 import { MODULE_LABELS, planPeriodProgress, resolveMediaUrl } from "@/features/organizations/orgPlanUtils";
 import { useConfirmDialog } from "@/hooks/useConfirmDialog";
@@ -167,8 +168,12 @@ export function OrganizationDetail({ orgId, onBack, onOpenAudit }: OrganizationD
   const statusLabel =
     orgMeta?.status === "trial" ? "Essai" : org.is_active ? "Actif" : "Suspendu";
   const ownerEmail =
-    owner?.email ?? users.find((u) => u.is_owner)?.email ?? users[0]?.email ?? org.email ?? "";
-  const logoUrl = resolveMediaUrl(org.logo_url);
+    owner?.email ?? users.find((u) => u.is_owner)?.email ?? users[0]?.email ?? org.email ?? orgMeta?.email ?? "";
+  const displayEmail = orgMeta?.email || org.email || "";
+  const displayPhone = orgMeta?.phone || org.phone || "";
+  const displayCountry = orgMeta?.country || org.country || "—";
+  const displayCurrency = orgMeta?.currency_display || orgMeta?.currency || org.currency || "XOF";
+  const logoUrl = resolveMediaUrl(orgMeta?.logo_url || org.logo_url);
 
   const openAssignPlan = () => {
     assignPlanMutation.reset();
@@ -204,14 +209,20 @@ export function OrganizationDetail({ orgId, onBack, onOpenAudit }: OrganizationD
               </div>
               <p className="m-0 mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-500">
                 <span className="inline-flex items-center gap-1">
-                  <Globe size={14} /> {org.slug}.codelab.bj
+                  <Globe size={14} /> {org.slug || orgMeta?.slug}.codelab.bj
                 </span>
                 <span className="inline-flex items-center gap-1">
-                  <Clock size={14} /> Créée {formatIsoDate(org.created_at)}
+                  <Clock size={14} /> Créée {formatIsoDate(org.created_at || orgMeta?.created_at)}
                 </span>
                 <span>
-                  {org.country || "—"} · {org.currency || "XOF"}
+                  {displayCountry} · {displayCurrency}
                 </span>
+                {displayEmail ? (
+                  <span className="inline-flex items-center gap-1 truncate" title={displayEmail}>
+                    {displayEmail}
+                  </span>
+                ) : null}
+                {displayPhone ? <span>{displayPhone}</span> : null}
               </p>
             </div>
           </div>
@@ -421,6 +432,8 @@ function OverviewPanel({
 
   return (
     <>
+      {orgMeta ? <OrgProfileInfoPanel org={orgMeta} /> : null}
+
       <div className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-3">
         <KpiCard label="Utilisateurs" value={t?.users ?? usersCount} icon={<Users size={18} />} accent="purple" />
         <KpiCard

@@ -163,6 +163,50 @@ export interface OrganizationDetail extends OrganizationSubscriptionOverview {
   allow_demo_payment?: boolean;
   demo_payment_expires_at?: string | null;
   demo_payment_active?: boolean;
+
+  /** Profil enregistré (lecture seule — GET admin detail enrichi). */
+  updated_at?: string;
+  logo_url?: string;
+  signature_url?: string;
+  deployment_type?: "platform" | "dedicated" | string | null;
+  employee_code?: string;
+  legal_form?: string;
+  primary_manager_name?: string;
+  rccm?: string;
+  capital_social?: string | null;
+  phone?: string;
+  email?: string;
+  address?: string;
+  country?: string;
+  currency?: string;
+  currency_display?: string;
+  show_decimals?: boolean;
+  timezone?: string;
+  locale?: string;
+  tax_id?: string;
+  tax_id_label?: string;
+  is_vat_registered?: boolean;
+  vat_rate?: string | null;
+  invoice_mode?: string;
+  fiscal_adapter_code?: string;
+  fiscal_pos_enabled?: boolean;
+  fiscal_invoice_enabled?: boolean;
+  billing_allow_line_tax_group_edit?: boolean;
+  invoice_footer_message?: string;
+  pos_discount_threshold_percent?: string | null;
+  auto_accounting?: boolean;
+  require_geo_verification?: boolean;
+  require_daily_report_before_clock_out?: boolean;
+  default_warehouse_id?: string | null;
+  payment_settings?: Record<string, unknown>;
+  plan_trial_ends_at?: string | null;
+  /** Clés PAL masquées côté API. */
+  pal_secret_key?: string;
+  pal_public_key?: string;
+  pal_user_id?: string;
+  pal_secret_key_set?: boolean;
+  pal_public_key_set?: boolean;
+  pal_user_id_set?: boolean;
 }
 
 export type OrganizationUpsert = {
@@ -304,7 +348,14 @@ export interface AdminProductsListResponse extends PaginatedResponse<AdminProduc
 export interface OrganizationRelatedData {
   success: boolean;
   data: {
-    organization: AdminOrganization & { email?: string; slug?: string; country?: string; currency?: string };
+    organization: AdminOrganization & {
+      email?: string;
+      phone?: string;
+      slug?: string;
+      country?: string;
+      currency?: string;
+      logo_url?: string;
+    };
     owner?: AdminUser | null;
     users: AdminUser[];
     customers: any[];
