@@ -1345,6 +1345,36 @@ export const adminApi = {
     payload: { action: "approve" | "reject" | "mark-paid"; admin_notes?: string },
   ) =>
     (await api.post(`/api/admin/partners/withdrawals/${withdrawalId}/action/`, payload)).data,
+
+  productFeedback: async (params?: {
+    q?: string;
+    status?: string;
+    feedback_type?: string;
+    feedback_id?: string;
+    org_id?: string;
+    limit?: number;
+    offset?: number;
+  }) =>
+    (await api.get<PaginatedResponse<ProductFeedbackItem>>("/api/admin/product-feedback/", { params }))
+      .data,
+
+  productFeedbackDetail: async (id: string) =>
+    (await api.get<ProductFeedbackItem>(`/api/admin/product-feedback/${id}/`)).data,
+
+  updateProductFeedback: async (
+    id: string,
+    payload: Partial<{
+      status: string;
+      admin_notes: string;
+      assigned_to_email: string;
+      fixed_in_version: string;
+    }>,
+  ) => (await api.patch<ProductFeedbackItem>(`/api/admin/product-feedback/${id}/`, payload)).data,
+
+  replyProductFeedback: async (id: string, body: string) =>
+    (
+      await api.post(`/api/admin/product-feedback/${id}/messages/`, { body })
+    ).data,
 };
 
 export interface PartnerProgramSettings {
@@ -1388,5 +1418,36 @@ export interface AdminPartnerWithdrawal {
   admin_notes: string;
   created_at: string;
   processed_at: string | null;
+}
+
+export interface ProductFeedbackMessage {
+  id: string;
+  body: string;
+  author_email: string;
+  author_name: string;
+  is_staff: boolean;
+  created_at: string;
+}
+
+export interface ProductFeedbackItem {
+  id: string;
+  reference: string;
+  feedback_type: "bug" | "improvement" | "comment";
+  status: string;
+  title: string;
+  description: string;
+  reporter_email: string;
+  reporter_name: string;
+  priority: string;
+  context: Record<string, string>;
+  screenshot_urls: string[];
+  admin_notes: string;
+  assigned_to_email: string;
+  fixed_in_version: string;
+  org: string;
+  org_name: string;
+  messages?: ProductFeedbackMessage[];
+  created_at: string;
+  updated_at: string;
 }
 

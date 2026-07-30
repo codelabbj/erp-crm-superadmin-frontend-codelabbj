@@ -26,6 +26,7 @@ import { Fiscal } from "@/features/fiscal/Fiscal";
 import { AIAssistant } from "@/features/ai/AIAssistant";
 import { PaymentTransactionsPage } from "@/features/paymentTransactions/PaymentTransactionsPage";
 import { PartnersPage } from "@/features/partners/PartnersPage";
+import { ProductFeedbackPage } from "@/features/productFeedback/ProductFeedbackPage";
 import { ORG_QUERY_KEY, readOrgIdFromSearch } from "@/lib/orgNavigation";
 
 export function DashboardPage() {
@@ -96,4 +97,5 @@ export const adminPages = {
   AIAssistant,
   PaymentTransactionsPage,
   PartnersPage,
+  ProductFeedbackPage,
 };

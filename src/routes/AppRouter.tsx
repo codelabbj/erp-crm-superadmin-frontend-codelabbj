@@ -35,6 +35,7 @@ export function AppRouter() {
     AIAssistant,
     PaymentTransactionsPage,
     PartnersPage,
+    ProductFeedbackPage,
   } = adminPages;
 
   return (
@@ -62,6 +63,7 @@ export function AppRouter() {
               <Route path="billing/dedicated-instances" element={<DedicatedInstancesRedirect />} />
               <Route path="catalog/products" element={<Products />} />
               <Route path="platform/feature-flags" element={<FeatureFlags />} />
+              <Route path="platform/product-feedback" element={<ProductFeedbackPage />} />
               <Route path="platform/modules" element={<Modules />} />
               <Route path="platform/jobs" element={<DataOps />} />
               <Route path="platform/staff" element={<Users />} />
