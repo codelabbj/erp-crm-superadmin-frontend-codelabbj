@@ -20,7 +20,9 @@ export function BusinessMetrics() {
       <header className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Métriques Business</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400">Suivi du MRR, ARR et de la croissance de la plateforme.</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            MRR/ARR issus des paiements encaissés (hors démo MAGIC).
+          </p>
         </div>
         <div className="flex gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-800/50">
           {["30d", "90d", "365d"].map((p) => (
@@ -44,14 +46,14 @@ export function BusinessMetrics() {
         <MetricCard
           title="MRR (Revenu Mensuel)"
           value={metrics?.mrr !== undefined ? formatMoney(metrics.mrr) : "—"}
-          change="+12.5%"
+          change={metrics?.paying_tenants != null ? `${metrics.paying_tenants} payant(s)` : undefined}
           trend="up"
           icon={<DollarSign size={20} className="text-emerald-500" />}
         />
         <MetricCard
           title="ARR (Revenu Annuel)"
           value={metrics?.arr !== undefined ? formatMoney(metrics.arr) : "—"}
-          change="+8.2%"
+          change={metrics?.revenue_30d != null ? `30j: ${formatMoney(metrics.revenue_30d)}` : undefined}
           trend="up"
           icon={<TrendingUp size={20} className="text-blue-500" />}
         />

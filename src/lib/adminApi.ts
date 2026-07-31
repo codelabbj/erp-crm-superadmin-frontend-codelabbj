@@ -835,6 +835,10 @@ export interface BusinessMetrics {
   arr: number;
   active_tenants: number;
   active_plans?: number;
+  paying_tenants?: number;
+  revenue_30d?: number;
+  revenue_365d?: number;
+  revenue_source?: string;
   churn_rate: number;
   net_revenue_retention: number;
   trial_to_paid_rate: number;
@@ -845,6 +849,7 @@ export interface BusinessMetrics {
     new_plans_by_month?: Array<{ month: string; count: number }>;
     cancelled_subscriptions_by_month?: Array<{ month: string; count: number }>;
     expired_plans_by_month?: Array<{ month: string; count: number }>;
+    revenue_by_month?: Array<{ month: string; amount: number }>;
   };
 }
 
