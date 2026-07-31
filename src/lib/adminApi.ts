@@ -1402,6 +1402,14 @@ export const adminApi = {
     (await api.get<PaginatedResponse<ProductFeedbackItem>>("/api/admin/product-feedback/", { params }))
       .data,
 
+  productFeedbackTopReporters: async (params?: { limit?: number }) =>
+    (
+      await api.get<PaginatedResponse<ProductFeedbackTopReporter>>(
+        "/api/admin/product-feedback/top-reporters/",
+        { params },
+      )
+    ).data,
+
   productFeedbackDetail: async (id: string) =>
     (await api.get<ProductFeedbackItem>(`/api/admin/product-feedback/${id}/`)).data,
 
@@ -1471,6 +1479,13 @@ export interface ProductFeedbackMessage {
   author_name: string;
   is_staff: boolean;
   created_at: string;
+}
+
+export interface ProductFeedbackTopReporter {
+  email: string;
+  name: string;
+  feedback_count: number;
+  last_feedback_at: string | null;
 }
 
 export interface ProductFeedbackItem {
