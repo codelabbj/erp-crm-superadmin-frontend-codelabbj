@@ -219,6 +219,7 @@ export interface OrganizationDetail extends OrganizationSubscriptionOverview {
   auto_accounting?: boolean;
   require_geo_verification?: boolean;
   require_daily_report_before_clock_out?: boolean;
+  require_clock_out_before_daily_report?: boolean;
   default_warehouse_id?: string | null;
   payment_settings?: Record<string, unknown>;
   plan_trial_ends_at?: string | null;

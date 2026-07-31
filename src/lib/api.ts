@@ -113,7 +113,12 @@ api.interceptors.response.use(
 
 export const authApi = {
   login: (email: string, password: string) =>
-    api.post<{ access: string; refresh: string }>("/api/token/", { email, password }),
+    api.post<{ access: string; refresh: string }>("/api/token/", {
+      email,
+      password,
+      // Distingue la console SA : multi-session côté backend (claim app=superadmin).
+      client: "superadmin",
+    }),
   me: () =>
     api.get<{ user: { id: string; email: string; full_name: string; is_superuser?: boolean } }>("/api/me/"),
 };
