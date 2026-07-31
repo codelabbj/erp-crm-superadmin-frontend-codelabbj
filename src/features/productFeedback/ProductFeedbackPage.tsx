@@ -161,7 +161,6 @@ export function ProductFeedbackPage() {
         description="Bugs, idées et commentaires remontés depuis l'application OwoDesk."
       />
 
-<<<<<<< HEAD
       <nav
         className="-mb-px flex gap-0.5 overflow-x-auto border-b border-neutral-4 dark:border-neutral-6"
         aria-label="Filtrer par statut"
@@ -191,7 +190,7 @@ export function ProductFeedbackPage() {
           );
         })}
       </nav>
-=======
+
       {topReporters.length > 0 || topReportersQuery.isLoading ? (
         <div className="rounded-2xl border border-neutral-4 bg-neutral-0 p-4 dark:border-neutral-6">
           <div className="mb-3 flex items-center gap-2">
@@ -237,7 +236,6 @@ export function ProductFeedbackPage() {
           )}
         </div>
       ) : null}
->>>>>>> c57ca33a3fdac63a53b61269979035795154b91d
 
       <FilterBar>
         <SearchInput
