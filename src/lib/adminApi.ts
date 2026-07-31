@@ -28,6 +28,19 @@ export interface AdminOrganization {
   members_count: number;
   created_at: string;
   owner?: OrgOwnerSummary | null;
+  plan_code?: string | null;
+  plan_name?: string | null;
+  plan_status?: string | null;
+  status?: string | null;
+  plan_billing_cycle?: string | null;
+  plan_starts_at?: string | null;
+  plan_expires_at?: string | null;
+  plan_trial_ends_at?: string | null;
+  additional_seats?: number;
+  has_pal_payment?: boolean;
+  has_magic_payment?: boolean;
+  has_any_paid?: boolean;
+  payment_source?: "pal" | "magic" | "admin_gifted" | "any_paid" | "unpaid" | string;
 }
 
 export interface AdminUser {
@@ -147,6 +160,10 @@ export interface OrganizationSubscriptionOverview {
   seats_total?: number;
   additional_seats?: number;
   active_modules_count?: number;
+  has_pal_payment?: boolean;
+  has_magic_payment?: boolean;
+  has_any_paid?: boolean;
+  payment_source?: string;
 }
 
 export interface OrganizationDetail extends OrganizationSubscriptionOverview {
@@ -958,7 +975,18 @@ export const adminApi = {
   patchLicensingModule: async (id: string, payload: AdminModulePatchPayload) =>
     (await api.patch<AdminModule>(`/api/licensing/modules/${id}/`, payload)).data,
 
-  organizationsOverview: async (params?: { q?: string; plan?: string; status?: string; limit?: number; offset?: number; sort?: string }) =>
+  organizationsOverview: async (params?: {
+    q?: string;
+    plan?: string;
+    status?: string;
+    subscription_status?: string;
+    payment_source?: string;
+    expiring_days?: number;
+    is_active?: string;
+    limit?: number;
+    offset?: number;
+    sort?: string;
+  }) =>
     (await api.get<PaginatedResponse<OrganizationSubscriptionOverview>>("/api/admin/organizations/", { params })).data,
   organizationDetail: async (id: string) => {
     const data = (await api.get<OrganizationDetail>(`/api/admin/organizations/${id}/`)).data;
@@ -1021,7 +1049,18 @@ export const adminApi = {
     (await api.get<PaginatedResponse<AdminSubscription>>("/api/admin/subscriptions/expiring-soon/", { params })).data,
   subscriptionAlerts: async () => (await api.get<SubscriptionAlerts>("/api/admin/subscriptions/alerts/")).data,
 
-  organizations: async (params?: { q?: string; limit?: number; offset?: number; sort?: string }) =>
+  organizations: async (params?: {
+    q?: string;
+    limit?: number;
+    offset?: number;
+    sort?: string;
+    plan?: string;
+    status?: string;
+    subscription_status?: string;
+    payment_source?: string;
+    expiring_days?: number;
+    is_active?: string;
+  }) =>
     (await api.get<PaginatedResponse<AdminOrganization>>("/api/admin/organizations/", { params })).data,
 
   updateOrganization: async (payload: { id: string; is_active: boolean }) =>
