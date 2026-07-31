@@ -199,7 +199,13 @@ export function Dashboard({ onOpenOrgSubscriptions, onOpenOrganizationsList }: D
   const mrr = businessMetrics?.mrr ?? overview?.mrr;
   const arr = businessMetrics?.arr ?? overview?.arr ?? (mrr != null ? mrr * 12 : undefined);
   const activeTenants = businessMetrics?.active_tenants ?? overview?.active_orgs ?? overview?.organizations;
-  const arpu = mrr != null && activeTenants ? mrr / activeTenants : undefined;
+  const payingTenants = businessMetrics?.paying_tenants;
+  const arpu =
+    mrr != null && payingTenants
+      ? mrr / payingTenants
+      : mrr != null && activeTenants
+        ? mrr / activeTenants
+        : undefined;
 
   const tenantSeries = useMemo(() => {
     const fromMetrics = businessMetrics?.time_series?.new_tenants_by_month;
@@ -283,26 +289,47 @@ export function Dashboard({ onOpenOrgSubscriptions, onOpenOrganizationsList }: D
       </header>
 
       {/* Revenus & croissance */}
-      <DashboardSection title="Revenus & croissance" description="Indicateurs SaaS (Franc CFA — XOF)">
+      <DashboardSection
+        title="Revenus & croissance"
+        description="Basé sur les paiements encaissés (OrgPayment, hors démo MAGIC) — XOF"
+      >
         <div className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-3">
           <KpiCard
             label="MRR"
             value={formatMoney(mrr)}
-            hint="Revenu récurrent mensuel"
+            hint="Dernier paiement abonnement normalisé / mois"
             icon={<Banknote size={18} />}
             accent="emerald"
           />
           <KpiCard
             label="ARR"
             value={formatMoney(arr)}
-            hint="Revenu récurrent annuel"
+            hint="MRR × 12"
             icon={<TrendingUp size={18} />}
             accent="emerald"
           />
           <KpiCard
+            label="Encaissé 30 j"
+            value={formatMoney(businessMetrics?.revenue_30d)}
+            hint="Somme des paiements réussis"
+            icon={<Wallet size={18} />}
+            accent="emerald"
+          />
+          <KpiCard
+            label="Encaissé 12 mois"
+            value={formatMoney(businessMetrics?.revenue_365d)}
+            hint="Cash collecté (hors MAGIC)"
+            icon={<Banknote size={18} />}
+            accent="blue"
+          />
+          <KpiCard
             label="ARPU"
             value={formatMoney(arpu)}
-            hint="Revenu moyen par tenant actif"
+            hint={
+              payingTenants != null
+                ? `Par tenant payant (${payingTenants})`
+                : "Revenu moyen par tenant"
+            }
             icon={<Wallet size={18} />}
             accent="blue"
           />

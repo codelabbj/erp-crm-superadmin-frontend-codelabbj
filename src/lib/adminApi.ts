@@ -835,6 +835,10 @@ export interface BusinessMetrics {
   arr: number;
   active_tenants: number;
   active_plans?: number;
+  paying_tenants?: number;
+  revenue_30d?: number;
+  revenue_365d?: number;
+  revenue_source?: string;
   churn_rate: number;
   net_revenue_retention: number;
   trial_to_paid_rate: number;
@@ -845,6 +849,7 @@ export interface BusinessMetrics {
     new_plans_by_month?: Array<{ month: string; count: number }>;
     cancelled_subscriptions_by_month?: Array<{ month: string; count: number }>;
     expired_plans_by_month?: Array<{ month: string; count: number }>;
+    revenue_by_month?: Array<{ month: string; amount: number }>;
   };
 }
 
@@ -1403,6 +1408,14 @@ export const adminApi = {
     (await api.get<PaginatedResponse<ProductFeedbackItem>>("/api/admin/product-feedback/", { params }))
       .data,
 
+  productFeedbackTopReporters: async (params?: { limit?: number }) =>
+    (
+      await api.get<PaginatedResponse<ProductFeedbackTopReporter>>(
+        "/api/admin/product-feedback/top-reporters/",
+        { params },
+      )
+    ).data,
+
   productFeedbackDetail: async (id: string) =>
     (await api.get<ProductFeedbackItem>(`/api/admin/product-feedback/${id}/`)).data,
 
@@ -1472,6 +1485,13 @@ export interface ProductFeedbackMessage {
   author_name: string;
   is_staff: boolean;
   created_at: string;
+}
+
+export interface ProductFeedbackTopReporter {
+  email: string;
+  name: string;
+  feedback_count: number;
+  last_feedback_at: string | null;
 }
 
 export interface ProductFeedbackItem {

@@ -7,6 +7,7 @@ import {
   MessageSquarePlus,
   ExternalLink,
   Send,
+  Trophy,
 } from "lucide-react";
 import { adminApi, type ProductFeedbackItem } from "@/lib/adminApi";
 import { orgDetailPath } from "@/lib/orgNavigation";
@@ -89,8 +90,14 @@ export function ProductFeedbackPage() {
       }),
   });
 
+  const topReportersQuery = useQuery({
+    queryKey: ["product-feedback-top-reporters"],
+    queryFn: () => adminApi.productFeedbackTopReporters({ limit: 5 }),
+  });
+
   const items = listQuery.data?.results ?? [];
   const total = listQuery.data?.count ?? 0;
+  const topReporters = topReportersQuery.data?.results ?? [];
 
   useEffect(() => {
     if (!focusId || !items.length) return;
@@ -109,6 +116,7 @@ export function ProductFeedbackPage() {
     onSuccess: (data) => {
       setSelected(data);
       void queryClient.invalidateQueries({ queryKey: ["product-feedback"] });
+      void queryClient.invalidateQueries({ queryKey: ["product-feedback-top-reporters"] });
       setDetailError("");
     },
     onError: (err: unknown) => setDetailError(getErrorMessage(err)),
@@ -153,6 +161,7 @@ export function ProductFeedbackPage() {
         description="Bugs, idées et commentaires remontés depuis l'application OwoDesk."
       />
 
+<<<<<<< HEAD
       <nav
         className="-mb-px flex gap-0.5 overflow-x-auto border-b border-neutral-4 dark:border-neutral-6"
         aria-label="Filtrer par statut"
@@ -182,6 +191,53 @@ export function ProductFeedbackPage() {
           );
         })}
       </nav>
+=======
+      {topReporters.length > 0 || topReportersQuery.isLoading ? (
+        <div className="rounded-2xl border border-neutral-4 bg-neutral-0 p-4 dark:border-neutral-6">
+          <div className="mb-3 flex items-center gap-2">
+            <Trophy className="h-4 w-4 text-primary-1" />
+            <h3 className="text-sm font-semibold text-neutral-9 dark:text-neutral-10">
+              Top contributeurs
+            </h3>
+            <span className="text-xs text-neutral-6">5 utilisateurs les plus actifs</span>
+          </div>
+          {topReportersQuery.isLoading ? (
+            <p className="text-sm text-neutral-6">Chargement…</p>
+          ) : (
+            <ol className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+              {topReporters.map((reporter, index) => (
+                <li key={reporter.email}>
+                  <button
+                    type="button"
+                    className="flex w-full items-start gap-2 rounded-xl border border-neutral-4 px-3 py-2 text-left transition hover:border-primary-3 hover:bg-neutral-1 dark:border-neutral-6"
+                    onClick={() => {
+                      setSearch(reporter.email);
+                      resetPage();
+                    }}
+                    title={`Filtrer les retours de ${reporter.email}`}
+                  >
+                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-neutral-2 text-[11px] font-bold text-neutral-7 dark:bg-neutral-7 dark:text-neutral-3">
+                      {index + 1}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-medium text-neutral-9 dark:text-neutral-10">
+                        {reporter.name || reporter.email}
+                      </span>
+                      {reporter.name ? (
+                        <span className="block truncate text-xs text-neutral-6">{reporter.email}</span>
+                      ) : null}
+                      <span className="mt-0.5 block text-xs font-semibold text-primary-1">
+                        {reporter.feedback_count} retour{reporter.feedback_count > 1 ? "s" : ""}
+                      </span>
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ol>
+          )}
+        </div>
+      ) : null}
+>>>>>>> c57ca33a3fdac63a53b61269979035795154b91d
 
       <FilterBar>
         <SearchInput
@@ -190,7 +246,7 @@ export function ProductFeedbackPage() {
             setSearch(v);
             resetPage();
           }}
-          placeholder="Référence, titre…"
+          placeholder="Référence, titre, e-mail…"
         />
         <FilterSelect
           value={typeFilter}
