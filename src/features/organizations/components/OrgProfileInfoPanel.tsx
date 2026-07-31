@@ -215,6 +215,10 @@ export function OrgProfileInfoPanel({ org }: Props) {
             label="Rapport avant départ"
             value={boolLabel(org.require_daily_report_before_clock_out)}
           />
+          <Field
+            label="Départ avant rapport"
+            value={boolLabel(org.require_clock_out_before_daily_report)}
+          />
           <Field label="Entrepôt défaut" value={display(org.default_warehouse_id)} mono />
           <Field
             label="Message pied de facture"
