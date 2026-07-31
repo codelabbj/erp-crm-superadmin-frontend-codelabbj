@@ -5,7 +5,7 @@ import { SubscriptionsStats } from "./SubscriptionsStats";
 import { SubscriptionsAlerts } from "./SubscriptionsAlerts";
 
 const TABS = [
-  { id: "list", label: "Organisations" },
+  { id: "list", label: "Gestion plans" },
   { id: "stats", label: "Statistiques" },
   { id: "alerts", label: "Alertes" },
 ] as const;

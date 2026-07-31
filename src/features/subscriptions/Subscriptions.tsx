@@ -227,7 +227,10 @@ export function Subscriptions({ focusOrgId, onFocusOrgHandled }: SubscriptionsPr
   return (
     <ListPageShell>
       {scopedOrgId ? <OrgContextBanner orgId={scopedOrgId} /> : null}
-      <PageHeader title="Abonnements" description="Vue par organisation, plans et sièges." />
+      <PageHeader
+        title="Abonnements"
+        description="Actions licensing : assigner un plan, sièges, prolonger / résilier. Stats et alertes dans les onglets."
+      />
       <FilterBar>
         <SearchInput
           value={q}

@@ -120,7 +120,7 @@ function OrgRowActions({
                 setOpen(false);
               }}
             >
-              <WalletCards size={14} /> Abonnements
+              <WalletCards size={14} /> Gérer le plan
             </button>
           </li>
           <li>
@@ -247,6 +247,10 @@ export function Organizations() {
           "Membres",
           "Plan",
           "Statut plan",
+          "Sièges utilisés",
+          "Sièges inclus",
+          "Sièges additionnels",
+          "Sièges total",
           "Paiement",
           "Expire le",
           "Créée le",
@@ -261,6 +265,10 @@ export function Organizations() {
           o.members_count,
           o.plan_code || "",
           planStatusLabel(o),
+          o.seats_used ?? "",
+          o.seats_included ?? "",
+          o.additional_seats ?? "",
+          o.seats_total ?? "",
           paymentSourceLabel(o.payment_source),
           formatIsoDate(o.plan_expires_at ?? undefined),
           formatIsoDate(o.created_at),
@@ -292,7 +300,7 @@ export function Organizations() {
     <ListPageShell>
       <PageHeader
         title="Organisations"
-        description="Tenants de la plateforme — filtres abonnement / paiement, export et actions rapides."
+        description="Annuaire des tenants — aperçu plan, sièges et paiement. Pour assigner un plan ou ajouter des sièges : Abonnements."
         actions={
           <button type="button" onClick={() => setIsModalOpen(true)} className="btn-primary px-3 py-1.5 text-xs">
             <Plus size={14} className="mr-1 inline" />
@@ -439,9 +447,9 @@ export function Organizations() {
               <th className="px-3 py-2.5 text-left font-semibold text-slate-700 dark:text-slate-300">Organisation</th>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-700 dark:text-slate-300">Plan</th>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-700 dark:text-slate-300">Abonnement</th>
+              <th className="px-3 py-2.5 text-left font-semibold text-slate-700 dark:text-slate-300">Sièges</th>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-700 dark:text-slate-300">Paiement</th>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-700 dark:text-slate-300">Expire</th>
-              <th className="px-3 py-2.5 text-left font-semibold text-slate-700 dark:text-slate-300">Membres</th>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-700 dark:text-slate-300">Org</th>
               <th className="px-3 py-2.5 text-right font-semibold text-slate-700 dark:text-slate-300">Actions</th>
             </tr>
@@ -471,8 +479,20 @@ export function Organizations() {
                   <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200">
                     {o.plan_code || "Aucun"}
                   </span>
+                  {o.plan_name ? (
+                    <p className="m-0 mt-0.5 max-w-[140px] truncate text-[11px] text-slate-500">{o.plan_name}</p>
+                  ) : null}
                 </td>
                 <td className="px-3 py-3 text-slate-700 dark:text-slate-300">{planStatusLabel(o)}</td>
+                <td className="px-3 py-3">
+                  <p className="m-0 tabular-nums font-medium text-slate-800 dark:text-slate-200">
+                    {o.seats_used ?? 0} / {o.seats_total ?? o.seats_included ?? 0}
+                  </p>
+                  <p className="m-0 text-[11px] text-slate-500">
+                    inclus {o.seats_included ?? 0}
+                    {(o.additional_seats ?? 0) > 0 ? ` +${o.additional_seats}` : ""}
+                  </p>
+                </td>
                 <td className="px-3 py-3">
                   <span
                     className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${
@@ -491,7 +511,6 @@ export function Organizations() {
                 <td className="px-3 py-3 text-slate-600 dark:text-slate-400">
                   {formatIsoDate(o.plan_expires_at ?? undefined)}
                 </td>
-                <td className="px-3 py-3 tabular-nums text-slate-800 dark:text-slate-200">{o.members_count}</td>
                 <td className="px-3 py-3">
                   <span
                     className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${

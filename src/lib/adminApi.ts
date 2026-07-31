@@ -36,6 +36,11 @@ export interface AdminOrganization {
   plan_starts_at?: string | null;
   plan_expires_at?: string | null;
   plan_trial_ends_at?: string | null;
+  enabled_modules?: string[];
+  active_modules_count?: number;
+  seats_used?: number;
+  seats_included?: number;
+  seats_total?: number;
   additional_seats?: number;
   has_pal_payment?: boolean;
   has_magic_payment?: boolean;
