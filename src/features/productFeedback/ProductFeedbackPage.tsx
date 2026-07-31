@@ -33,6 +33,8 @@ const STATUS_OPTIONS = [
   { value: "rejected", label: "Rejeté" },
 ];
 
+const STATUS_TABS = [{ value: "", label: "Tous" }, ...STATUS_OPTIONS] as const;
+
 const TYPE_OPTIONS = [
   { value: "bug", label: "Bug" },
   { value: "improvement", label: "Amélioration" },
@@ -151,6 +153,36 @@ export function ProductFeedbackPage() {
         description="Bugs, idées et commentaires remontés depuis l'application OwoDesk."
       />
 
+      <nav
+        className="-mb-px flex gap-0.5 overflow-x-auto border-b border-neutral-4 dark:border-neutral-6"
+        aria-label="Filtrer par statut"
+        role="tablist"
+      >
+        {STATUS_TABS.map((tab) => {
+          const isActive = statusFilter === tab.value;
+          return (
+            <button
+              key={tab.value || "all"}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              onClick={() => {
+                setStatusFilter(tab.value);
+                resetPage();
+              }}
+              className={cn(
+                "relative shrink-0 border-b-2 px-4 py-2.5 text-xs font-semibold whitespace-nowrap transition-colors",
+                isActive
+                  ? "border-primary-1 bg-primary-5/40 text-primary-1"
+                  : "border-transparent text-neutral-6 hover:bg-neutral-1 hover:text-neutral-8",
+              )}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
+      </nav>
+
       <FilterBar>
         <SearchInput
           value={search}
@@ -159,15 +191,6 @@ export function ProductFeedbackPage() {
             resetPage();
           }}
           placeholder="Référence, titre…"
-        />
-        <FilterSelect
-          value={statusFilter}
-          onChange={(v) => {
-            setStatusFilter(v);
-            resetPage();
-          }}
-          placeholder="Tous les statuts"
-          options={STATUS_OPTIONS}
         />
         <FilterSelect
           value={typeFilter}
