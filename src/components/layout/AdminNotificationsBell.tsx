@@ -26,6 +26,10 @@ function formatRelative(iso: string): string {
 }
 
 function notificationTargetPath(item: AdminNotificationItem): string | null {
+  const feedbackId = item.payload?.feedback_id;
+  if (typeof feedbackId === "string" && feedbackId) {
+    return `/platform/product-feedback?feedback_id=${feedbackId}`;
+  }
   const orgId = item.payload?.org_id;
   if (typeof orgId === "string" && orgId) {
     return orgDetailPath(orgId, "billing");

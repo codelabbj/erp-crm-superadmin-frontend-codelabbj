@@ -36,6 +36,7 @@ export function Subscriptions({ focusOrgId, onFocusOrgHandled }: SubscriptionsPr
   const debouncedQ = useDebouncedValue(q);
   const [statusFilter, setStatusFilter] = useState("");
   const [planFilter, setPlanFilter] = useState("");
+  const [paymentSource, setPaymentSource] = useState("");
   const { page, setPage, offset, pageSize, resetPage } = usePaginationState(30);
   const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
   const [selectedPlanCode, setSelectedPlanCode] = useState("");
@@ -51,12 +52,13 @@ export function Subscriptions({ focusOrgId, onFocusOrgHandled }: SubscriptionsPr
   });
 
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ["org-subscriptions-overview", debouncedQ, statusFilter, planFilter, page],
+    queryKey: ["org-subscriptions-overview", debouncedQ, statusFilter, planFilter, paymentSource, page],
     queryFn: () =>
       adminApi.organizationsOverview({
         q: debouncedQ || undefined,
         plan: planFilter || undefined,
         status: statusFilter || undefined,
+        payment_source: paymentSource || undefined,
         limit: pageSize,
         offset,
         sort: "-created_at",
@@ -225,7 +227,10 @@ export function Subscriptions({ focusOrgId, onFocusOrgHandled }: SubscriptionsPr
   return (
     <ListPageShell>
       {scopedOrgId ? <OrgContextBanner orgId={scopedOrgId} /> : null}
-      <PageHeader title="Abonnements" description="Vue par organisation, plans et sièges." />
+      <PageHeader
+        title="Abonnements"
+        description="Actions licensing : assigner un plan, sièges, prolonger / résilier. Stats et alertes dans les onglets."
+      />
       <FilterBar>
         <SearchInput
           value={q}
@@ -246,6 +251,24 @@ export function Subscriptions({ focusOrgId, onFocusOrgHandled }: SubscriptionsPr
             { value: "active", label: "Actif" },
             { value: "suspended", label: "Suspendu" },
             { value: "trial", label: "Essai" },
+            { value: "expired", label: "Expiré" },
+            { value: "expiring_soon", label: "Bientôt expiré" },
+            { value: "no_plan", label: "Sans plan" },
+          ]}
+        />
+        <FilterSelect
+          value={paymentSource}
+          onChange={(v) => {
+            setPaymentSource(v);
+            resetPage();
+          }}
+          placeholder="Source paiement"
+          options={[
+            { value: "pal", label: "Payé via PAL" },
+            { value: "admin_gifted", label: "Offert / admin" },
+            { value: "magic", label: "Démo MAGIC" },
+            { value: "any_paid", label: "Tout paiement" },
+            { value: "unpaid", label: "Sans paiement" },
           ]}
         />
         <FilterSelect
@@ -270,6 +293,7 @@ export function Subscriptions({ focusOrgId, onFocusOrgHandled }: SubscriptionsPr
             <tr>
               <th className="px-2 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Organisation</th>
               <th className="px-2 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Plan actif</th>
+              <th className="px-2 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Paiement</th>
               <th className="px-2 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Sieges</th>
               <th className="px-2 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Modules actifs</th>
               <th className="px-2 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Date creation</th>
@@ -293,6 +317,17 @@ export function Subscriptions({ focusOrgId, onFocusOrgHandled }: SubscriptionsPr
                   <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200">
                     {org.plan_code || "Aucun"}
                   </span>
+                </td>
+                <td className="px-2 py-2 text-[11px] text-slate-700 dark:text-slate-300">
+                  {org.payment_source === "pal"
+                    ? "PAL"
+                    : org.payment_source === "admin_gifted"
+                      ? "Offert/admin"
+                      : org.payment_source === "magic"
+                        ? "MAGIC"
+                        : org.payment_source === "any_paid"
+                          ? "Payé"
+                          : "—"}
                 </td>
                 <td className="px-2 py-2 text-slate-800 dark:text-slate-200">
                   {org.seats_used ?? 0} / {org.seats_included ?? 0}

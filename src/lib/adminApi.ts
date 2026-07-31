@@ -28,6 +28,24 @@ export interface AdminOrganization {
   members_count: number;
   created_at: string;
   owner?: OrgOwnerSummary | null;
+  plan_code?: string | null;
+  plan_name?: string | null;
+  plan_status?: string | null;
+  status?: string | null;
+  plan_billing_cycle?: string | null;
+  plan_starts_at?: string | null;
+  plan_expires_at?: string | null;
+  plan_trial_ends_at?: string | null;
+  enabled_modules?: string[];
+  active_modules_count?: number;
+  seats_used?: number;
+  seats_included?: number;
+  seats_total?: number;
+  additional_seats?: number;
+  has_pal_payment?: boolean;
+  has_magic_payment?: boolean;
+  has_any_paid?: boolean;
+  payment_source?: "pal" | "magic" | "admin_gifted" | "any_paid" | "unpaid" | string;
 }
 
 export interface AdminUser {
@@ -147,6 +165,10 @@ export interface OrganizationSubscriptionOverview {
   seats_total?: number;
   additional_seats?: number;
   active_modules_count?: number;
+  has_pal_payment?: boolean;
+  has_magic_payment?: boolean;
+  has_any_paid?: boolean;
+  payment_source?: string;
 }
 
 export interface OrganizationDetail extends OrganizationSubscriptionOverview {
@@ -959,7 +981,18 @@ export const adminApi = {
   patchLicensingModule: async (id: string, payload: AdminModulePatchPayload) =>
     (await api.patch<AdminModule>(`/api/licensing/modules/${id}/`, payload)).data,
 
-  organizationsOverview: async (params?: { q?: string; plan?: string; status?: string; limit?: number; offset?: number; sort?: string }) =>
+  organizationsOverview: async (params?: {
+    q?: string;
+    plan?: string;
+    status?: string;
+    subscription_status?: string;
+    payment_source?: string;
+    expiring_days?: number;
+    is_active?: string;
+    limit?: number;
+    offset?: number;
+    sort?: string;
+  }) =>
     (await api.get<PaginatedResponse<OrganizationSubscriptionOverview>>("/api/admin/organizations/", { params })).data,
   organizationDetail: async (id: string) => {
     const data = (await api.get<OrganizationDetail>(`/api/admin/organizations/${id}/`)).data;
@@ -1022,7 +1055,18 @@ export const adminApi = {
     (await api.get<PaginatedResponse<AdminSubscription>>("/api/admin/subscriptions/expiring-soon/", { params })).data,
   subscriptionAlerts: async () => (await api.get<SubscriptionAlerts>("/api/admin/subscriptions/alerts/")).data,
 
-  organizations: async (params?: { q?: string; limit?: number; offset?: number; sort?: string }) =>
+  organizations: async (params?: {
+    q?: string;
+    limit?: number;
+    offset?: number;
+    sort?: string;
+    plan?: string;
+    status?: string;
+    subscription_status?: string;
+    payment_source?: string;
+    expiring_days?: number;
+    is_active?: string;
+  }) =>
     (await api.get<PaginatedResponse<AdminOrganization>>("/api/admin/organizations/", { params })).data,
 
   updateOrganization: async (payload: { id: string; is_active: boolean }) =>
@@ -1346,6 +1390,36 @@ export const adminApi = {
     payload: { action: "approve" | "reject" | "mark-paid"; admin_notes?: string },
   ) =>
     (await api.post(`/api/admin/partners/withdrawals/${withdrawalId}/action/`, payload)).data,
+
+  productFeedback: async (params?: {
+    q?: string;
+    status?: string;
+    feedback_type?: string;
+    feedback_id?: string;
+    org_id?: string;
+    limit?: number;
+    offset?: number;
+  }) =>
+    (await api.get<PaginatedResponse<ProductFeedbackItem>>("/api/admin/product-feedback/", { params }))
+      .data,
+
+  productFeedbackDetail: async (id: string) =>
+    (await api.get<ProductFeedbackItem>(`/api/admin/product-feedback/${id}/`)).data,
+
+  updateProductFeedback: async (
+    id: string,
+    payload: Partial<{
+      status: string;
+      admin_notes: string;
+      assigned_to_email: string;
+      fixed_in_version: string;
+    }>,
+  ) => (await api.patch<ProductFeedbackItem>(`/api/admin/product-feedback/${id}/`, payload)).data,
+
+  replyProductFeedback: async (id: string, body: string) =>
+    (
+      await api.post(`/api/admin/product-feedback/${id}/messages/`, { body })
+    ).data,
 };
 
 export interface PartnerProgramSettings {
@@ -1389,5 +1463,36 @@ export interface AdminPartnerWithdrawal {
   admin_notes: string;
   created_at: string;
   processed_at: string | null;
+}
+
+export interface ProductFeedbackMessage {
+  id: string;
+  body: string;
+  author_email: string;
+  author_name: string;
+  is_staff: boolean;
+  created_at: string;
+}
+
+export interface ProductFeedbackItem {
+  id: string;
+  reference: string;
+  feedback_type: "bug" | "improvement" | "comment";
+  status: string;
+  title: string;
+  description: string;
+  reporter_email: string;
+  reporter_name: string;
+  priority: string;
+  context: Record<string, string>;
+  screenshot_urls: string[];
+  admin_notes: string;
+  assigned_to_email: string;
+  fixed_in_version: string;
+  org: string;
+  org_name: string;
+  messages?: ProductFeedbackMessage[];
+  created_at: string;
+  updated_at: string;
 }
 
