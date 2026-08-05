@@ -117,6 +117,31 @@ export interface PlatformPlanLimits {
   max_users_hard: number;
   additional_seats_allowed: boolean;
   included_credits?: number;
+  list_price_monthly?: number;
+  list_price_yearly?: number;
+  promo_percent?: number;
+  annual_discount_percent?: number;
+  promo_label?: string;
+  promo_ends_at?: string | null;
+  quote_based?: boolean;
+  discount?: string;
+}
+
+export interface PlanPricing {
+  list_price_monthly: string;
+  list_price_yearly: string;
+  price_monthly: string;
+  price_yearly: string;
+  promo_percent: number;
+  annual_discount_percent: number;
+  promo_active: boolean;
+  promo_label: string;
+  promo_ends_at: string | null;
+  monthly_savings: string;
+  yearly_savings_vs_list: string;
+  yearly_savings_vs_monthly: string;
+  annual_equivalent_monthly: string;
+  quote_based: boolean;
 }
 
 export interface PlatformPlan {
@@ -127,6 +152,7 @@ export interface PlatformPlan {
   price_monthly: string | number;
   price_yearly: string | number;
   trial_days?: number;
+  pricing?: PlanPricing;
   limits: PlatformPlanLimits;
   enabled_modules: (string | { code: string; name?: string })[];
   is_active: boolean;

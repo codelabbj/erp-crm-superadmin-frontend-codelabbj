@@ -7,6 +7,7 @@ import { ListPageShell, PageHeader } from "@/components/ui/PageHeader";
 import { Pagination } from "@/components/ui/Pagination";
 import { useDebouncedValue, usePaginationState } from "@/hooks/useListState";
 import { clientPageSlice } from "@/lib/pagination";
+import { computePlanPricePreview, isQuoteBasedPlanCode } from "../../lib/planPricingPreview";
 import { useConfirmDialog } from "@/hooks/useConfirmDialog";
 
 type EnabledModuleRef = string | { code?: string | null };
@@ -34,8 +35,12 @@ type PlanFormState = {
   name: string;
   code: string;
   description: string;
-  price_monthly: string;
-  price_yearly: string;
+  list_price_monthly: string;
+  list_price_yearly: string;
+  promo_percent: string;
+  annual_discount_percent: string;
+  promo_label: string;
+  quote_based: boolean;
   included_seats: string;
   max_users_hard: string;
   included_credits: string;
@@ -50,8 +55,12 @@ const emptyForm: PlanFormState = {
   name: "",
   code: "",
   description: "",
-  price_monthly: "",
-  price_yearly: "",
+  list_price_monthly: "",
+  list_price_yearly: "",
+  promo_percent: "0",
+  annual_discount_percent: "20",
+  promo_label: "",
+  quote_based: false,
   included_seats: "1",
   max_users_hard: "1",
   included_credits: "0",
@@ -72,16 +81,29 @@ function resolveTrialDays(form: PlanFormState): number {
 function toFormState(plan: PlatformPlan): PlanFormState {
   const trialDays = plan.trial_days ?? 0;
   const trialEnabled = trialDays > 0;
+  const limits = plan.limits ?? {};
+  const pricing = plan.pricing;
+  const quoteBased = Boolean(limits.quote_based) || isQuoteBasedPlanCode(plan.code ?? "");
   return {
     name: plan.name ?? "",
     code: plan.code ?? "",
     description: plan.description ?? "",
-    price_monthly: String(plan.price_monthly ?? ""),
-    price_yearly: String(plan.price_yearly ?? ""),
-    included_seats: String(plan.limits?.included_seats ?? 1),
-    max_users_hard: String(plan.limits?.max_users_hard ?? 1),
-    included_credits: String(plan.limits?.included_credits ?? 0),
-    additional_seats_allowed: Boolean(plan.limits?.additional_seats_allowed),
+    list_price_monthly: String(
+      limits.list_price_monthly ?? pricing?.list_price_monthly ?? plan.price_monthly ?? "",
+    ),
+    list_price_yearly: String(
+      limits.list_price_yearly ?? pricing?.list_price_yearly ?? plan.price_yearly ?? "",
+    ),
+    promo_percent: String(limits.promo_percent ?? pricing?.promo_percent ?? 0),
+    annual_discount_percent: String(
+      limits.annual_discount_percent ?? pricing?.annual_discount_percent ?? 20,
+    ),
+    promo_label: String(limits.promo_label ?? pricing?.promo_label ?? ""),
+    quote_based: quoteBased,
+    included_seats: String(limits.included_seats ?? 1),
+    max_users_hard: String(limits.max_users_hard ?? 1),
+    included_credits: String(limits.included_credits ?? 0),
+    additional_seats_allowed: Boolean(limits.additional_seats_allowed),
     enabled_modules: normalizeEnabledModuleCodes(plan.enabled_modules),
     is_active: Boolean(plan.is_active),
     trial_enabled: trialEnabled,
@@ -92,12 +114,27 @@ function toFormState(plan: PlatformPlan): PlanFormState {
 function toPayload(form: PlanFormState, existingLimits?: PlatformPlan["limits"]): PlatformPlanUpsert {
   const trialDays = resolveTrialDays(form);
   const includedCredits = Number(form.included_credits);
+  const quoteBased = form.quote_based || isQuoteBasedPlanCode(form.code);
+  const listMonthly = Number(form.list_price_monthly);
+  const listYearlyRaw = form.list_price_yearly.trim();
+  const listYearly = listYearlyRaw ? Number(listYearlyRaw) : undefined;
+  const promoPercent = Number(form.promo_percent);
+  const annualDiscountPercent = Number(form.annual_discount_percent);
+  const preview = quoteBased
+    ? { priceMonthly: 0, priceYearly: 0 }
+    : computePlanPricePreview({
+        listPriceMonthly: listMonthly,
+        listPriceYearly: listYearly,
+        promoPercent,
+        annualDiscountPercent,
+      });
+
   return {
     name: form.name.trim(),
     code: form.code.trim().toLowerCase(),
     description: form.description.trim(),
-    price_monthly: form.price_monthly.trim(),
-    price_yearly: form.price_yearly.trim(),
+    price_monthly: preview.priceMonthly,
+    price_yearly: preview.priceYearly,
     trial_days: trialDays,
     limits: {
       ...(existingLimits ?? {}),
@@ -105,6 +142,17 @@ function toPayload(form: PlanFormState, existingLimits?: PlatformPlan["limits"])
       max_users_hard: Number(form.max_users_hard),
       additional_seats_allowed: form.additional_seats_allowed,
       included_credits: Number.isFinite(includedCredits) && includedCredits >= 0 ? Math.floor(includedCredits) : 0,
+      ...(quoteBased
+        ? { quote_based: true }
+        : {
+            list_price_monthly: listMonthly,
+            ...(listYearly != null && Number.isFinite(listYearly) ? { list_price_yearly: listYearly } : {}),
+            promo_percent: Number.isFinite(promoPercent) ? Math.max(0, Math.min(100, promoPercent)) : 0,
+            annual_discount_percent: Number.isFinite(annualDiscountPercent)
+              ? Math.max(0, Math.min(100, annualDiscountPercent))
+              : 20,
+            promo_label: form.promo_label.trim(),
+          }),
     },
     enabled_modules: form.enabled_modules,
     is_active: form.is_active,
@@ -200,6 +248,19 @@ export function Plans() {
     [filteredPlans, page, pageSize],
   );
 
+  const pricePreview = useMemo(() => {
+    if (form.quote_based || isQuoteBasedPlanCode(form.code)) return null;
+    const listMonthly = Number(form.list_price_monthly);
+    if (!Number.isFinite(listMonthly) || listMonthly <= 0) return null;
+    const listYearlyRaw = form.list_price_yearly.trim();
+    return computePlanPricePreview({
+      listPriceMonthly: listMonthly,
+      listPriceYearly: listYearlyRaw ? Number(listYearlyRaw) : undefined,
+      promoPercent: Number(form.promo_percent),
+      annualDiscountPercent: Number(form.annual_discount_percent),
+    });
+  }, [form]);
+
   const startCreate = () => {
     setIsFormOpen(true);
     setEditingPlan(null);
@@ -213,8 +274,13 @@ export function Plans() {
   };
 
   const handleSubmit = () => {
-    if (!form.name.trim() || !form.code.trim() || !form.price_monthly.trim() || !form.price_yearly.trim()) {
+    const quoteBased = form.quote_based || isQuoteBasedPlanCode(form.code);
+    if (!form.name.trim() || !form.code.trim()) {
       setFeedback("Merci de renseigner les champs obligatoires du plan.");
+      return;
+    }
+    if (!quoteBased && !form.list_price_monthly.trim()) {
+      setFeedback("Merci de renseigner le prix catalogue mensuel.");
       return;
     }
     const payload = toPayload(form, editingPlan?.limits);
@@ -269,8 +335,10 @@ export function Plans() {
             <tr>
               <th className="px-2 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Nom</th>
               <th className="px-2 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Code</th>
-              <th className="px-2 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Mensuel</th>
-              <th className="px-2 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Annuel</th>
+              <th className="px-2 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Catalogue/mois</th>
+              <th className="px-2 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Promo</th>
+              <th className="px-2 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Final/mois</th>
+              <th className="px-2 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Final/an</th>
               <th className="px-2 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Essai</th>
               <th className="px-2 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Sieges inclus</th>
               <th className="px-2 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Credits inclus</th>
@@ -287,6 +355,14 @@ export function Plans() {
                 <td className="px-2 py-2 text-slate-800 dark:text-slate-200">{plan.name}</td>
                 <td className="px-2 py-2">
                   <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-700 dark:bg-slate-800 dark:text-slate-200">{plan.code}</code>
+                </td>
+                <td className="px-2 py-2 text-slate-700 dark:text-slate-300">
+                  {plan.limits?.list_price_monthly ?? plan.pricing?.list_price_monthly ?? "—"}
+                </td>
+                <td className="px-2 py-2 text-slate-700 dark:text-slate-300">
+                  {(plan.limits?.promo_percent ?? plan.pricing?.promo_percent ?? 0) > 0
+                    ? `-${plan.limits?.promo_percent ?? plan.pricing?.promo_percent}%`
+                    : "—"}
                 </td>
                 <td className="px-2 py-2 text-slate-700 dark:text-slate-300">{String(plan.price_monthly)}</td>
                 <td className="px-2 py-2 text-slate-700 dark:text-slate-300">{String(plan.price_yearly)}</td>
@@ -390,14 +466,49 @@ export function Plans() {
                 Description
                 <textarea className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100" rows={3} value={form.description} onChange={(e) => setForm((v) => ({ ...v, description: e.target.value }))} />
               </label>
-              <label className="grid gap-1 text-xs text-slate-700 dark:text-slate-300">
-                Prix mensuel *
-                <input type="number" step="0.01" className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100" value={form.price_monthly} onChange={(e) => setForm((v) => ({ ...v, price_monthly: e.target.value }))} />
+
+              <label className="inline-flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300 md:col-span-2">
+                <input
+                  type="checkbox"
+                  checked={form.quote_based || isQuoteBasedPlanCode(form.code)}
+                  disabled={isQuoteBasedPlanCode(form.code)}
+                  onChange={(e) => setForm((v) => ({ ...v, quote_based: e.target.checked }))}
+                />
+                Tarif sur devis (Business / Enterprise)
               </label>
-              <label className="grid gap-1 text-xs text-slate-700 dark:text-slate-300">
-                Prix annuel *
-                <input type="number" step="0.01" className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100" value={form.price_yearly} onChange={(e) => setForm((v) => ({ ...v, price_yearly: e.target.value }))} />
-              </label>
+
+              {!form.quote_based && !isQuoteBasedPlanCode(form.code) ? (
+                <>
+                  <label className="grid gap-1 text-xs text-slate-700 dark:text-slate-300">
+                    Prix catalogue mensuel *
+                    <input type="number" step="1" min={0} className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100" value={form.list_price_monthly} onChange={(e) => setForm((v) => ({ ...v, list_price_monthly: e.target.value }))} />
+                  </label>
+                  <label className="grid gap-1 text-xs text-slate-700 dark:text-slate-300">
+                    Reduction promo (%)
+                    <input type="number" step="1" min={0} max={100} className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100" value={form.promo_percent} onChange={(e) => setForm((v) => ({ ...v, promo_percent: e.target.value }))} />
+                  </label>
+                  <label className="grid gap-1 text-xs text-slate-700 dark:text-slate-300">
+                    Reduction annuelle (%)
+                    <input type="number" step="1" min={0} max={100} className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100" value={form.annual_discount_percent} onChange={(e) => setForm((v) => ({ ...v, annual_discount_percent: e.target.value }))} />
+                  </label>
+                  <label className="grid gap-1 text-xs text-slate-700 dark:text-slate-300">
+                    Prix catalogue annuel
+                    <input type="number" step="1" min={0} placeholder="Auto = mensuel x 12" className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100" value={form.list_price_yearly} onChange={(e) => setForm((v) => ({ ...v, list_price_yearly: e.target.value }))} />
+                  </label>
+                  <label className="grid gap-1 text-xs text-slate-700 dark:text-slate-300 md:col-span-2">
+                    Libelle promo
+                    <input className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100" placeholder="Offre de lancement" value={form.promo_label} onChange={(e) => setForm((v) => ({ ...v, promo_label: e.target.value }))} />
+                  </label>
+                  {pricePreview ? (
+                    <div className="md:col-span-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-900 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-200">
+                      <strong>Apercu calcule :</strong>{" "}
+                      {pricePreview.priceMonthly.toLocaleString("fr-FR")} F/mois ·{" "}
+                      {pricePreview.priceYearly.toLocaleString("fr-FR")} F/an
+                      {pricePreview.promo > 0 ? ` (-${pricePreview.promo}%)` : ""}
+                    </div>
+                  ) : null}
+                </>
+              ) : null}
               <label className="grid gap-1 text-xs text-slate-700 dark:text-slate-300">
                 Sieges inclus *
                 <input type="number" className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100" value={form.included_seats} onChange={(e) => setForm((v) => ({ ...v, included_seats: e.target.value }))} />
