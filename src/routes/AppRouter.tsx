@@ -36,6 +36,8 @@ export function AppRouter() {
     PaymentTransactionsPage,
     PartnersPage,
     ProductFeedbackPage,
+    ProductBacklogPage,
+    BlogAdminPage,
   } = adminPages;
 
   return (
@@ -64,6 +66,8 @@ export function AppRouter() {
               <Route path="catalog/products" element={<Products />} />
               <Route path="platform/feature-flags" element={<FeatureFlags />} />
               <Route path="platform/product-feedback" element={<ProductFeedbackPage />} />
+              <Route path="platform/backlog" element={<ProductBacklogPage />} />
+              <Route path="platform/blog" element={<BlogAdminPage />} />
               <Route path="platform/modules" element={<Modules />} />
               <Route path="platform/jobs" element={<DataOps />} />
               <Route path="platform/staff" element={<Users />} />

@@ -1459,6 +1459,37 @@ export const adminApi = {
     (
       await api.post(`/api/admin/product-feedback/${id}/messages/`, { body })
     ).data,
+
+  productBacklog: async (params?: {
+    q?: string;
+    status?: string;
+    horizon?: string;
+    priority?: string;
+    limit?: number;
+    offset?: number;
+  }) =>
+    (await api.get<PaginatedResponse<ProductBacklogItem>>("/api/admin/product-backlog/", { params }))
+      .data,
+
+  createProductBacklogItem: async (payload: Partial<ProductBacklogItem> & { title: string }) =>
+    (await api.post<ProductBacklogItem>("/api/admin/product-backlog/", payload)).data,
+
+  updateProductBacklogItem: async (id: string, payload: Partial<ProductBacklogItem>) =>
+    (await api.patch<ProductBacklogItem>(`/api/admin/product-backlog/${id}/`, payload)).data,
+
+  deleteProductBacklogItem: async (id: string) =>
+    (await api.delete(`/api/admin/product-backlog/${id}/`)).data,
+
+  blogPosts: async (params?: { q?: string; status?: string; limit?: number; offset?: number }) =>
+    (await api.get<PaginatedResponse<BlogPost>>("/api/admin/blog/posts/", { params })).data,
+
+  createBlogPost: async (payload: Partial<BlogPost> & { title: string }) =>
+    (await api.post<BlogPost>("/api/admin/blog/posts/", payload)).data,
+
+  updateBlogPost: async (id: string, payload: Partial<BlogPost>) =>
+    (await api.patch<BlogPost>(`/api/admin/blog/posts/${id}/`, payload)).data,
+
+  deleteBlogPost: async (id: string) => (await api.delete(`/api/admin/blog/posts/${id}/`)).data,
 };
 
 export interface PartnerProgramSettings {
@@ -1538,6 +1569,40 @@ export interface ProductFeedbackItem {
   org: string;
   org_name: string;
   messages?: ProductFeedbackMessage[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProductBacklogItem {
+  id: string;
+  title: string;
+  description: string;
+  status: string;
+  horizon: string;
+  priority: string;
+  category: string;
+  source_url: string;
+  created_by_email: string;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BlogPost {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string;
+  cover_url: string;
+  body_html: string;
+  status: string;
+  published_at: string | null;
+  author_name: string;
+  author_email: string;
+  seo_title: string;
+  seo_description: string;
+  tags: string[];
+  reading_minutes: number;
   created_at: string;
   updated_at: string;
 }
