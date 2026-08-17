@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
@@ -12,6 +12,7 @@ import {
   AlignLeft,
   AlignRight,
   Bold,
+  CodeXml,
   Heading2,
   Heading3,
   Image as ImageIcon,
@@ -60,6 +61,8 @@ function ToolbarButton({
 
 export function BlogRichEditor({ value, onChange, resetKey }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
+  const [htmlOpen, setHtmlOpen] = useState(false);
+  const [htmlDraft, setHtmlDraft] = useState("");
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
@@ -101,6 +104,19 @@ export function BlogRichEditor({ value, onChange, resetKey }: Props) {
       return;
     }
     editor.chain().focus().extendMarkRange("link").setLink({ href: trimmed }).run();
+  };
+
+  const applyHtml = (mode: "replace" | "insert") => {
+    const html = htmlDraft.trim();
+    if (!html) return;
+    if (mode === "replace") {
+      editor.commands.setContent(html, false);
+    } else {
+      editor.chain().focus().insertContent(html).run();
+    }
+    onChange(editor.getHTML());
+    setHtmlOpen(false);
+    setHtmlDraft("");
   };
 
   const addYoutube = () => {
@@ -208,6 +224,15 @@ export function BlogRichEditor({ value, onChange, resetKey }: Props) {
         <ToolbarButton title="Vidéo YouTube" onClick={addYoutube}>
           <Video className="h-4 w-4" />
         </ToolbarButton>
+        <ToolbarButton
+          title="Coller du HTML"
+          onClick={() => {
+            setHtmlDraft("");
+            setHtmlOpen(true);
+          }}
+        >
+          <CodeXml className="h-4 w-4" />
+        </ToolbarButton>
         <input
           ref={fileRef}
           type="file"
@@ -220,6 +245,45 @@ export function BlogRichEditor({ value, onChange, resetKey }: Props) {
         />
       </div>
       <EditorContent editor={editor} className="blog-editor-content" />
+      {htmlOpen ? (
+        <div className="blog-html-overlay" role="dialog" aria-labelledby="blog-html-title">
+          <div className="blog-html-modal">
+            <h3 id="blog-html-title">Coller du HTML</h3>
+            <p>
+              Collez le code (&lt;p&gt;, &lt;h2&gt;, listes, liens). Il sera transformé en mise en
+              forme, les balises ne resteront pas visibles.
+            </p>
+            <textarea
+              className="blog-html-textarea"
+              value={htmlDraft}
+              onChange={(e) => setHtmlDraft(e.target.value)}
+              placeholder="<h2>Titre</h2><p>Paragraphe…</p>"
+              autoFocus
+            />
+            <div className="blog-html-actions">
+              <button type="button" className="btn-secondary" onClick={() => setHtmlOpen(false)}>
+                Annuler
+              </button>
+              <button
+                type="button"
+                className="btn-secondary"
+                disabled={!htmlDraft.trim()}
+                onClick={() => applyHtml("insert")}
+              >
+                Insérer au curseur
+              </button>
+              <button
+                type="button"
+                className="btn-primary"
+                disabled={!htmlDraft.trim()}
+                onClick={() => applyHtml("replace")}
+              >
+                Remplacer tout l&apos;article
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
