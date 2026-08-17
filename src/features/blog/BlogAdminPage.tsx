@@ -236,6 +236,10 @@ export function BlogAdminPage() {
                 placeholder="2 à 3 phrases pour donner envie de lire…"
               />
             </label>
+            <p className="text-xs text-neutral-6">
+              Images dans l&apos;article : <strong>1200 × 800 px</strong> max, JPEG ou WebP, moins de 400&nbsp;Ko.
+              Évitez les captures d&apos;écran floues.
+            </p>
             <BlogRichEditor
               value={draft.body_html}
               resetKey={selectedId || "new"}
@@ -298,11 +302,16 @@ export function BlogAdminPage() {
             </label>
             <div className="space-y-2">
               <p className="text-xs font-medium text-neutral-7">Image de couverture</p>
+              <p className="text-xs leading-relaxed text-neutral-6">
+                Taille idéale : <strong>1200 × 630 px</strong> (paysage 16:9). JPEG ou WebP, moins de
+                400&nbsp;Ko. Placez le sujet au centre : la liste et l&apos;article recadrent légèrement
+                les bords. C&apos;est aussi le format WhatsApp / LinkedIn.
+              </p>
               {draft.cover_url ? (
                 <img src={draft.cover_url} alt="" className="h-28 w-full rounded-lg object-cover" />
               ) : (
                 <div className="flex h-28 items-center justify-center rounded-lg border border-dashed border-neutral-4 text-xs text-neutral-6">
-                  Aucune image
+                  1200 × 630 px
                 </div>
               )}
               <input
