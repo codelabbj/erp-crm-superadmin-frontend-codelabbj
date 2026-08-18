@@ -21,6 +21,7 @@ export function AppRouter() {
     BusinessInvoicesRedirect,
     DedicatedInstancesRedirect,
     FeatureFlags,
+    PdfToolsCatalog,
     Modules,
     Products,
     DataOps,
@@ -65,6 +66,7 @@ export function AppRouter() {
               <Route path="billing/dedicated-instances" element={<DedicatedInstancesRedirect />} />
               <Route path="catalog/products" element={<Products />} />
               <Route path="platform/feature-flags" element={<FeatureFlags />} />
+              <Route path="platform/pdf-tools" element={<PdfToolsCatalog />} />
               <Route path="platform/product-feedback" element={<ProductFeedbackPage />} />
               <Route path="platform/backlog" element={<ProductBacklogPage />} />
               <Route path="platform/blog" element={<BlogAdminPage />} />

@@ -816,6 +816,45 @@ export interface FeatureFlagOverride {
   is_enabled: boolean;
 }
 
+export interface PdfToolCatalogItem {
+  code: string;
+  label: string;
+  is_premium: boolean;
+  default_is_premium: boolean;
+  is_overridden: boolean;
+}
+
+export interface PdfToolsCatalogResponse {
+  tools: PdfToolCatalogItem[];
+  premium_count: number;
+  free_count: number;
+}
+
+export interface PdfToolUsageToolRow {
+  code: string;
+  label: string;
+  is_premium: boolean;
+  runs: number;
+  done: number;
+  failed: number;
+  input_files: number;
+  output_files: number;
+  input_bytes: number;
+  output_bytes: number;
+  client_runs: number;
+  server_runs: number;
+  unique_users: number;
+  unique_clients: number;
+  unique_anonymous: number;
+}
+
+export interface PdfToolsUsageResponse {
+  period: string;
+  totals: Omit<PdfToolUsageToolRow, "code" | "label" | "is_premium">;
+  tools: PdfToolUsageToolRow[];
+  daily: { day: string | null; runs: number; input_bytes: number; unique_users: number }[];
+}
+
 export interface BannedIP {
   id: string;
   ip_address: string;
@@ -1213,6 +1252,15 @@ export const adminApi = {
   featureFlagOverrides: async () => (await api.get<FeatureFlagOverride[]>("/api/admin/feature-flags/overrides/")).data,
   upsertFeatureFlagOverride: async (payload: { flag_key: string; is_enabled: boolean; tenant_id?: string }) =>
     (await api.post<FeatureFlagOverride>("/api/admin/feature-flags/overrides/", payload)).data,
+
+  pdfToolsCatalog: async () =>
+    (await api.get<PdfToolsCatalogResponse>("/api/admin/pdf-tools/")).data,
+  patchPdfToolCatalog: async (code: string, payload: { is_premium: boolean }) =>
+    (await api.patch<PdfToolCatalogItem>(`/api/admin/pdf-tools/${code}/`, payload)).data,
+  resetPdfToolCatalog: async (code: string) =>
+    (await api.post<PdfToolCatalogItem>(`/api/admin/pdf-tools/${code}/reset/`)).data,
+  pdfToolsUsage: async (period = "30d") =>
+    (await api.get<PdfToolsUsageResponse>("/api/admin/pdf-tools/usage/", { params: { period } })).data,
 
   // Security (WAF & IP Banning)
   bannedIps: async () => (await api.get<BannedIP[]>("/api/admin/security/banned-ips/")).data,

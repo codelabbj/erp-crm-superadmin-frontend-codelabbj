@@ -12,6 +12,7 @@ import { BillingOps } from "@/features/billingOps/BillingOps";
 import { BusinessInvoicesRedirect } from "@/features/businessInvoices/BusinessInvoices";
 import { DedicatedInstancesRedirect } from "@/features/dedicatedInstances/DedicatedInstances";
 import { FeatureFlags } from "@/features/featureFlags/FeatureFlags";
+import { PdfToolsCatalog } from "@/features/pdfTools/PdfToolsCatalog";
 import { Modules } from "@/features/modules/Modules";
 import { Products } from "@/features/products/Products";
 import { DataOps } from "@/features/dataOps/DataOps";
@@ -84,6 +85,7 @@ export const adminPages = {
   BusinessInvoicesRedirect,
   DedicatedInstancesRedirect,
   FeatureFlags,
+  PdfToolsCatalog,
   Modules,
   Products,
   DataOps,
