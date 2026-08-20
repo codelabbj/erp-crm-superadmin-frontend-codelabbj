@@ -851,6 +851,47 @@ export interface PdfToolUsageToolRow {
   unique_audience: number;
 }
 
+export interface PdfToolUsageFailureRow {
+  id: string;
+  created_at: string | null;
+  tool_code: string;
+  label: string;
+  engine: string;
+  error_message: string;
+  error_code: string;
+  input_names: string[];
+  input_file_count: number;
+  input_bytes: number;
+  is_authenticated: boolean;
+  client_id: string;
+  has_user: boolean;
+  duration_ms: number;
+  browser: string;
+  os_name: string;
+  device_type: string;
+  locale: string;
+  timezone: string;
+  screen: string;
+  referrer_host: string;
+  page_path: string;
+  country: string;
+  user_agent: string;
+  client_context: Record<string, unknown>;
+}
+
+export interface PdfToolAudienceBucket {
+  key: string;
+  runs: number;
+}
+
+export interface PdfToolAudienceBreakdown {
+  browsers: PdfToolAudienceBucket[];
+  operating_systems: PdfToolAudienceBucket[];
+  devices: PdfToolAudienceBucket[];
+  countries: PdfToolAudienceBucket[];
+  referrers: PdfToolAudienceBucket[];
+}
+
 export interface PdfToolsUsageResponse {
   period: string;
   totals: Omit<PdfToolUsageToolRow, "code" | "label" | "is_premium">;
@@ -864,6 +905,8 @@ export interface PdfToolsUsageResponse {
     unique_users: number;
     unique_anonymous: number;
   }[];
+  recent_failures: PdfToolUsageFailureRow[];
+  audience?: PdfToolAudienceBreakdown;
 }
 
 export interface BannedIP {

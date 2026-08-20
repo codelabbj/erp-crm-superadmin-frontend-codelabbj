@@ -1,7 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
-import { Files, HardDrive, Monitor, Server, UserRound, Users } from "lucide-react";
+import { AlertTriangle, Files, HardDrive, Monitor, Server, UserRound, Users } from "lucide-react";
 import { useMemo, useState, type ReactNode } from "react";
-import { adminApi, type PdfToolUsageToolRow } from "../../lib/adminApi";
+import {
+  adminApi,
+  type PdfToolAudienceBreakdown,
+  type PdfToolAudienceBucket,
+  type PdfToolUsageFailureRow,
+  type PdfToolUsageToolRow,
+} from "../../lib/adminApi";
 import { FilterBar, SearchInput } from "@/components/ui/FilterBar";
 
 function formatBytes(n: number) {
@@ -14,6 +20,20 @@ function formatBytes(n: number) {
 
 function formatCount(n: number) {
   return (Number(n) || 0).toLocaleString("fr-FR");
+}
+
+function formatWhen(iso: string | null) {
+  if (!iso) return "—";
+  try {
+    return new Date(iso).toLocaleString("fr-FR", {
+      day: "2-digit",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return iso;
+  }
 }
 
 const PERIODS = [
@@ -47,14 +67,16 @@ export function PdfToolsUsagePanel() {
 
   const totals = data?.totals;
   const daily = data?.daily ?? [];
+  const failures = data?.recent_failures ?? [];
+  const audience = data?.audience;
 
   return (
     <div className="grid gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="max-w-2xl text-sm text-slate-500 dark:text-slate-400">
-          Audience complète : visiteurs sans compte (navigateur) + comptes connectés. Chaque outil
-          affiche le nombre de traitements et le volume (Ko/Mo) entrant / sortant. Aucun nom de
-          fichier n’est stocké.
+          Audience complète : visiteurs sans compte + comptes connectés. Chaque run stocke OS,
+          navigateur, device, locale, écran, referrer et UTM (debug + monétisation). Les échecs
+          gardent aussi le message et les noms de fichiers (pas le contenu).
         </p>
         <div className="flex gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-800/50">
           {PERIODS.map((item) => (
@@ -110,6 +132,9 @@ export function PdfToolsUsagePanel() {
               hint="Client-side vs API"
             />
           </div>
+
+          <FailuresPanel failures={failures} />
+          <AudienceBreakdownPanel audience={audience} />
 
           {daily.length > 0 ? (
             <div className="overflow-x-auto rounded-2xl border border-border-soft bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
@@ -193,6 +218,134 @@ export function PdfToolsUsagePanel() {
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+function FailuresPanel({ failures }: { failures: PdfToolUsageFailureRow[] }) {
+  if (!failures.length) {
+    return (
+      <div className="rounded-2xl border border-dashed border-border-soft bg-slate-50/60 px-4 py-6 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/40">
+        Aucun échec enregistré sur cette période.
+      </div>
+    );
+  }
+
+  return (
+    <div className="overflow-x-auto rounded-2xl border border-rose-200/70 bg-white shadow-sm dark:border-rose-900/40 dark:bg-slate-900">
+      <div className="flex items-center gap-2 border-b border-rose-100 px-4 py-3 dark:border-rose-900/30">
+        <AlertTriangle size={16} className="text-rose-500" />
+        <p className="text-xs font-semibold uppercase tracking-wider text-rose-600 dark:text-rose-300">
+          Cas d’échec à corriger ({failures.length})
+        </p>
+      </div>
+      <table className="w-full min-w-[920px] text-left text-sm">
+        <thead className="bg-rose-50/70 text-xs font-semibold uppercase tracking-wider text-rose-700/80 dark:bg-rose-950/30 dark:text-rose-200/70">
+          <tr>
+            <th className="px-4 py-3">Quand</th>
+            <th className="px-4 py-3">Opération</th>
+            <th className="px-4 py-3">Fichier(s)</th>
+            <th className="px-4 py-3">Erreur</th>
+            <th className="px-4 py-3">Contexte</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-rose-100 dark:divide-rose-900/30">
+          {failures.map((row) => (
+            <tr key={row.id} className="align-top">
+              <td className="whitespace-nowrap px-4 py-3 text-xs text-slate-500">
+                {formatWhen(row.created_at)}
+              </td>
+              <td className="px-4 py-3">
+                <div className="font-semibold text-slate-900 dark:text-slate-100">{row.label}</div>
+                <div className="font-mono text-[11px] text-slate-400">
+                  {row.tool_code} · {row.engine}
+                </div>
+              </td>
+              <td className="px-4 py-3">
+                {(row.input_names || []).length ? (
+                  <ul className="space-y-0.5 text-xs text-slate-700 dark:text-slate-300">
+                    {row.input_names.map((name) => (
+                      <li key={name} className="break-all font-medium">
+                        {name}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <span className="text-xs text-slate-400">
+                    {formatCount(row.input_file_count)} fichier(s) · {formatBytes(row.input_bytes)}
+                  </span>
+                )}
+              </td>
+              <td className="px-4 py-3">
+                {row.error_code ? (
+                  <div className="mb-1 font-mono text-[11px] font-bold text-rose-600 dark:text-rose-300">
+                    {row.error_code}
+                  </div>
+                ) : null}
+                <div className="max-w-md whitespace-pre-wrap break-words text-xs text-slate-700 dark:text-slate-300">
+                  {row.error_message || "—"}
+                </div>
+              </td>
+              <td className="px-4 py-3 text-xs text-slate-500">
+                <div>{row.is_authenticated || row.has_user ? "Compte" : "Invité"}</div>
+                {[row.browser, row.os_name, row.device_type].filter(Boolean).length ? (
+                  <div>
+                    {[row.browser, row.os_name, row.device_type].filter(Boolean).join(" · ")}
+                  </div>
+                ) : null}
+                {row.country ? <div>Pays {row.country}</div> : null}
+                {row.locale || row.timezone ? (
+                  <div>
+                    {[row.locale, row.timezone].filter(Boolean).join(" · ")}
+                  </div>
+                ) : null}
+                {row.screen ? <div>{row.screen}</div> : null}
+                {row.referrer_host ? <div>ref {row.referrer_host}</div> : null}
+                {row.page_path ? <div className="font-mono break-all">{row.page_path}</div> : null}
+                {row.client_id ? <div className="font-mono">id {row.client_id}…</div> : null}
+                {row.duration_ms ? <div>{formatCount(row.duration_ms)} ms</div> : null}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function AudienceBreakdownPanel({ audience }: { audience?: PdfToolAudienceBreakdown }) {
+  if (!audience) return null;
+  const sections: { title: string; rows: PdfToolAudienceBucket[] }[] = [
+    { title: "Navigateurs", rows: audience.browsers ?? [] },
+    { title: "OS", rows: audience.operating_systems ?? [] },
+    { title: "Devices", rows: audience.devices ?? [] },
+    { title: "Pays", rows: audience.countries ?? [] },
+    { title: "Referrers", rows: audience.referrers ?? [] },
+  ].filter((s) => s.rows.length > 0);
+  if (!sections.length) return null;
+
+  return (
+    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+      {sections.map((section) => (
+        <div
+          key={section.title}
+          className="rounded-2xl border border-border-soft bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+        >
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
+            {section.title}
+          </p>
+          <ul className="space-y-1.5 text-sm">
+            {section.rows.map((row) => (
+              <li key={`${section.title}-${row.key}`} className="flex items-center justify-between gap-2">
+                <span className="truncate text-slate-700 dark:text-slate-300">{row.key}</span>
+                <span className="shrink-0 font-semibold tabular-nums text-slate-900 dark:text-slate-100">
+                  {formatCount(row.runs)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
     </div>
   );
 }
