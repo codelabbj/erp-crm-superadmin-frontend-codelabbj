@@ -68,7 +68,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { icon: Puzzle, label: "Modules", path: "/platform/modules" },
       { icon: Users2, label: "Utilisateurs staff", path: "/platform/staff" },
       { icon: Flag, label: "Feature flags", path: "/platform/feature-flags" },
-      { icon: FileText, label: "Outils PDF Premium", path: "/platform/pdf-tools" },
+      { icon: FileText, label: "Outils PDF", path: "/platform/pdf-tools" },
       { icon: Map, label: "Backlog / roadmap", path: "/platform/backlog" },
       { icon: Newspaper, label: "Blog", path: "/platform/blog" },
       { icon: MessageSquarePlus, label: "Retours utilisateurs", path: "/platform/product-feedback" },

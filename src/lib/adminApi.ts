@@ -843,16 +843,70 @@ export interface PdfToolUsageToolRow {
   output_bytes: number;
   client_runs: number;
   server_runs: number;
+  authenticated_runs: number;
+  anonymous_runs: number;
   unique_users: number;
   unique_clients: number;
   unique_anonymous: number;
+  unique_audience: number;
+}
+
+export interface PdfToolUsageFailureRow {
+  id: string;
+  created_at: string | null;
+  tool_code: string;
+  label: string;
+  engine: string;
+  error_message: string;
+  error_code: string;
+  input_names: string[];
+  input_file_count: number;
+  input_bytes: number;
+  is_authenticated: boolean;
+  client_id: string;
+  has_user: boolean;
+  duration_ms: number;
+  browser: string;
+  os_name: string;
+  device_type: string;
+  locale: string;
+  timezone: string;
+  screen: string;
+  referrer_host: string;
+  page_path: string;
+  country: string;
+  user_agent: string;
+  client_context: Record<string, unknown>;
+}
+
+export interface PdfToolAudienceBucket {
+  key: string;
+  runs: number;
+}
+
+export interface PdfToolAudienceBreakdown {
+  browsers: PdfToolAudienceBucket[];
+  operating_systems: PdfToolAudienceBucket[];
+  devices: PdfToolAudienceBucket[];
+  countries: PdfToolAudienceBucket[];
+  referrers: PdfToolAudienceBucket[];
 }
 
 export interface PdfToolsUsageResponse {
   period: string;
   totals: Omit<PdfToolUsageToolRow, "code" | "label" | "is_premium">;
   tools: PdfToolUsageToolRow[];
-  daily: { day: string | null; runs: number; input_bytes: number; unique_users: number }[];
+  daily: {
+    day: string | null;
+    runs: number;
+    authenticated_runs: number;
+    anonymous_runs: number;
+    input_bytes: number;
+    unique_users: number;
+    unique_anonymous: number;
+  }[];
+  recent_failures: PdfToolUsageFailureRow[];
+  audience?: PdfToolAudienceBreakdown;
 }
 
 export interface BannedIP {
@@ -1437,6 +1491,7 @@ export const adminApi = {
   uploadImage: async (file: File) => {
     const formData = new FormData();
     formData.append("image", file);
+    // Ne pas forcer Content-Type : le navigateur doit ajouter le boundary multipart.
     return (await api.post<{ url: string }>("/api/upload/image/", formData)).data;
   },
 

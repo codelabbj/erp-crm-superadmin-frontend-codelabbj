@@ -61,6 +61,11 @@ export function getErrorMessage(error: unknown): string {
       return (data as any).detail;
     }
 
+    // { "error": "some message" } — ex. upload image blog / GCS
+    if (typeof (data as any).error === "string") {
+      return (data as any).error;
+    }
+
     // { "message": "some message" }
     if (typeof (data as any).message === "string") {
       return (data as any).message;
