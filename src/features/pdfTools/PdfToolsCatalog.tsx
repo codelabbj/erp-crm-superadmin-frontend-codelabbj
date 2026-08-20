@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { FileText, RotateCcw, ToggleLeft, ToggleRight } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { adminApi, type PdfToolCatalogItem } from "../../lib/adminApi";
 import { getErrorMessage } from "../../lib/ui";
 import { FilterBar, SearchInput } from "@/components/ui/FilterBar";
@@ -14,7 +15,14 @@ type Filter = "all" | "premium" | "free" | "overridden";
 type Tab = "catalog" | "usage";
 
 export function PdfToolsCatalog() {
-  const [tab, setTab] = useState<Tab>("catalog");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tab: Tab = searchParams.get("tab") === "usage" ? "usage" : "catalog";
+  const setTab = (next: Tab) => {
+    const params = new URLSearchParams(searchParams);
+    if (next === "usage") params.set("tab", "usage");
+    else params.delete("tab");
+    setSearchParams(params, { replace: true });
+  };
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const debouncedSearch = useDebouncedValue(search);
@@ -102,10 +110,10 @@ export function PdfToolsCatalog() {
     <div className="grid gap-6">
       <header className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Outils PDF Premium</h2>
+          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Outils PDF</h2>
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            Rendez un outil Premium ou retirez-le de l’offre payante. L’onglet Utilisation compte les
-            traitements navigateur et serveur.
+            Catalogue Premium / gratuit, et stats d’utilisation (invités inclus) : nombre de
+            traitements et volume par outil.
           </p>
         </div>
         {data && (

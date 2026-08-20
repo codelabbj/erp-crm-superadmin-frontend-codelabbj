@@ -843,16 +843,27 @@ export interface PdfToolUsageToolRow {
   output_bytes: number;
   client_runs: number;
   server_runs: number;
+  authenticated_runs: number;
+  anonymous_runs: number;
   unique_users: number;
   unique_clients: number;
   unique_anonymous: number;
+  unique_audience: number;
 }
 
 export interface PdfToolsUsageResponse {
   period: string;
   totals: Omit<PdfToolUsageToolRow, "code" | "label" | "is_premium">;
   tools: PdfToolUsageToolRow[];
-  daily: { day: string | null; runs: number; input_bytes: number; unique_users: number }[];
+  daily: {
+    day: string | null;
+    runs: number;
+    authenticated_runs: number;
+    anonymous_runs: number;
+    input_bytes: number;
+    unique_users: number;
+    unique_anonymous: number;
+  }[];
 }
 
 export interface BannedIP {
@@ -1437,9 +1448,8 @@ export const adminApi = {
   uploadImage: async (file: File) => {
     const formData = new FormData();
     formData.append("image", file);
-    return (await api.post<{ url: string }>("/api/upload/image/", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    })).data;
+    // Ne pas forcer Content-Type : le navigateur doit ajouter le boundary multipart.
+    return (await api.post<{ url: string }>("/api/upload/image/", formData)).data;
   },
 
   // Assistant IA
