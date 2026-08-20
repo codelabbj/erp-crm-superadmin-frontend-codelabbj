@@ -1491,8 +1491,11 @@ export const adminApi = {
   uploadImage: async (file: File) => {
     const formData = new FormData();
     formData.append("image", file);
-    // Ne pas forcer Content-Type : le navigateur doit ajouter le boundary multipart.
-    return (await api.post<{ url: string }>("/api/upload/image/", formData)).data;
+    // Forcer la suppression du Content-Type JSON par défaut de l'instance axios
+    // pour que le navigateur génère automatiquement le boundary multipart.
+    return (await api.post<{ url: string }>("/api/upload/image/", formData, {
+      headers: { "Content-Type": undefined },
+    })).data;
   },
 
   // Assistant IA
