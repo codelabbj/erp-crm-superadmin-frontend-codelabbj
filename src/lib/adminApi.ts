@@ -1437,9 +1437,7 @@ export const adminApi = {
   uploadImage: async (file: File) => {
     const formData = new FormData();
     formData.append("image", file);
-    return (await api.post<{ url: string }>("/api/upload/image/", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    })).data;
+    return (await api.post<{ url: string }>("/api/upload/image/", formData)).data;
   },
 
   // Assistant IA
