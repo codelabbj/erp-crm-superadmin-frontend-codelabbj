@@ -38,6 +38,7 @@ import { OrgTeamTab } from "@/features/organizations/components/tabs/OrgTeamTab"
 import { OrgPartnerTab } from "@/features/organizations/components/tabs/OrgPartnerTab";
 import { OrgCreditsPanel } from "@/features/organizations/components/OrgCreditsPanel";
 import { OrgDemoPaymentPanel } from "@/features/organizations/components/OrgDemoPaymentPanel";
+import { OrgFlatFeePanel } from "@/features/organizations/components/OrgFlatFeePanel";
 import { OrgProfileInfoPanel } from "@/features/organizations/components/OrgProfileInfoPanel";
 import { type OrgDetailTab, orgProductsPath, readOrgDetailTab } from "@/lib/orgNavigation";
 import { MODULE_LABELS, planPeriodProgress, resolveMediaUrl } from "@/features/organizations/orgPlanUtils";
@@ -494,6 +495,8 @@ function OverviewPanel({
       ) : null}
 
       {orgMeta ? <OrgDemoPaymentPanel orgId={orgId} orgMeta={orgMeta} /> : null}
+
+      {orgMeta ? <OrgFlatFeePanel orgId={orgId} orgMeta={orgMeta} /> : null}
 
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="rounded-2xl border border-border-soft bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">

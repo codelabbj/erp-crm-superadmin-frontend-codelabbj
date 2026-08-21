@@ -211,6 +211,8 @@ export interface OrganizationDetail extends OrganizationSubscriptionOverview {
   allow_demo_payment?: boolean;
   demo_payment_expires_at?: string | null;
   demo_payment_active?: boolean;
+  subscription_flat_fee_enabled?: boolean;
+  subscription_flat_fee_amount?: string | null;
 
   /** Profil enregistré (lecture seule — GET admin detail enrichi). */
   updated_at?: string;
@@ -1137,6 +1139,17 @@ export const adminApi = {
         allow_demo_payment: boolean;
         demo_payment_expires_at: string | null;
         demo_payment_active: boolean;
+      }>(`/api/admin/organizations/${id}/`, payload)
+    ).data,
+  patchOrganizationFlatFee: async (
+    id: string,
+    payload: { subscription_flat_fee_enabled: boolean; subscription_flat_fee_amount?: string | number },
+  ) =>
+    (
+      await api.patch<{
+        id: string;
+        subscription_flat_fee_enabled: boolean;
+        subscription_flat_fee_amount: string;
       }>(`/api/admin/organizations/${id}/`, payload)
     ).data,
   organizationRelatedData: async (id: string) =>
