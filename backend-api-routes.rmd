@@ -1,0 +1,150 @@
+# Routes API attendues par le front Super Admin
+
+*Document à transmettre à l’équipe backend — généré pour alignement des endpoints.*
+
+Bonjour,
+
+Le front **Super Admin** consomme les endpoints ci-dessous (chemins **relatifs** à la base URL, ex. celle de `VITE_API_BASE_URL`). Toutes les requêtes authentifiées partent avec un en-tête **Authorization: Bearer** (access JWT) ; le rafraîchissement de token utilise `POST /api/token/refresh/`.
+
+Merci de confirmer ce qui **existe déjà**, ce qu’il reste à **exposer**, et d’aligner **méthodes HTTP**, **chemins** et **contrats** (y compris la suppression de plan — voir remarque en bas).
+
+---
+
+## Auth & profil
+
+| Méthode | Chemin |
+|---------|--------|
+| `POST` | `/api/token/` — body : `email`, `password` → `access`, `refresh` |
+| `POST` | `/api/token/refresh/` — body : `refresh` → `access` |
+| `GET` | `/api/me/` — utilisateur courant (dont `is_superuser` pour l’accès console) |
+
+---
+
+## Vue d’ensemble admin
+
+| Méthode | Chemin |
+|---------|--------|
+| `GET` | `/api/admin/overview/` |
+
+---
+
+## Licensing — plans
+
+| Méthode | Chemin |
+|---------|--------|
+| `GET` | `/api/admin/licensing/plans/` |
+| `POST` | `/api/admin/licensing/plans/` |
+| `PUT` | `/api/admin/licensing/plans/{id}/` |
+| `PATCH` | `/api/admin/licensing/plans/{id}/` |
+| `DELETE` | `/api/admin/plans/{id}/delete/` |
+
+**Remarque** : aujourd’hui le front supprime sur `/api/admin/plans/{id}/delete/` — à **harmoniser** si vous préférez tout regrouper sous `/api/admin/licensing/plans/…`.
+
+---
+
+## Licensing — modules (catalogue admin)
+
+| Méthode | Chemin |
+|---------|--------|
+| `GET` | `/api/admin/licensing/modules/` |
+| `PATCH` | `/api/admin/licensing/modules/{id}/` |
+
+---
+
+## Organisations
+
+| Méthode | Chemin | Notes |
+|---------|--------|--------|
+| `GET` | `/api/admin/organizations/` | Deux usages : liste paginée + vue « abonnements » avec query `q`, `plan`, `status`, `limit`, `offset`, `sort` (réponse attendue `count` + `results` quand pagination) |
+| `GET` | `/api/admin/organizations/{id}/` | Détail org |
+| `GET` | `/api/admin/organizations/{id}/subscriptions/` | Abonnements de l’org |
+| `POST` | `/api/admin/organizations/{id}/assign-plan/` | Body typ. `plan_id` / `plan_code` |
+| `POST` | `/api/admin/organizations/{id}/add-seats/` | Body : `seats` |
+| `PATCH` | `/api/admin/organizations/` | Mise à jour (ex. `id` + `is_active` — contrat à valider) |
+
+---
+
+## Abonnements (niveau plateforme)
+
+| Méthode | Chemin | Notes |
+|---------|--------|--------|
+| `GET` | `/api/admin/subscriptions/` | Query : `status`, `module`, `limit`, `offset`, `sort` |
+| `PATCH` | `/api/admin/subscriptions/{id}/` | |
+| `DELETE` | `/api/admin/subscriptions/{id}/` | |
+| `POST` | `/api/admin/subscriptions/{id}/extend/` | Body : `ends_at` |
+| `GET` | `/api/admin/subscriptions/stats/` | |
+| `GET` | `/api/admin/subscriptions/expiring-soon/` | |
+| `GET` | `/api/admin/subscriptions/alerts/` | Objet attendu : `expired`, `trial_ending_soon`, `no_plan` (tableaux) |
+
+---
+
+## Utilisateurs admin
+
+| Méthode | Chemin | Notes |
+|---------|--------|--------|
+| `GET` | `/api/admin/users/` | Query : `q`, `limit`, `offset`, `sort` |
+| `PATCH` | `/api/admin/users/` | Body avec `id` + champs (ex. `is_active`, `is_staff`, `is_superuser`) |
+
+---
+
+## Modules (hors licensing)
+
+| Méthode | Chemin | Notes |
+|---------|--------|--------|
+| `GET` | `/api/admin/modules/` | Query : `sort` |
+| `PATCH` | `/api/admin/modules/` | Body avec `id` + champs modifiables |
+
+---
+
+## Rôles & permissions
+
+| Méthode | Chemin |
+|---------|--------|
+| `GET` | `/api/roles/` |
+| `POST` | `/api/roles/` |
+| `GET` | `/api/permissions-schema/` |
+
+---
+
+## Audit
+
+| Méthode | Chemin |
+|---------|--------|
+| `GET` | `/api/audit-logs/` |
+
+---
+
+## Facturation (listings)
+
+| Méthode | Chemin |
+|---------|--------|
+| `GET` | `/api/billing/clients/` |
+| `GET` | `/api/billing/invoices/` |
+| `GET` | `/api/billing/payments/` |
+
+*Les trois acceptent en query notamment : `q`, `limit`, `offset`, `sort` (selon implémentation backend).*
+
+---
+
+## Import / export (jobs)
+
+| Méthode | Chemin |
+|---------|--------|
+| `GET` | `/api/io/imports/` |
+| `GET` | `/api/io/exports/` |
+
+---
+
+## Point à trancher
+
+- Cohérence de la **suppression de plan** : conserver `DELETE` sur `/api/admin/plans/{id}/delete/` ou un arbre unique sous `/api/admin/licensing/plans/…` ?
+
+---
+
+## Hors scope actuel du front
+
+Les écrans **Coming soon** (santé plateforme, métriques business, onboarding, domaines/SSL, feature flags, WAF, etc.) **n’appellent pas encore** d’API dédiée. Voir le document de spec produit / `SUPERADMIN_BACKEND_REQUIREMENTS.md` pour des pistes de routes futures.
+
+---
+
+*Équipe front — Super Admin*
