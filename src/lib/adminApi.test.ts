@@ -194,4 +194,30 @@ describe("adminApi", () => {
     await adminApi.exportJobs();
     expect(get).toHaveBeenCalledWith("/api/io/exports/", { params: undefined });
   });
+
+  it("pdf tools usage and failure file download", async () => {
+    await adminApi.pdfToolsUsage("7d");
+    expect(get).toHaveBeenCalledWith("/api/admin/pdf-tools/usage/", { params: { period: "7d" } });
+
+    const blob = new Blob(["%PDF"], { type: "application/pdf" });
+    get.mockResolvedValueOnce({
+      data: blob,
+      headers: { "content-disposition": 'attachment; filename="scan.pdf"' },
+    });
+    const click = vi.fn();
+    vi.stubGlobal("URL", {
+      createObjectURL: vi.fn(() => "blob:mock"),
+      revokeObjectURL: vi.fn(),
+    });
+    vi.stubGlobal("document", {
+      createElement: vi.fn(() => ({ click, href: "", download: "" })),
+    });
+
+    await adminApi.downloadPdfToolUsageFile("evt-1", "input.bin");
+    expect(get).toHaveBeenCalledWith("/api/admin/pdf-tools/usage/evt-1/file/", {
+      responseType: "blob",
+    });
+    expect(click).toHaveBeenCalled();
+    vi.unstubAllGlobals();
+  });
 });

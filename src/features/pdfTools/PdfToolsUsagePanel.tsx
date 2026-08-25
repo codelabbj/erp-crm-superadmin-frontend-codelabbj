@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, Files, HardDrive, Monitor, Server, UserRound, Users } from "lucide-react";
+import { AlertTriangle, Download, Files, HardDrive, Monitor, Server, UserRound, Users } from "lucide-react";
 import { useMemo, useState, type ReactNode } from "react";
 import {
   adminApi,
@@ -9,6 +9,7 @@ import {
   type PdfToolUsageToolRow,
 } from "../../lib/adminApi";
 import { FilterBar, SearchInput } from "@/components/ui/FilterBar";
+import { getErrorMessage } from "../../lib/ui";
 
 function formatBytes(n: number) {
   const value = Number(n) || 0;
@@ -76,7 +77,8 @@ export function PdfToolsUsagePanel() {
         <p className="max-w-2xl text-sm text-slate-500 dark:text-slate-400">
           Audience complète : visiteurs sans compte + comptes connectés. Chaque run stocke OS,
           navigateur, device, locale, écran, referrer et UTM (debug + monétisation). Les échecs
-          gardent aussi le message et les noms de fichiers (pas le contenu).
+          serveur conservent le fichier source 14 jours (bouton Télécharger). Les traitements
+          navigateur n’envoient pas le contenu.
         </p>
         <div className="flex gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-800/50">
           {PERIODS.map((item) => (
@@ -222,7 +224,14 @@ export function PdfToolsUsagePanel() {
   );
 }
 
+function hasStoredFailureFile(row: PdfToolUsageFailureRow) {
+  return Boolean(row.has_input_file || (row.input_download_url || "").trim());
+}
+
 function FailuresPanel({ failures }: { failures: PdfToolUsageFailureRow[] }) {
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [downloadError, setDownloadError] = useState("");
+
   if (!failures.length) {
     return (
       <div className="rounded-2xl border border-dashed border-border-soft bg-slate-50/60 px-4 py-6 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/40">
@@ -231,15 +240,32 @@ function FailuresPanel({ failures }: { failures: PdfToolUsageFailureRow[] }) {
     );
   }
 
+  const downloadFile = async (row: PdfToolUsageFailureRow) => {
+    setDownloadError("");
+    setDownloadingId(row.id);
+    try {
+      await adminApi.downloadPdfToolUsageFile(row.id, row.input_names?.[0] || "input.bin");
+    } catch (err) {
+      setDownloadError(getErrorMessage(err));
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
   return (
     <div className="overflow-x-auto rounded-2xl border border-rose-200/70 bg-white shadow-sm dark:border-rose-900/40 dark:bg-slate-900">
-      <div className="flex items-center gap-2 border-b border-rose-100 px-4 py-3 dark:border-rose-900/30">
-        <AlertTriangle size={16} className="text-rose-500" />
-        <p className="text-xs font-semibold uppercase tracking-wider text-rose-600 dark:text-rose-300">
-          Cas d’échec à corriger ({failures.length})
-        </p>
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-rose-100 px-4 py-3 dark:border-rose-900/30">
+        <div className="flex items-center gap-2">
+          <AlertTriangle size={16} className="text-rose-500" />
+          <p className="text-xs font-semibold uppercase tracking-wider text-rose-600 dark:text-rose-300">
+            Cas d’échec à corriger ({failures.length})
+          </p>
+        </div>
+        {downloadError ? (
+          <p className="text-xs font-medium text-rose-600 dark:text-rose-300">{downloadError}</p>
+        ) : null}
       </div>
-      <table className="w-full min-w-[920px] text-left text-sm">
+      <table className="w-full min-w-[1080px] text-left text-sm">
         <thead className="bg-rose-50/70 text-xs font-semibold uppercase tracking-wider text-rose-700/80 dark:bg-rose-950/30 dark:text-rose-200/70">
           <tr>
             <th className="px-4 py-3">Quand</th>
@@ -247,6 +273,7 @@ function FailuresPanel({ failures }: { failures: PdfToolUsageFailureRow[] }) {
             <th className="px-4 py-3">Fichier(s)</th>
             <th className="px-4 py-3">Erreur</th>
             <th className="px-4 py-3">Contexte</th>
+            <th className="px-4 py-3">Télécharger</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-rose-100 dark:divide-rose-900/30">
@@ -304,6 +331,25 @@ function FailuresPanel({ failures }: { failures: PdfToolUsageFailureRow[] }) {
                 {row.page_path ? <div className="font-mono break-all">{row.page_path}</div> : null}
                 {row.client_id ? <div className="font-mono">id {row.client_id}…</div> : null}
                 {row.duration_ms ? <div>{formatCount(row.duration_ms)} ms</div> : null}
+              </td>
+              <td className="px-4 py-3">
+                {hasStoredFailureFile(row) ? (
+                  <button
+                    type="button"
+                    onClick={() => downloadFile(row)}
+                    disabled={downloadingId === row.id}
+                    className="btn-ghost inline-flex h-9 items-center gap-1.5 px-3 text-xs font-semibold text-rose-700 hover:text-rose-900 disabled:opacity-60 dark:text-rose-200"
+                  >
+                    <Download size={14} />
+                    {downloadingId === row.id ? "…" : "Télécharger"}
+                  </button>
+                ) : (
+                  <span className="text-xs text-slate-400">
+                    {row.engine === "server"
+                      ? "Non conservé"
+                      : "Navigateur (pas de fichier)"}
+                  </span>
+                )}
               </td>
             </tr>
           ))}

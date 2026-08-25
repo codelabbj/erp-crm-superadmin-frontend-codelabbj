@@ -1,5 +1,45 @@
 import { api } from "./api";
 
+function filenameFromContentDisposition(header: unknown, fallback: string): string {
+  const raw = Array.isArray(header) ? header[0] : header;
+  if (typeof raw !== "string" || !raw.trim()) return fallback;
+  const star = /filename\*=(?:UTF-8'')?([^;]+)/i.exec(raw);
+  const plain = /filename="?([^";]+)"?/i.exec(raw);
+  const value = (star?.[1] || plain?.[1] || "").trim().replace(/^["']|["']$/g, "");
+  if (!value) return fallback;
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
+function triggerBrowserDownload(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+async function normalizeBlobError(err: unknown, fallback: string): Promise<Error> {
+  const data = (err as { response?: { data?: unknown } })?.response?.data;
+  if (data instanceof Blob) {
+    const text = await data.text().catch(() => "");
+    try {
+      const json = JSON.parse(text) as { detail?: string };
+      if (typeof json.detail === "string" && json.detail.trim()) {
+        return new Error(json.detail);
+      }
+    } catch {
+      /* keep fallback */
+    }
+    return new Error(fallback);
+  }
+  return err instanceof Error ? err : new Error(fallback);
+}
+
 export interface AdminOverview {
   organizations: number;
   users: number;
@@ -862,6 +902,8 @@ export interface PdfToolUsageFailureRow {
   error_message: string;
   error_code: string;
   input_names: string[];
+  has_input_file?: boolean;
+  input_download_url?: string;
   input_file_count: number;
   input_bytes: number;
   is_authenticated: boolean;
@@ -1328,6 +1370,20 @@ export const adminApi = {
     (await api.post<PdfToolCatalogItem>(`/api/admin/pdf-tools/${code}/reset/`)).data,
   pdfToolsUsage: async (period = "30d") =>
     (await api.get<PdfToolsUsageResponse>("/api/admin/pdf-tools/usage/", { params: { period } })).data,
+  downloadPdfToolUsageFile: async (eventId: string, fallbackName = "input.bin") => {
+    try {
+      const res = await api.get<Blob>(`/api/admin/pdf-tools/usage/${eventId}/file/`, {
+        responseType: "blob",
+      });
+      const filename = filenameFromContentDisposition(
+        res.headers?.["content-disposition"],
+        fallbackName,
+      );
+      triggerBrowserDownload(res.data, filename);
+    } catch (err) {
+      throw await normalizeBlobError(err, "Fichier d’échec introuvable.");
+    }
+  },
 
   // Security (WAF & IP Banning)
   bannedIps: async () => (await api.get<BannedIP[]>("/api/admin/security/banned-ips/")).data,
