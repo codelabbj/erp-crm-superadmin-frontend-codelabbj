@@ -21,6 +21,7 @@ import {
   CalendarDays,
   CalendarPlus,
   Info,
+  Warehouse,
 } from "lucide-react";
 import { adminApi, type AssignPlanPayload, type ExtendPlanPayload, type OrganizationDetail as OrgMeta } from "../../lib/adminApi";
 import { formatIsoDate } from "../../lib/ui";
@@ -40,6 +41,7 @@ import { OrgCreditsPanel } from "@/features/organizations/components/OrgCreditsP
 import { OrgDemoPaymentPanel } from "@/features/organizations/components/OrgDemoPaymentPanel";
 import { OrgFlatFeePanel } from "@/features/organizations/components/OrgFlatFeePanel";
 import { OrgProfileInfoPanel } from "@/features/organizations/components/OrgProfileInfoPanel";
+import { OrgWarehousesQuotaPanel } from "@/features/organizations/components/OrgWarehousesQuotaPanel";
 import { type OrgDetailTab, orgProductsPath, readOrgDetailTab } from "@/lib/orgNavigation";
 import { MODULE_LABELS, planPeriodProgress, resolveMediaUrl } from "@/features/organizations/orgPlanUtils";
 import { useConfirmDialog } from "@/hooks/useConfirmDialog";
@@ -448,6 +450,25 @@ function OverviewPanel({
           icon={<Users size={18} />}
           accent={seatPct != null && seatPct >= 90 ? "rose" : "blue"}
         />
+        <KpiCard
+          label="Entrepôts"
+          value={
+            orgMeta?.warehouses_max != null
+              ? `${orgMeta.warehouses_used ?? 0} / ${orgMeta.warehouses_max}`
+              : (orgMeta?.warehouses_used ?? "—")
+          }
+          hint={
+            orgMeta?.warehouses_at_limit
+              ? "Limite atteinte"
+              : orgMeta?.max_warehouses_override != null
+                ? `Override ${orgMeta.max_warehouses_override}`
+                : orgMeta?.warehouses_max != null
+                  ? "Défaut plan"
+                  : undefined
+          }
+          icon={<Warehouse size={18} />}
+          accent={orgMeta?.warehouses_at_limit ? "rose" : "emerald"}
+        />
         <KpiCard label="Clients CRM" value={t?.customers ?? 0} icon={<Users size={18} />} accent="blue" />
         <KpiCard label="Commandes" value={t?.orders ?? 0} icon={<ShoppingCart size={18} />} accent="emerald" />
         <KpiCard label="Factures" value={t?.invoices ?? 0} icon={<FileText size={18} />} accent="amber" />
@@ -694,6 +715,8 @@ function SubscriptionPanel({
           ) : (
             <p className="mb-4 text-xs text-slate-400">Capacité sièges non configurée.</p>
           )}
+
+          {orgMeta ? <OrgWarehousesQuotaPanel orgId={orgMeta.id} orgMeta={orgMeta} embedded /> : null}
 
           <button type="button" className="btn-magenta mb-2 w-full text-xs" onClick={onAssignPlan}>
             <Plus size={14} className="mr-1 inline" /> Assigner / migrer un plan

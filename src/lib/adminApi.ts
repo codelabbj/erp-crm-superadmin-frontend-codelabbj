@@ -156,6 +156,8 @@ export interface PlatformPlanLimits {
   included_seats: number;
   max_users_hard: number;
   additional_seats_allowed: boolean;
+  /** Plafond entrepôts du forfait (starter=1, pro=15, business/enterprise=25). */
+  max_warehouses?: number;
   included_credits?: number;
   list_price_monthly?: number;
   list_price_yearly?: number;
@@ -240,6 +242,12 @@ export interface OrganizationSubscriptionOverview {
 export interface OrganizationDetail extends OrganizationSubscriptionOverview {
   plan?: { id: string; code: string; name: string } | null;
   seats_max_hard?: number;
+  /** Surcharge superadmin ; null = défaut du plan (`limits.max_warehouses`). */
+  max_warehouses_override?: number | null;
+  warehouses_used?: number;
+  warehouses_included?: number;
+  warehouses_max?: number;
+  warehouses_at_limit?: boolean;
   referred_by_partner?: {
     id: string;
     name: string;
@@ -1192,6 +1200,21 @@ export const adminApi = {
         id: string;
         subscription_flat_fee_enabled: boolean;
         subscription_flat_fee_amount: string;
+      }>(`/api/admin/organizations/${id}/`, payload)
+    ).data,
+  /** `null` ou `""` remet le plafond au défaut du plan. */
+  patchOrganizationWarehousesOverride: async (
+    id: string,
+    payload: { max_warehouses_override: number | null | "" },
+  ) =>
+    (
+      await api.patch<{
+        id: string;
+        max_warehouses_override: number | null;
+        warehouses_used?: number;
+        warehouses_included?: number;
+        warehouses_max?: number;
+        warehouses_at_limit?: boolean;
       }>(`/api/admin/organizations/${id}/`, payload)
     ).data,
   organizationRelatedData: async (id: string) =>

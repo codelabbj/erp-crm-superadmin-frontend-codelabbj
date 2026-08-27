@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { adminApi, type BusinessPlanRequestItem } from "@/lib/adminApi";
 import { getErrorMessage } from "@/lib/ui";
 
@@ -22,6 +22,7 @@ export function CreateBusinessInvoiceModal({
   onCreated,
   onError,
 }: Props) {
+  const queryClient = useQueryClient();
   const [recipientEmail, setRecipientEmail] = useState(
     sourceRequest?.contact_email || defaultRecipientEmail,
   );
@@ -33,13 +34,28 @@ export function CreateBusinessInvoiceModal({
     sourceRequest?.billing_cycle || "yearly",
   );
   const [includedSeats, setIncludedSeats] = useState(sourceRequest?.estimated_seats ?? 25);
+  const [maxWarehouses, setMaxWarehouses] = useState(25);
   const [amountTotal, setAmountTotal] = useState("");
   const [sendEmail, setSendEmail] = useState(true);
   const [notes, setNotes] = useState(sourceRequest?.message || "");
 
+  const { data: orgMeta } = useQuery({
+    queryKey: ["org-detail", orgId],
+    queryFn: () => adminApi.organizationDetail(orgId),
+  });
+
+  useEffect(() => {
+    if (!orgMeta) return;
+    const fromOverride = orgMeta.max_warehouses_override;
+    const fromMax = orgMeta.warehouses_max;
+    const fromIncluded = orgMeta.warehouses_included;
+    const next = fromOverride ?? fromMax ?? fromIncluded ?? 25;
+    if (typeof next === "number" && next >= 1) setMaxWarehouses(next);
+  }, [orgMeta]);
+
   const createMutation = useMutation({
-    mutationFn: () =>
-      adminApi.createBusinessInvoice({
+    mutationFn: async () => {
+      const invoice = await adminApi.createBusinessInvoice({
         org_id: orgId,
         recipient_email: recipientEmail,
         recipient_name: recipientName,
@@ -50,7 +66,17 @@ export function CreateBusinessInvoiceModal({
         send_email: sendEmail,
         notes,
         business_plan_request_id: sourceRequest?.id,
-      }),
+      });
+      // La facture Business n'a pas encore de champ entrepôts côté API :
+      // on applique le plafond via l'override org (endpoint existant).
+      if (Number.isInteger(maxWarehouses) && maxWarehouses >= 1) {
+        await adminApi.patchOrganizationWarehousesOverride(orgId, {
+          max_warehouses_override: maxWarehouses,
+        });
+        await queryClient.invalidateQueries({ queryKey: ["org-detail", orgId] });
+      }
+      return invoice;
+    },
     onSuccess: onCreated,
     onError: (err) => onError(getErrorMessage(err)),
   });
@@ -131,17 +157,31 @@ export function CreateBusinessInvoiceModal({
               />
             </label>
             <label className="text-sm">
-              Montant total (XOF)
+              Plafond entrepôts
               <input
                 type="number"
                 min={1}
                 className="input mt-1 w-full"
-                value={amountTotal}
-                onChange={(e) => setAmountTotal(e.target.value)}
+                value={maxWarehouses}
+                onChange={(e) => setMaxWarehouses(Number(e.target.value))}
                 required
               />
+              <span className="mt-1 block text-[11px] text-slate-400">
+                Appliqué immédiatement en override org (défaut plan Business : 25).
+              </span>
             </label>
           </div>
+          <label className="text-sm">
+            Montant total (XOF)
+            <input
+              type="number"
+              min={1}
+              className="input mt-1 w-full"
+              value={amountTotal}
+              onChange={(e) => setAmountTotal(e.target.value)}
+              required
+            />
+          </label>
           <label className="text-sm">
             Notes internes
             <textarea

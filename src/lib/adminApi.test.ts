@@ -99,6 +99,12 @@ describe("adminApi", () => {
 
     await adminApi.addSeatsToOrganization("oid", { quantity: 2 });
     expect(post).toHaveBeenCalledWith("/api/admin/organizations/oid/add-seats/", { quantity: 2 });
+
+    await adminApi.patchOrganizationWarehousesOverride("oid", { max_warehouses_override: 40 });
+    expect(patch).toHaveBeenCalledWith("/api/admin/organizations/oid/", { max_warehouses_override: 40 });
+
+    await adminApi.patchOrganizationWarehousesOverride("oid", { max_warehouses_override: null });
+    expect(patch).toHaveBeenCalledWith("/api/admin/organizations/oid/", { max_warehouses_override: null });
   });
 
   it("subscriptions (patch, delete, extend)", async () => {

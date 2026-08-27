@@ -31,6 +31,14 @@ function formatEnabledModulesLabel(modules: EnabledModuleRef[] | undefined): str
   return codes.length ? codes.join(", ") : "—";
 }
 
+function defaultMaxWarehousesForCode(code: string): number {
+  const c = code.trim().toLowerCase();
+  if (c === "starter") return 1;
+  if (c === "pro") return 15;
+  if (c === "business" || c === "enterprise") return 25;
+  return 1;
+}
+
 type PlanFormState = {
   name: string;
   code: string;
@@ -43,6 +51,7 @@ type PlanFormState = {
   quote_based: boolean;
   included_seats: string;
   max_users_hard: string;
+  max_warehouses: string;
   included_credits: string;
   additional_seats_allowed: boolean;
   enabled_modules: string[];
@@ -63,6 +72,7 @@ const emptyForm: PlanFormState = {
   quote_based: false,
   included_seats: "1",
   max_users_hard: "1",
+  max_warehouses: "1",
   included_credits: "0",
   additional_seats_allowed: false,
   enabled_modules: [],
@@ -102,6 +112,7 @@ function toFormState(plan: PlatformPlan): PlanFormState {
     quote_based: quoteBased,
     included_seats: String(limits.included_seats ?? 1),
     max_users_hard: String(limits.max_users_hard ?? 1),
+    max_warehouses: String(limits.max_warehouses ?? defaultMaxWarehousesForCode(plan.code ?? "")),
     included_credits: String(limits.included_credits ?? 0),
     additional_seats_allowed: Boolean(limits.additional_seats_allowed),
     enabled_modules: normalizeEnabledModuleCodes(plan.enabled_modules),
@@ -114,6 +125,7 @@ function toFormState(plan: PlatformPlan): PlanFormState {
 function toPayload(form: PlanFormState, existingLimits?: PlatformPlan["limits"]): PlatformPlanUpsert {
   const trialDays = resolveTrialDays(form);
   const includedCredits = Number(form.included_credits);
+  const maxWarehouses = Number(form.max_warehouses);
   const quoteBased = form.quote_based || isQuoteBasedPlanCode(form.code);
   const listMonthly = Number(form.list_price_monthly);
   const listYearlyRaw = form.list_price_yearly.trim();
@@ -140,6 +152,10 @@ function toPayload(form: PlanFormState, existingLimits?: PlatformPlan["limits"])
       ...(existingLimits ?? {}),
       included_seats: Number(form.included_seats),
       max_users_hard: Number(form.max_users_hard),
+      max_warehouses:
+        Number.isFinite(maxWarehouses) && maxWarehouses >= 1
+          ? Math.floor(maxWarehouses)
+          : defaultMaxWarehousesForCode(form.code),
       additional_seats_allowed: form.additional_seats_allowed,
       included_credits: Number.isFinite(includedCredits) && includedCredits >= 0 ? Math.floor(includedCredits) : 0,
       ...(quoteBased
@@ -341,6 +357,7 @@ export function Plans() {
               <th className="px-2 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Final/an</th>
               <th className="px-2 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Essai</th>
               <th className="px-2 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Sieges inclus</th>
+              <th className="px-2 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Entrepôts</th>
               <th className="px-2 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Credits inclus</th>
               <th className="px-2 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Sieges max</th>
               <th className="px-2 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Sieges additionnels</th>
@@ -370,6 +387,9 @@ export function Plans() {
                   {(plan.trial_days ?? 0) > 0 ? `${plan.trial_days} j` : "Non"}
                 </td>
                 <td className="px-2 py-2 text-slate-700 dark:text-slate-300">{plan.limits?.included_seats ?? "—"}</td>
+                <td className="px-2 py-2 text-slate-700 dark:text-slate-300">
+                  {plan.limits?.max_warehouses ?? defaultMaxWarehousesForCode(plan.code ?? "")}
+                </td>
                 <td className="px-2 py-2 text-slate-700 dark:text-slate-300">
                   {plan.limits?.included_credits != null
                     ? Number(plan.limits.included_credits).toLocaleString("fr-FR")
@@ -516,6 +536,19 @@ export function Plans() {
               <label className="grid gap-1 text-xs text-slate-700 dark:text-slate-300">
                 Sieges max (hard) *
                 <input type="number" className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100" value={form.max_users_hard} onChange={(e) => setForm((v) => ({ ...v, max_users_hard: e.target.value }))} />
+              </label>
+              <label className="grid gap-1 text-xs text-slate-700 dark:text-slate-300">
+                Entrepôts max (plan) *
+                <input
+                  type="number"
+                  min={1}
+                  className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                  value={form.max_warehouses}
+                  onChange={(e) => setForm((v) => ({ ...v, max_warehouses: e.target.value }))}
+                />
+                <span className="text-[11px] text-slate-500">
+                  Défaut catalogue : Starter 1 · Pro 15 · Business/Enterprise 25. Les orgs peuvent avoir un override.
+                </span>
               </label>
               <label className="grid gap-1 text-xs text-slate-700 dark:text-slate-300">
                 Credits inclus / periode
