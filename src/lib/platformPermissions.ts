@@ -10,9 +10,35 @@ export const PERM = {
   SETTINGS_SELF: "settings.self",
 } as const;
 
+export function resolvePlatformPerms(user?: {
+  platform_permissions?: string[] | null;
+  platform_role?: string | null;
+  is_superuser?: boolean;
+} | null): string[] {
+  if (user?.platform_permissions?.length) {
+    return [...user.platform_permissions];
+  }
+  const role = (user?.platform_role || "").toLowerCase();
+  if (role && ROLE_PERMS[role]) {
+    return [...ROLE_PERMS[role]];
+  }
+  if (user?.is_superuser) {
+    return [...ROLE_PERMS.owner];
+  }
+  return [];
+}
+
 export function hasPerm(perms: readonly string[] | undefined | null, perm: string): boolean {
   if (!perms?.length) return false;
   return perms.includes(perm);
+}
+
+/** Vérifie une permission à partir du payload /api/me/ user. */
+export function userHasPerm(
+  user: Parameters<typeof resolvePlatformPerms>[0],
+  perm: string,
+): boolean {
+  return hasPerm(resolvePlatformPerms(user), perm);
 }
 
 /** Mapping path → permission requise (absence = accessible si console.access). */

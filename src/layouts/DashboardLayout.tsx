@@ -79,7 +79,7 @@ export function DashboardLayout() {
         onToggle={handleToggle}
         userEmail={me?.user?.email}
         userName={me?.user?.full_name}
-        permissions={me?.user?.platform_permissions}
+        meUser={me?.user}
         onLogout={() => setIsLogoutConfirmOpen(true)}
         onRefresh={() => void refreshAllData()}
         isRefreshing={isRefreshing}

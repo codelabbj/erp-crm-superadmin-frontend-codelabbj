@@ -1,7 +1,7 @@
 import { Navigate, Outlet } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { authApi } from "@/lib/api";
-import { hasPerm } from "@/lib/platformPermissions";
+import { hasPerm, resolvePlatformPerms } from "@/lib/platformPermissions";
 
 export function ProtectedRoute() {
   const hasToken = Boolean(localStorage.getItem("sa_access"));
@@ -70,7 +70,7 @@ export function RequirePerm({ perm }: { perm: string }) {
     );
   }
 
-  if (!hasPerm(me?.user?.platform_permissions, perm)) {
+  if (!hasPerm(resolvePlatformPerms(me?.user), perm)) {
     return <Navigate to="/" replace />;
   }
 

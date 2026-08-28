@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { authApi } from "@/lib/api";
-import { hasPerm, PERM } from "@/lib/platformPermissions";
+import { hasPerm, PERM, resolvePlatformPerms } from "@/lib/platformPermissions";
 
 export function usePlatformPerms() {
   const { data: me, isLoading } = useQuery({
@@ -9,12 +9,12 @@ export function usePlatformPerms() {
     staleTime: 60_000,
   });
 
-  const perms = me?.user?.platform_permissions;
+  const perms = resolvePlatformPerms(me?.user);
 
   return {
     isLoading,
     perms,
-    role: me?.user?.platform_role ?? null,
+    role: me?.user?.platform_role ?? (me?.user?.is_superuser ? "owner" : null),
     can: (perm: string) => hasPerm(perms, perm),
     canWriteOrgs: hasPerm(perms, PERM.ORGS_WRITE),
     canWriteBilling: hasPerm(perms, PERM.BILLING_WRITE),

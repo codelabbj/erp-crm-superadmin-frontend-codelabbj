@@ -2,7 +2,7 @@ import { ChevronLeft, ChevronRight, LogOut, RefreshCw } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { Logo } from "@/components/ui/Logo";
 import { NAV_SECTIONS, type NavSection } from "@/lib/navigation";
-import { hasPerm, PATH_PERMISSION } from "@/lib/platformPermissions";
+import { hasPerm, PATH_PERMISSION, resolvePlatformPerms } from "@/lib/platformPermissions";
 import { cn } from "@/lib/utils";
 
 type SidebarProps = {
@@ -10,21 +10,27 @@ type SidebarProps = {
   onToggle: () => void;
   userEmail?: string;
   userName?: string;
-  permissions?: string[];
+  meUser?: {
+    platform_permissions?: string[] | null;
+    platform_role?: string | null;
+    is_superuser?: boolean;
+  };
   onLogout: () => void;
   onRefresh: () => void;
   isRefreshing: boolean;
 };
 
-function filterSections(sections: NavSection[], permissions?: string[]): NavSection[] {
+function filterSections(
+  sections: NavSection[],
+  meUser?: SidebarProps["meUser"],
+): NavSection[] {
+  const permissions = resolvePlatformPerms(meUser);
   return sections
     .map((section) => ({
       ...section,
       items: section.items.filter((item) => {
         const required = PATH_PERMISSION[item.path];
         if (!required) return true;
-        // Without permissions payload yet, show all (owner/superuser migration)
-        if (!permissions?.length) return true;
         return hasPerm(permissions, required);
       }),
     }))
@@ -88,12 +94,12 @@ export function Sidebar({
   onToggle,
   userEmail,
   userName,
-  permissions,
+  meUser,
   onLogout,
   onRefresh,
   isRefreshing,
 }: SidebarProps) {
-  const sections = filterSections(NAV_SECTIONS, permissions);
+  const sections = filterSections(NAV_SECTIONS, meUser);
   return (
     <aside
       className={cn(

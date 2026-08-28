@@ -4,6 +4,7 @@ import {
   hasPerm,
   PATH_PERMISSION,
   PERM,
+  resolvePlatformPerms,
   ROLE_PERMS,
 } from "./platformPermissions";
 
@@ -40,6 +41,18 @@ describe("platformPermissions", () => {
     expect(hasPerm(ops, PERM.STAFF_MANAGE)).toBe(false);
     expect(canAccessPath([...ops], "/billing/invoices")).toBe(true);
     expect(canAccessPath([...ops], "/plans")).toBe(false);
+  });
+
+  it("resolvePlatformPerms falls back to owner for superuser", () => {
+    const perms = resolvePlatformPerms({ is_superuser: true, platform_permissions: [] });
+    expect(hasPerm(perms, PERM.BILLING_WRITE)).toBe(true);
+    expect(hasPerm(perms, PERM.STAFF_MANAGE)).toBe(true);
+  });
+
+  it("resolvePlatformPerms uses role when permissions array empty", () => {
+    const perms = resolvePlatformPerms({ platform_role: "ops", platform_permissions: null });
+    expect(hasPerm(perms, PERM.BILLING_WRITE)).toBe(true);
+    expect(hasPerm(perms, PERM.PLANS_WRITE)).toBe(false);
   });
 
   it("role matrix smoke: owner has full console", () => {
