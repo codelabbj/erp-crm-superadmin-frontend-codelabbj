@@ -1,6 +1,8 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { LoginPage } from "@/features/auth/LoginPage";
 import { AcceptInvitePage } from "@/features/auth/AcceptInvitePage";
+import { ForgotPasswordPage } from "@/features/auth/ForgotPasswordPage";
+import { ResetPasswordPage } from "@/features/auth/ResetPasswordPage";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
 import { adminPages } from "@/routes/adminPages";
 import { ProtectedRoute, RequirePerm, SuperAdminGuard } from "@/routes/guards";
@@ -49,6 +51,8 @@ export function AppRouter() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/accept-invite" element={<AcceptInvitePage />} />
         <Route element={<ProtectedRoute />}>
           <Route element={<SuperAdminGuard />}>

@@ -161,4 +161,25 @@ export const authApi = {
     ),
   patchSecurityOtp: (payload: { enabled?: boolean; reauth_period_seconds?: number }) =>
     api.patch<{ enabled: boolean; reauth_period_seconds: number }>("/api/me/security-otp/", payload),
+  requestPasswordReset: (email: string) =>
+    api.post<{ detail: string }>("/api/auth/request-password-reset/", {
+      email,
+      client: "superadmin",
+    }),
+  validatePasswordResetToken: (token: string) =>
+    api.get<{ valid: boolean; email_hint?: string; detail?: string }>(
+      "/api/auth/reset-password/validate/",
+      { params: { token, client: "superadmin" } },
+    ),
+  setPasswordFromToken: (token: string, password: string) =>
+    api.post<{ detail: string }>("/api/auth/set-password/", {
+      token,
+      password,
+      client: "superadmin",
+    }),
+  changePassword: (payload: {
+    current_password: string;
+    new_password: string;
+    confirm_password: string;
+  }) => api.post<{ detail: string }>("/api/me/change-password/", payload),
 };

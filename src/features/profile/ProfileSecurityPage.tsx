@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Shield, Timer } from "lucide-react";
+import { Shield, Timer, KeyRound } from "lucide-react";
 import { authApi } from "@/lib/api";
 import { getErrorMessage } from "@/lib/ui";
 import { ListPageShell, PageHeader } from "@/components/ui/PageHeader";
@@ -40,6 +40,9 @@ export function ProfileSecurityPage() {
   const [idle, setIdle] = useState(3600);
   const [otpEnabled, setOtpEnabled] = useState(false);
   const [reauth, setReauth] = useState(0);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   useEffect(() => {
     if (me?.user?.console_idle_timeout_seconds) setIdle(me.user.console_idle_timeout_seconds);
@@ -74,6 +77,23 @@ export function ProfileSecurityPage() {
     onError: (e) => setError(getErrorMessage(e)),
   });
 
+  const changePassword = useMutation({
+    mutationFn: () =>
+      authApi.changePassword({
+        current_password: currentPassword,
+        new_password: newPassword,
+        confirm_password: confirmPassword,
+      }),
+    onSuccess: () => {
+      setFeedback("Mot de passe mis à jour.");
+      setError("");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    },
+    onError: (e) => setError(getErrorMessage(e)),
+  });
+
   return (
     <ListPageShell>
       <PageHeader
@@ -91,6 +111,69 @@ export function ProfileSecurityPage() {
 
       {feedback ? <p className="mb-3 text-xs text-emerald-600">{feedback}</p> : null}
       {error ? <p className="mb-3 text-xs text-red-600">{error}</p> : null}
+
+      <section className="mb-5 rounded-2xl border border-border-soft bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold">
+          <KeyRound size={15} /> Mot de passe
+        </h3>
+        <form
+          className="grid max-w-md gap-3"
+          onSubmit={(e) => {
+            e.preventDefault();
+            setError("");
+            if (newPassword.length < 8) {
+              setError("Nouveau mot de passe : 8 caractères minimum.");
+              return;
+            }
+            changePassword.mutate();
+          }}
+        >
+          <label className="text-xs text-slate-600 dark:text-slate-300">
+            Mot de passe actuel
+            <input
+              type="password"
+              required
+              autoComplete="current-password"
+              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+            />
+          </label>
+          <label className="text-xs text-slate-600 dark:text-slate-300">
+            Nouveau mot de passe
+            <input
+              type="password"
+              required
+              minLength={8}
+              autoComplete="new-password"
+              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+            />
+          </label>
+          <label className="text-xs text-slate-600 dark:text-slate-300">
+            Confirmer
+            <input
+              type="password"
+              required
+              minLength={8}
+              autoComplete="new-password"
+              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+            />
+          </label>
+          <button type="submit" className="btn-primary w-fit" disabled={changePassword.isPending}>
+            {changePassword.isPending ? "Enregistrement…" : "Changer le mot de passe"}
+          </button>
+        </form>
+        <p className="mt-3 text-xs text-slate-500">
+          Mot de passe perdu ?{" "}
+          <a href="/forgot-password" className="text-brand-purple-600 hover:underline">
+            Réinitialiser par e-mail
+          </a>
+        </p>
+      </section>
 
       <section className="mb-5 rounded-2xl border border-border-soft bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold">

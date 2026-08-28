@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { AlertTriangle, Eye, EyeOff, Lock, Mail, Moon, PanelsTopLeft, ShieldCheck, Sun, X } from "lucide-react";
 import { authApi, consumeSaLoginNotice } from "../../lib/api";
 import { getErrorMessage } from "../../lib/ui";
@@ -155,6 +155,12 @@ export function LoginPage() {
                   </button>
                 </div>
               </label>
+
+              <div className="text-right">
+                <Link to="/forgot-password" className="text-xs text-brand-purple-600 hover:underline dark:text-brand-purple-400">
+                  Mot de passe oublié ?
+                </Link>
+              </div>
 
               <button
                 className="btn-primary py-3 shadow-brand-purple-700/30"
