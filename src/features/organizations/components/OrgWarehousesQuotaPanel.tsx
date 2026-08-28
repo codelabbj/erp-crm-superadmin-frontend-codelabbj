@@ -9,6 +9,8 @@ type Props = {
   orgMeta: OrganizationDetail;
   /** Compact : intégré dans la carte Plan & sièges. */
   embedded?: boolean;
+  /** Masque les contrôles d'écriture (permission orgs.write). */
+  readOnly?: boolean;
 };
 
 const OVERRIDE_PLAN_CODES = new Set(["business", "enterprise"]);
@@ -17,9 +19,9 @@ function planAllowsOverride(planCode: string | null | undefined): boolean {
   return OVERRIDE_PLAN_CODES.has((planCode ?? "").toLowerCase());
 }
 
-export function OrgWarehousesQuotaPanel({ orgId, orgMeta, embedded = false }: Props) {
+export function OrgWarehousesQuotaPanel({ orgId, orgMeta, embedded = false, readOnly = false }: Props) {
   const queryClient = useQueryClient();
-  const canOverride = planAllowsOverride(orgMeta.plan_code);
+  const canOverride = !readOnly && planAllowsOverride(orgMeta.plan_code);
   const [overrideInput, setOverrideInput] = useState(
     orgMeta.max_warehouses_override != null ? String(orgMeta.max_warehouses_override) : "",
   );

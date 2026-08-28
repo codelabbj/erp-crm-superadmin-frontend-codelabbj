@@ -4,6 +4,7 @@ import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Topbar } from "@/components/layout/Topbar";
 import { authApi } from "@/lib/api";
+import { useConsoleIdleTimeout } from "@/hooks/useConsoleIdleTimeout";
 
 const SIDEBAR_KEY = "owo_sa_sidebar_collapsed";
 
@@ -19,6 +20,8 @@ export function DashboardLayout() {
     queryKey: ["me"],
     queryFn: async () => (await authApi.me()).data,
   });
+
+  useConsoleIdleTimeout(me?.user?.console_idle_timeout_seconds);
 
   const handleToggle = () => {
     setIsCollapsed((prev) => {
@@ -76,6 +79,7 @@ export function DashboardLayout() {
         onToggle={handleToggle}
         userEmail={me?.user?.email}
         userName={me?.user?.full_name}
+        permissions={me?.user?.platform_permissions}
         onLogout={() => setIsLogoutConfirmOpen(true)}
         onRefresh={() => void refreshAllData()}
         isRefreshing={isRefreshing}

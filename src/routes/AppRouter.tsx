@@ -1,8 +1,10 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { LoginPage } from "@/features/auth/LoginPage";
+import { AcceptInvitePage } from "@/features/auth/AcceptInvitePage";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
 import { adminPages } from "@/routes/adminPages";
-import { ProtectedRoute, SuperAdminGuard } from "@/routes/guards";
+import { ProtectedRoute, RequirePerm, SuperAdminGuard } from "@/routes/guards";
+import { PERM } from "@/lib/platformPermissions";
 
 export function AppRouter() {
   const {
@@ -39,12 +41,15 @@ export function AppRouter() {
     ProductFeedbackPage,
     ProductBacklogPage,
     BlogAdminPage,
+    PlatformTeamPage,
+    ProfileSecurityPage,
   } = adminPages;
 
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/accept-invite" element={<AcceptInvitePage />} />
         <Route element={<ProtectedRoute />}>
           <Route element={<SuperAdminGuard />}>
             <Route element={<DashboardLayout />}>
@@ -59,11 +64,15 @@ export function AppRouter() {
               <Route path="partners" element={<PartnersPage />} />
               <Route path="subscriptions/stats" element={<SubscriptionsStatsRedirect />} />
               <Route path="subscriptions/alerts" element={<SubscriptionsAlertsRedirect />} />
-              <Route path="plans" element={<Plans />} />
+              <Route element={<RequirePerm perm={PERM.PLANS_WRITE} />}>
+                <Route path="plans" element={<Plans />} />
+              </Route>
               <Route path="credits-catalog" element={<CreditsCatalog />} />
-              <Route path="billing/invoices" element={<BillingOps />} />
-              <Route path="billing/business-invoices" element={<BusinessInvoicesRedirect />} />
-              <Route path="billing/dedicated-instances" element={<DedicatedInstancesRedirect />} />
+              <Route element={<RequirePerm perm={PERM.BILLING_WRITE} />}>
+                <Route path="billing/invoices" element={<BillingOps />} />
+                <Route path="billing/business-invoices" element={<BusinessInvoicesRedirect />} />
+                <Route path="billing/dedicated-instances" element={<DedicatedInstancesRedirect />} />
+              </Route>
               <Route path="catalog/products" element={<Products />} />
               <Route path="platform/feature-flags" element={<FeatureFlags />} />
               <Route path="platform/pdf-tools" element={<PdfToolsCatalog />} />
@@ -73,7 +82,13 @@ export function AppRouter() {
               <Route path="platform/modules" element={<Modules />} />
               <Route path="platform/jobs" element={<DataOps />} />
               <Route path="platform/staff" element={<Users />} />
-              <Route path="security/audit-logs" element={<AuditLogsPage />} />
+              <Route element={<RequirePerm perm={PERM.STAFF_MANAGE} />}>
+                <Route path="platform/team" element={<PlatformTeamPage />} />
+              </Route>
+              <Route path="profile/security" element={<ProfileSecurityPage />} />
+              <Route element={<RequirePerm perm={PERM.AUDIT_READ} />}>
+                <Route path="security/audit-logs" element={<AuditLogsPage />} />
+              </Route>
               <Route path="security/waf" element={<Security />} />
               <Route path="business/marketing" element={<Marketing />} />
               <Route path="business/support" element={<Support />} />

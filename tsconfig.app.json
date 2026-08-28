@@ -37,5 +37,8 @@
   "include": [
     "src",
     "src/features/subscriptions/Subscriptions.tsx"
+  ],
+  "exclude": [
+    "**/*.test.ts"
   ]
 }

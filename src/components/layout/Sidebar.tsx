@@ -2,6 +2,7 @@ import { ChevronLeft, ChevronRight, LogOut, RefreshCw } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { Logo } from "@/components/ui/Logo";
 import { NAV_SECTIONS, type NavSection } from "@/lib/navigation";
+import { hasPerm, PATH_PERMISSION } from "@/lib/platformPermissions";
 import { cn } from "@/lib/utils";
 
 type SidebarProps = {
@@ -9,10 +10,26 @@ type SidebarProps = {
   onToggle: () => void;
   userEmail?: string;
   userName?: string;
+  permissions?: string[];
   onLogout: () => void;
   onRefresh: () => void;
   isRefreshing: boolean;
 };
+
+function filterSections(sections: NavSection[], permissions?: string[]): NavSection[] {
+  return sections
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) => {
+        const required = PATH_PERMISSION[item.path];
+        if (!required) return true;
+        // Without permissions payload yet, show all (owner/superuser migration)
+        if (!permissions?.length) return true;
+        return hasPerm(permissions, required);
+      }),
+    }))
+    .filter((s) => s.items.length > 0);
+}
 
 function NavSections({ sections, isCollapsed }: { sections: NavSection[]; isCollapsed: boolean }) {
   return (
@@ -71,10 +88,12 @@ export function Sidebar({
   onToggle,
   userEmail,
   userName,
+  permissions,
   onLogout,
   onRefresh,
   isRefreshing,
 }: SidebarProps) {
+  const sections = filterSections(NAV_SECTIONS, permissions);
   return (
     <aside
       className={cn(
@@ -89,7 +108,7 @@ export function Sidebar({
       </div>
 
       <nav className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain px-3 py-3">
-        <NavSections sections={NAV_SECTIONS} isCollapsed={isCollapsed} />
+        <NavSections sections={sections} isCollapsed={isCollapsed} />
       </nav>
 
       <div className="shrink-0 space-y-2 border-t border-neutral-4 p-3">

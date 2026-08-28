@@ -113,12 +113,52 @@ api.interceptors.response.use(
 
 export const authApi = {
   login: (email: string, password: string) =>
-    api.post<{ access: string; refresh: string }>("/api/token/", {
+    api.post<{
+      access?: string;
+      refresh?: string;
+      otp_required?: boolean;
+      challenge_id?: string;
+      email_hint?: string;
+      expires_in?: number;
+      detail?: string;
+    }>("/api/token/", {
       email,
       password,
-      // Distingue la console SA : multi-session côté backend (claim app=superadmin).
       client: "superadmin",
     }),
+  verifyOtp: (challengeId: string, code: string) =>
+    api.post<{ access: string; refresh: string; otp_required?: boolean }>(
+      "/api/auth/login/verify-otp/",
+      { challenge_id: challengeId, code, client: "superadmin" },
+    ),
+  resendOtp: (challengeId: string) =>
+    api.post<{ challenge_id: string; email_hint?: string; expires_in?: number }>(
+      "/api/auth/login/resend-otp/",
+      { challenge_id: challengeId },
+    ),
   me: () =>
-    api.get<{ user: { id: string; email: string; full_name: string; is_superuser?: boolean } }>("/api/me/"),
+    api.get<{
+      user: {
+        id: string;
+        email: string;
+        full_name: string;
+        is_superuser?: boolean;
+        platform_role?: string | null;
+        platform_permissions?: string[];
+        can_access_console?: boolean;
+        console_idle_timeout_seconds?: number;
+        email_otp_enabled?: boolean;
+      };
+    }>("/api/me/"),
+  patchConsolePreferences: (payload: { console_idle_timeout_seconds: number }) =>
+    api.patch<{ console_idle_timeout_seconds: number; allowed: number[] }>(
+      "/api/me/console-preferences/",
+      payload,
+    ),
+  getSecurityOtp: () =>
+    api.get<{ enabled: boolean; reauth_period_seconds: number; last_verified_at?: string | null }>(
+      "/api/me/security-otp/",
+    ),
+  patchSecurityOtp: (payload: { enabled?: boolean; reauth_period_seconds?: number }) =>
+    api.patch<{ enabled: boolean; reauth_period_seconds: number }>("/api/me/security-otp/", payload),
 };

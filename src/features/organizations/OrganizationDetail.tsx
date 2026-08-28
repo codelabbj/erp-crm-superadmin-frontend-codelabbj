@@ -45,6 +45,7 @@ import { OrgWarehousesQuotaPanel } from "@/features/organizations/components/Org
 import { type OrgDetailTab, orgProductsPath, readOrgDetailTab } from "@/lib/orgNavigation";
 import { MODULE_LABELS, planPeriodProgress, resolveMediaUrl } from "@/features/organizations/orgPlanUtils";
 import { useConfirmDialog } from "@/hooks/useConfirmDialog";
+import { usePlatformPerms } from "@/hooks/usePlatformPerms";
 
 type OrganizationDetailProps = {
   orgId: string;
@@ -59,6 +60,7 @@ export function OrganizationDetail({ orgId, onBack, onOpenAudit }: OrganizationD
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
   const [isExtendModalOpen, setIsExtendModalOpen] = useState(false);
   const queryClient = useQueryClient();
+  const { canWriteOrgs, canWriteBilling } = usePlatformPerms();
 
   const setActiveTab = (tab: OrgDetailTab) => {
     if (tab === "overview") {
@@ -232,33 +234,37 @@ export function OrganizationDetail({ orgId, onBack, onOpenAudit }: OrganizationD
         </div>
 
         <div className="mt-5 flex flex-wrap gap-2 border-t border-slate-100 pt-4 dark:border-slate-800">
-          <QuickAction icon={<Plus size={15} />} label="Assigner un plan" onClick={openAssignPlan} />
+          {canWriteOrgs ? (
+            <QuickAction icon={<Plus size={15} />} label="Assigner un plan" onClick={openAssignPlan} />
+          ) : null}
           <QuickAction
             icon={<Package size={15} />}
             label="Voir les produits"
             title="Catalogue inventaire de cette organisation"
             onClick={() => navigate(orgProductsPath(org.id))}
           />
-          <QuickAction
-            icon={org.is_active ? <ShieldAlert size={15} /> : <CheckCircle2 size={15} />}
-            label={org.is_active ? "Suspendre" : "Réactiver"}
-            title={
-              org.is_active
-                ? "Désactive l'accès à l'organisation (connexion bloquée). Ne résilie pas le plan ni les modules."
-                : "Réactive l'accès à l'organisation."
-            }
-            onClick={() =>
-              ask({
-                description: org.is_active
-                  ? `Suspendre « ${org.name} » ? L'accès sera bloqué (le plan et les modules ne sont pas résiliés).`
-                  : `Réactiver « ${org.name} » ?`,
-                danger: org.is_active,
-                confirmText: org.is_active ? "Suspendre" : "Réactiver",
-                action: () => mut.mutate({ id: org.id, is_active: !org.is_active }),
-              })
-            }
-            variant={org.is_active ? "danger" : "success"}
-          />
+          {canWriteOrgs ? (
+            <QuickAction
+              icon={org.is_active ? <ShieldAlert size={15} /> : <CheckCircle2 size={15} />}
+              label={org.is_active ? "Suspendre" : "Réactiver"}
+              title={
+                org.is_active
+                  ? "Désactive l'accès à l'organisation (connexion bloquée). Ne résilie pas le plan ni les modules."
+                  : "Réactive l'accès à l'organisation."
+              }
+              onClick={() =>
+                ask({
+                  description: org.is_active
+                    ? `Suspendre « ${org.name} » ? L'accès sera bloqué (le plan et les modules ne sont pas résiliés).`
+                    : `Réactiver « ${org.name} » ?`,
+                  danger: org.is_active,
+                  confirmText: org.is_active ? "Suspendre" : "Réactiver",
+                  action: () => mut.mutate({ id: org.id, is_active: !org.is_active }),
+                })
+              }
+              variant={org.is_active ? "danger" : "success"}
+            />
+          ) : null}
           <QuickAction icon={<History size={15} />} label="Journaux d'audit" onClick={onOpenAudit} />
         </div>
 
@@ -298,6 +304,7 @@ export function OrganizationDetail({ orgId, onBack, onOpenAudit }: OrganizationD
           seatsIncluded={seatsIncluded}
           additionalSeats={additionalSeats}
           subs={subs?.results ?? []}
+          canWriteOrgs={canWriteOrgs}
           onAssignPlan={openAssignPlan}
           onExtendPlan={() => setIsExtendModalOpen(true)}
           onOpenBilling={() => setActiveTab("billing")}
@@ -307,14 +314,20 @@ export function OrganizationDetail({ orgId, onBack, onOpenAudit }: OrganizationD
       {activeTab === "team" ? <OrgTeamTab orgId={orgId} owner={owner} users={users} /> : null}
 
       {activeTab === "billing" ? (
-        <>
-          <OrgBusinessPlanRequestsPanel orgId={orgId} orgName={org.name} />
-          <OrgBusinessInvoicesPanel
-            orgId={orgId}
-            orgName={org.name}
-            defaultRecipientEmail={ownerEmail}
-          />
-        </>
+        canWriteBilling ? (
+          <>
+            <OrgBusinessPlanRequestsPanel orgId={orgId} orgName={org.name} />
+            <OrgBusinessInvoicesPanel
+              orgId={orgId}
+              orgName={org.name}
+              defaultRecipientEmail={ownerEmail}
+            />
+          </>
+        ) : (
+          <p className="rounded-2xl border border-border-soft bg-white p-5 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
+            Lecture seule : la facturation Business nécessite la permission billing.write.
+          </p>
+        )
       ) : null}
 
       {activeTab === "payments" ? <PaymentTransactionsList orgId={orgId} embedded /> : null}
@@ -606,6 +619,7 @@ function SubscriptionPanel({
   seatsIncluded,
   additionalSeats,
   subs,
+  canWriteOrgs,
   onAssignPlan,
   onExtendPlan,
   onOpenBilling,
@@ -618,6 +632,7 @@ function SubscriptionPanel({
   seatsIncluded: number;
   additionalSeats: number;
   subs: { id: string; status: string; ends_at?: string | null; module: { name: string } }[];
+  canWriteOrgs: boolean;
   onAssignPlan: () => void;
   onExtendPlan: () => void;
   onOpenBilling: () => void;
@@ -716,17 +731,30 @@ function SubscriptionPanel({
             <p className="mb-4 text-xs text-slate-400">Capacité sièges non configurée.</p>
           )}
 
-          {orgMeta ? <OrgWarehousesQuotaPanel orgId={orgMeta.id} orgMeta={orgMeta} embedded /> : null}
-
-          <button type="button" className="btn-magenta mb-2 w-full text-xs" onClick={onAssignPlan}>
-            <Plus size={14} className="mr-1 inline" /> Assigner / migrer un plan
-          </button>
-
-          {orgMeta?.plan_code ? (
-            <button type="button" className="btn-secondary mb-3 w-full text-xs" onClick={onExtendPlan}>
-              <CalendarPlus size={14} className="mr-1 inline" /> Prolonger la durée
-            </button>
+          {orgMeta ? (
+            <OrgWarehousesQuotaPanel
+              orgId={orgMeta.id}
+              orgMeta={orgMeta}
+              embedded
+              readOnly={!canWriteOrgs}
+            />
           ) : null}
+
+          {canWriteOrgs ? (
+            <>
+              <button type="button" className="btn-magenta mb-2 w-full text-xs" onClick={onAssignPlan}>
+                <Plus size={14} className="mr-1 inline" /> Assigner / migrer un plan
+              </button>
+
+              {orgMeta?.plan_code ? (
+                <button type="button" className="btn-secondary mb-3 w-full text-xs" onClick={onExtendPlan}>
+                  <CalendarPlus size={14} className="mr-1 inline" /> Prolonger la durée
+                </button>
+              ) : null}
+            </>
+          ) : (
+            <p className="mb-3 text-xs text-slate-500">Lecture seule — pas de permission orgs.write.</p>
+          )}
 
           <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-800/40 dark:text-slate-300">
             <p className="m-0 flex items-start gap-2">
@@ -738,7 +766,7 @@ function SubscriptionPanel({
                 Une nouvelle facture payée prolonge la période et met à jour sièges / add-ons.
               </span>
             </p>
-            {isBusiness ? (
+            {isBusiness && canWriteOrgs ? (
               <button type="button" className="btn-secondary mt-3 w-full text-[11px]" onClick={onOpenBilling}>
                 Émettre une facture Business
               </button>

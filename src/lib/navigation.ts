@@ -17,6 +17,8 @@ import {
   SlidersHorizontal,
   Upload,
   Users2,
+  UsersRound,
+  UserCog,
   WalletCards,
   Coins,
 } from "lucide-react";
@@ -67,6 +69,8 @@ export const NAV_SECTIONS: NavSection[] = [
       { icon: Package, label: "Produits", path: "/catalog/products" },
       { icon: Puzzle, label: "Modules", path: "/platform/modules" },
       { icon: Users2, label: "Utilisateurs staff", path: "/platform/staff" },
+      { icon: UsersRound, label: "Équipe console", path: "/platform/team" },
+      { icon: UserCog, label: "Mon profil", path: "/profile/security" },
       { icon: Flag, label: "Feature flags", path: "/platform/feature-flags" },
       { icon: FileText, label: "Outils PDF", path: "/platform/pdf-tools" },
       { icon: Map, label: "Backlog / roadmap", path: "/platform/backlog" },

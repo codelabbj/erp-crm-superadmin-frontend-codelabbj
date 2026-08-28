@@ -30,6 +30,8 @@ import { PartnersPage } from "@/features/partners/PartnersPage";
 import { ProductFeedbackPage } from "@/features/productFeedback/ProductFeedbackPage";
 import { ProductBacklogPage } from "@/features/productBacklog/ProductBacklogPage";
 import { BlogAdminPage } from "@/features/blog/BlogAdminPage";
+import { PlatformTeamPage } from "@/features/platformTeam/PlatformTeamPage";
+import { ProfileSecurityPage } from "@/features/profile/ProfileSecurityPage";
 import { ORG_QUERY_KEY, readOrgIdFromSearch } from "@/lib/orgNavigation";
 
 export function DashboardPage() {
@@ -104,4 +106,6 @@ export const adminPages = {
   ProductFeedbackPage,
   ProductBacklogPage,
   BlogAdminPage,
+  PlatformTeamPage,
+  ProfileSecurityPage,
 };

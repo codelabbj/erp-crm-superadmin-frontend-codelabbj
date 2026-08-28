@@ -20,6 +20,7 @@ import { useDebouncedValue, usePaginationState } from "@/hooks/useListState";
 import { paginatedCount } from "@/lib/pagination";
 import { downloadCsv } from "@/lib/exportCsv";
 import { useConfirmDialog } from "@/hooks/useConfirmDialog";
+import { usePlatformPerms } from "@/hooks/usePlatformPerms";
 
 function ownerDisplayName(owner: AdminOrganization["owner"]): string {
   if (!owner) return "Propriétaire inconnu";
@@ -65,11 +66,13 @@ function planStatusLabel(org: AdminOrganization): string {
 
 function OrgRowActions({
   org,
+  canWriteOrgs,
   onView,
   onSubscriptions,
   onToggleActive,
 }: {
   org: AdminOrganization;
+  canWriteOrgs: boolean;
   onView: () => void;
   onSubscriptions: () => void;
   onToggleActive: () => void;
@@ -111,30 +114,34 @@ function OrgRowActions({
               <Eye size={14} /> Voir le détail
             </button>
           </li>
-          <li>
-            <button
-              type="button"
-              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left hover:bg-slate-100 dark:hover:bg-slate-800"
-              onClick={() => {
-                onSubscriptions();
-                setOpen(false);
-              }}
-            >
-              <WalletCards size={14} /> Gérer le plan
-            </button>
-          </li>
-          <li>
-            <button
-              type="button"
-              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left hover:bg-slate-100 dark:hover:bg-slate-800"
-              onClick={() => {
-                onToggleActive();
-                setOpen(false);
-              }}
-            >
-              <Power size={14} /> {org.is_active ? "Suspendre" : "Réactiver"}
-            </button>
-          </li>
+          {canWriteOrgs ? (
+            <>
+              <li>
+                <button
+                  type="button"
+                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left hover:bg-slate-100 dark:hover:bg-slate-800"
+                  onClick={() => {
+                    onSubscriptions();
+                    setOpen(false);
+                  }}
+                >
+                  <WalletCards size={14} /> Gérer le plan
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left hover:bg-slate-100 dark:hover:bg-slate-800"
+                  onClick={() => {
+                    onToggleActive();
+                    setOpen(false);
+                  }}
+                >
+                  <Power size={14} /> {org.is_active ? "Suspendre" : "Réactiver"}
+                </button>
+              </li>
+            </>
+          ) : null}
         </ul>
       ) : null}
     </div>
@@ -143,6 +150,7 @@ function OrgRowActions({
 
 export function Organizations() {
   const navigate = useNavigate();
+  const { canWriteOrgs } = usePlatformPerms();
   const [q, setQ] = useState("");
   const [sort, setSort] = useState("-created_at");
   const [subscriptionStatus, setSubscriptionStatus] = useState("");
@@ -302,10 +310,12 @@ export function Organizations() {
         title="Organisations"
         description="Annuaire des tenants — aperçu plan, sièges et paiement. Pour assigner un plan ou ajouter des sièges : Abonnements."
         actions={
-          <button type="button" onClick={() => setIsModalOpen(true)} className="btn-primary px-3 py-1.5 text-xs">
-            <Plus size={14} className="mr-1 inline" />
-            Nouvelle organisation
-          </button>
+          canWriteOrgs ? (
+            <button type="button" onClick={() => setIsModalOpen(true)} className="btn-primary px-3 py-1.5 text-xs">
+              <Plus size={14} className="mr-1 inline" />
+              Nouvelle organisation
+            </button>
+          ) : undefined
         }
       />
 
@@ -525,6 +535,7 @@ export function Organizations() {
                 <td className="px-3 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                   <OrgRowActions
                     org={o}
+                    canWriteOrgs={canWriteOrgs}
                     onView={() => navigate(`/organizations/${o.id}`)}
                     onSubscriptions={() => navigate(orgSubscriptionsPath(o.id))}
                     onToggleActive={() =>

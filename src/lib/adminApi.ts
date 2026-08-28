@@ -678,6 +678,45 @@ export interface AuditLogItem {
   user_name?: string;
 }
 
+export type PlatformRole = "owner" | "ops" | "support" | "viewer";
+
+export interface PlatformStaffMember {
+  id: string;
+  user_id: string;
+  email: string;
+  full_name: string;
+  role: PlatformRole | string;
+  permissions: string[];
+  is_active: boolean;
+  is_superuser: boolean;
+  email_otp_enabled: boolean;
+  console_idle_timeout_seconds: number;
+  accepted_at?: string | null;
+  created_at?: string | null;
+  invited_by_email?: string | null;
+}
+
+export interface PlatformStaffInvite {
+  id: string;
+  email: string;
+  full_name?: string;
+  role: PlatformRole | string;
+  status: string;
+  expires_at?: string | null;
+  created_at?: string | null;
+  invited_by_email?: string | null;
+}
+
+export interface PlatformAuditLogItem {
+  id: string;
+  actor_email: string;
+  action: string;
+  entity_type: string;
+  entity_id: string;
+  payload?: Record<string, unknown>;
+  created_at?: string | null;
+}
+
 export interface PaymentTransactionItem {
   transaction_id: string;
   external_reference: string;
@@ -1316,6 +1355,34 @@ export const adminApi = {
   createRole: async (payload: { name: string; permissions?: Record<string, string[]>; is_default?: boolean }) =>
     (await api.post<RoleItem>("/api/roles/", payload)).data,
   permissionsSchema: async () => (await api.get<PermissionsSchema>("/api/permissions-schema/")).data,
+
+  platformStaff: async () =>
+    (
+      await api.get<{
+        results: PlatformStaffMember[];
+        pending_invites: PlatformStaffInvite[];
+      }>("/api/admin/platform-staff/")
+    ).data,
+  invitePlatformStaff: async (payload: { email: string; role: string; full_name?: string }) =>
+    (await api.post<PlatformStaffInvite>("/api/admin/platform-staff/invite/", payload)).data,
+  validatePlatformStaffInvite: async (token: string) =>
+    (
+      await api.get<{ email: string; full_name?: string; role: string; expires_at: string }>(
+        "/api/admin/platform-staff/invite/validate/",
+        { params: { token } },
+      )
+    ).data,
+  acceptPlatformStaffInvite: async (payload: { token: string; password: string; full_name?: string }) =>
+    (await api.post<{ detail: string; email: string; role?: string }>("/api/admin/platform-staff/accept/", payload))
+      .data,
+  patchPlatformStaff: async (id: string, payload: { role?: string; is_active?: boolean }) =>
+    (await api.patch<PlatformStaffMember>(`/api/admin/platform-staff/${id}/`, payload)).data,
+  revokePlatformStaff: async (id: string) =>
+    (await api.post<{ detail: string }>(`/api/admin/platform-staff/${id}/revoke/`)).data,
+  resendPlatformStaffInvite: async (inviteId: string) =>
+    (await api.post<PlatformStaffInvite>(`/api/admin/platform-staff/invites/${inviteId}/resend/`)).data,
+  platformAuditLogs: async (params?: { limit?: number; offset?: number }) =>
+    (await api.get<PaginatedResponse<PlatformAuditLogItem>>("/api/admin/platform-audit-logs/", { params })).data,
 
   auditLogs: async (params?: { q?: string; action?: string; limit?: number; offset?: number; sort?: string }) =>
     (await api.get<PaginatedResponse<AuditLogItem>>("/api/audit-logs/", { params })).data,
