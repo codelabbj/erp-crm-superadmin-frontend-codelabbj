@@ -48,8 +48,8 @@ export function ResetPasswordPage() {
             <p className="m-0 text-sm text-red-600">
               {validate.data?.detail || getErrorMessage(validate.error) || "Lien invalide ou expiré."}
             </p>
-            <Link to="/forgot-password" className="btn-secondary text-center">
-              Demander un nouveau lien
+            <Link to="/owner/forgot-password" className="btn-secondary text-center">
+              Demander un nouveau lien (Owner)
             </Link>
           </div>
         ) : null}

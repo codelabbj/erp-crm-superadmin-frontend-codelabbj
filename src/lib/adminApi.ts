@@ -1379,6 +1379,8 @@ export const adminApi = {
     (await api.patch<PlatformStaffMember>(`/api/admin/platform-staff/${id}/`, payload)).data,
   revokePlatformStaff: async (id: string) =>
     (await api.post<{ detail: string }>(`/api/admin/platform-staff/${id}/revoke/`)).data,
+  sendPlatformStaffPasswordReset: async (id: string) =>
+    (await api.post<{ detail: string }>(`/api/admin/platform-staff/${id}/send-password-reset/`)).data,
   resendPlatformStaffInvite: async (inviteId: string) =>
     (await api.post<PlatformStaffInvite>(`/api/admin/platform-staff/invites/${inviteId}/resend/`)).data,
   platformAuditLogs: async (params?: { limit?: number; offset?: number }) =>

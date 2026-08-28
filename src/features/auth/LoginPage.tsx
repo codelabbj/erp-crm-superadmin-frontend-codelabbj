@@ -157,8 +157,11 @@ export function LoginPage() {
               </label>
 
               <div className="text-right">
-                <Link to="/forgot-password" className="text-xs text-brand-purple-600 hover:underline dark:text-brand-purple-400">
-                  Mot de passe oublié ?
+                <Link
+                  to="/owner/forgot-password"
+                  className="text-xs text-brand-purple-600 hover:underline dark:text-brand-purple-400"
+                >
+                  Compte Owner — mot de passe oublié ?
                 </Link>
               </div>
 

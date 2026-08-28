@@ -51,7 +51,8 @@ export function AppRouter() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/owner/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/forgot-password" element={<Navigate to="/owner/forgot-password" replace />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/accept-invite" element={<AcceptInvitePage />} />
         <Route element={<ProtectedRoute />}>

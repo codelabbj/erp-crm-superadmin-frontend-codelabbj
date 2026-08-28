@@ -64,6 +64,12 @@ export function PlatformTeamPage() {
     onError: (e) => setError(getErrorMessage(e)),
   });
 
+  const resetPwdMut = useMutation({
+    mutationFn: (id: string) => adminApi.sendPlatformStaffPasswordReset(id),
+    onSuccess: (data) => setFeedback(data.detail || "Lien de réinitialisation envoyé."),
+    onError: (e) => setError(getErrorMessage(e)),
+  });
+
   return (
     <ListPageShell>
       <PageHeader
@@ -168,16 +174,36 @@ export function PlatformTeamPage() {
                 <td className="px-4 py-3 text-xs">{m.is_active ? "Actif" : "Révoqué"}</td>
                 <td className="px-4 py-3">
                   {m.is_active ? (
-                    <button
-                      type="button"
-                      className="btn-secondary px-2 py-1 text-xs text-red-700"
-                      disabled={revokeMut.isPending}
-                      onClick={() => {
-                        if (window.confirm(`Révoquer l'accès de ${m.email} ?`)) revokeMut.mutate(m.id);
-                      }}
-                    >
-                      Révoquer
-                    </button>
+                    <div className="flex flex-wrap gap-2">
+                      {m.role !== "owner" ? (
+                        <button
+                          type="button"
+                          className="btn-secondary px-2 py-1 text-xs"
+                          disabled={resetPwdMut.isPending}
+                          onClick={() => {
+                            if (
+                              window.confirm(
+                                `Envoyer un lien de réinitialisation du mot de passe à ${m.email} ?`,
+                              )
+                            ) {
+                              resetPwdMut.mutate(m.id);
+                            }
+                          }}
+                        >
+                          Reset mot de passe
+                        </button>
+                      ) : null}
+                      <button
+                        type="button"
+                        className="btn-secondary px-2 py-1 text-xs text-red-700"
+                        disabled={revokeMut.isPending}
+                        onClick={() => {
+                          if (window.confirm(`Révoquer l'accès de ${m.email} ?`)) revokeMut.mutate(m.id);
+                        }}
+                      >
+                        Révoquer
+                      </button>
+                    </div>
                   ) : (
                     "—"
                   )}
