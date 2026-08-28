@@ -1,16 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Shield, UserPlus } from "lucide-react";
 import { adminApi, type PlatformRole } from "@/lib/adminApi";
 import { getErrorMessage } from "@/lib/ui";
 import { ListPageShell, PageHeader } from "@/components/ui/PageHeader";
-
-const ROLES: { value: PlatformRole; label: string }[] = [
-  { value: "owner", label: "Owner" },
-  { value: "ops", label: "Ops" },
-  { value: "support", label: "Support" },
-  { value: "viewer", label: "Viewer" },
-];
+import { PLATFORM_ROLE_META, platformRoleLabel, platformRoleMeta } from "@/lib/platformRoleLabels";
 
 export function PlatformTeamPage() {
   const qc = useQueryClient();
@@ -19,6 +13,8 @@ export function PlatformTeamPage() {
   const [role, setRole] = useState<PlatformRole>("ops");
   const [feedback, setFeedback] = useState("");
   const [error, setError] = useState("");
+
+  const selectedRoleMeta = useMemo(() => platformRoleMeta(role), [role]);
 
   const { data, isLoading, isError, error: loadError } = useQuery({
     queryKey: ["platform-staff"],
@@ -74,8 +70,23 @@ export function PlatformTeamPage() {
     <ListPageShell>
       <PageHeader
         title="Équipe console"
-        description="Inviter et gérer les accès Super Admin (Owner, Ops, Support, Viewer)."
+        description="Inviter des collègues avec un rôle adapté à leur responsabilité sur la plateforme OwoDesk."
       />
+
+      <section className="mb-6 rounded-2xl border border-border-soft bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/60">
+        <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Les 4 rôles</h3>
+        <div className="grid gap-3 md:grid-cols-2">
+          {PLATFORM_ROLE_META.map((r) => (
+            <article
+              key={r.value}
+              className="rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-950"
+            >
+              <p className="m-0 text-sm font-semibold text-slate-800 dark:text-slate-100">{r.label}</p>
+              <p className="m-0 mt-1 text-xs text-slate-600 dark:text-slate-300">{r.summary}</p>
+            </article>
+          ))}
+        </div>
+      </section>
 
       <section className="mb-6 rounded-2xl border border-border-soft bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
@@ -88,7 +99,7 @@ export function PlatformTeamPage() {
             inviteMut.mutate();
           }}
         >
-          <label className="text-xs text-slate-600 dark:text-slate-300">
+          <label className="text-xs text-slate-600 dark:text-slate-300 md:col-span-2">
             E-mail
             <input
               type="email"
@@ -98,7 +109,7 @@ export function PlatformTeamPage() {
               onChange={(e) => setEmail(e.target.value)}
             />
           </label>
-          <label className="text-xs text-slate-600 dark:text-slate-300">
+          <label className="text-xs text-slate-600 dark:text-slate-300 md:col-span-2">
             Nom (optionnel)
             <input
               className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"
@@ -106,26 +117,36 @@ export function PlatformTeamPage() {
               onChange={(e) => setFullName(e.target.value)}
             />
           </label>
-          <label className="text-xs text-slate-600 dark:text-slate-300">
+          <label className="text-xs text-slate-600 dark:text-slate-300 md:col-span-3">
             Rôle
             <select
               className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"
               value={role}
               onChange={(e) => setRole(e.target.value as PlatformRole)}
             >
-              {ROLES.map((r) => (
+              {PLATFORM_ROLE_META.map((r) => (
                 <option key={r.value} value={r.value}>
-                  {r.label}
+                  {r.label} — {r.summary}
                 </option>
               ))}
             </select>
           </label>
-          <div className="flex items-end">
+          <div className="flex items-end md:col-span-1">
             <button type="submit" className="btn-primary w-full" disabled={inviteMut.isPending}>
               {inviteMut.isPending ? "Envoi…" : "Envoyer l'invitation"}
             </button>
           </div>
         </form>
+        {selectedRoleMeta ? (
+          <div className="mt-3 rounded-lg border border-slate-100 bg-slate-50 p-3 text-xs text-slate-600 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300">
+            <p className="m-0 font-semibold text-slate-800 dark:text-slate-100">{selectedRoleMeta.title}</p>
+            <ul className="mb-0 mt-2 list-disc space-y-1 pl-4">
+              {selectedRoleMeta.details.map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
         {feedback ? <p className="mt-2 text-xs text-emerald-600">{feedback}</p> : null}
         {error ? <p className="mt-2 text-xs text-red-600">{error}</p> : null}
       </section>
@@ -158,17 +179,21 @@ export function PlatformTeamPage() {
                 </td>
                 <td className="px-4 py-3">
                   <select
-                    className="rounded-md border border-slate-200 px-2 py-1 text-xs dark:border-slate-700 dark:bg-slate-950"
+                    className="max-w-[min(100%,280px)] rounded-md border border-slate-200 px-2 py-1 text-xs dark:border-slate-700 dark:bg-slate-950"
                     value={m.role}
                     onChange={(e) => patchMut.mutate({ id: m.id, role: e.target.value })}
                     disabled={!m.is_active || patchMut.isPending}
+                    title={platformRoleMeta(m.role)?.summary}
                   >
-                    {ROLES.map((r) => (
+                    {PLATFORM_ROLE_META.map((r) => (
                       <option key={r.value} value={r.value}>
                         {r.label}
                       </option>
                     ))}
                   </select>
+                  <p className="m-0 mt-1 max-w-xs text-[10px] text-slate-500">
+                    {platformRoleMeta(m.role)?.summary}
+                  </p>
                 </td>
                 <td className="px-4 py-3 text-xs">{m.email_otp_enabled ? "Oui" : "Non"}</td>
                 <td className="px-4 py-3 text-xs">{m.is_active ? "Actif" : "Révoqué"}</td>
@@ -224,7 +249,7 @@ export function PlatformTeamPage() {
                 className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-100 px-3 py-2 text-sm dark:border-slate-800"
               >
                 <span>
-                  {inv.email} · <strong>{inv.role}</strong>
+                  {inv.email} · <strong>{platformRoleLabel(inv.role)}</strong>
                 </span>
                 <button
                   type="button"

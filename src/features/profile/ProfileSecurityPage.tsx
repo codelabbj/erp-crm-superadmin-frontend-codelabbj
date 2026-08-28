@@ -4,6 +4,7 @@ import { Shield, Timer, KeyRound } from "lucide-react";
 import { authApi } from "@/lib/api";
 import { getErrorMessage } from "@/lib/ui";
 import { ListPageShell, PageHeader } from "@/components/ui/PageHeader";
+import { platformRoleLabel } from "@/lib/platformRoleLabels";
 
 const IDLE_OPTIONS: { value: number; label: string }[] = [
   { value: 300, label: "5 minutes" },
@@ -105,7 +106,7 @@ export function ProfileSecurityPage() {
         <p className="m-0 font-semibold text-slate-800 dark:text-slate-100">{me?.user?.full_name}</p>
         <p className="m-0 text-slate-500">{me?.user?.email}</p>
         <p className="m-0 mt-1 text-xs text-slate-400">
-          Rôle : {me?.user?.platform_role || (me?.user?.is_superuser ? "owner" : "—")}
+          Rôle : {platformRoleLabel(me?.user?.platform_role) || (me?.user?.is_superuser ? "Propriétaire (Owner)" : "—")}
         </p>
       </div>
 
