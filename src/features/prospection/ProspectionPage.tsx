@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, X } from "lucide-react";
+import { Mail, Plus, X } from "lucide-react";
 import { FilterBar, FilterSelect, SearchInput } from "@/components/ui/FilterBar";
 import { ListPageShell, PageHeader } from "@/components/ui/PageHeader";
 import {
@@ -78,6 +78,7 @@ export function ProspectionPage() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [pageError, setPageError] = useState("");
+  const [pageInfo, setPageInfo] = useState("");
 
   const listQuery = useQuery({
     queryKey: ["prospection-cabinets", pays, statut, q],
@@ -107,16 +108,40 @@ export function ProspectionPage() {
     await queryClient.invalidateQueries({ queryKey: ["prospection-stats"] });
   };
 
+  const previewSend = useMutation({
+    mutationFn: () => adminApi.sendProspectionPreview(selectedId ?? undefined),
+    onSuccess: (result) => {
+      setPageError("");
+      setPageInfo(`Aperçu envoyé à ${result.to}.`);
+    },
+    onError: (err: unknown) => {
+      setPageInfo("");
+      setPageError(getErrorMessage(err));
+    },
+  });
+
   return (
     <ListPageShell>
       <PageHeader
         title="Prospection cabinets comptables"
         description="Ajoutez un cabinet, complétez l’email s’il manque, puis envoyez le courrier de partenariat depuis la console."
         actions={
-          <button type="button" className="btn-primary" onClick={() => setIsCreateOpen(true)}>
-            <Plus size={16} />
-            Ajouter un prospect
-          </button>
+          <>
+            <button
+              type="button"
+              className="btn-secondary"
+              disabled={previewSend.isPending}
+              title="Envoie le modèle à kadersaka@gmail.com, sans changer le statut du cabinet."
+              onClick={() => previewSend.mutate()}
+            >
+              <Mail size={16} />
+              {previewSend.isPending ? "Envoi de l’aperçu…" : "M’envoyer l’aperçu"}
+            </button>
+            <button type="button" className="btn-primary" onClick={() => setIsCreateOpen(true)}>
+              <Plus size={16} />
+              Ajouter un prospect
+            </button>
+          </>
         }
       />
 
@@ -129,6 +154,7 @@ export function ProspectionPage() {
       </div>
 
       {pageError ? <p className="text-xs text-red-700">{pageError}</p> : null}
+      {pageInfo ? <p className="text-xs text-emerald-700">{pageInfo}</p> : null}
 
       <FilterBar>
         <SearchInput value={q} onChange={setQ} placeholder="Nom, email, ville, notes…" />
@@ -523,9 +549,18 @@ function CabinetDetail({
       </label>
 
       {previewQuery.data ? (
-        <div className="rounded-lg bg-slate-50 px-2 py-1.5 text-xs dark:bg-slate-800">
-          <div className="font-medium">{previewQuery.data.subject}</div>
-          <div className="mt-1 line-clamp-4 whitespace-pre-wrap text-neutral-6">{previewQuery.data.body}</div>
+        <div className="overflow-hidden rounded-lg border border-neutral-4 bg-white text-xs dark:border-slate-700 dark:bg-slate-800">
+          <div className="border-b border-neutral-4 px-2 py-1.5 font-medium">{previewQuery.data.subject}</div>
+          {previewQuery.data.body_html ? (
+            <iframe
+              title="Aperçu du courrier"
+              className="h-56 w-full bg-white"
+              sandbox=""
+              srcDoc={previewQuery.data.body_html}
+            />
+          ) : (
+            <div className="whitespace-pre-wrap px-2 py-1.5 text-neutral-6">{previewQuery.data.body}</div>
+          )}
         </div>
       ) : null}
 

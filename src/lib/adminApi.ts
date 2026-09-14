@@ -1780,6 +1780,14 @@ export const adminApi = {
       })
     ).data,
 
+  sendProspectionPreview: async (cabinetId?: number) =>
+    (
+      await api.post<{ status: string; to: string; subject: string }>(
+        "/api/prospection/cabinets/send-preview/",
+        cabinetId ? { cabinet_id: cabinetId } : {},
+      )
+    ).data,
+
   prospectionStats: async () =>
     (await api.get<ProspectionStatRow[]>("/api/prospection/cabinets/stats/")).data,
 };
@@ -1929,6 +1937,7 @@ export interface ProspectionEmailPreview {
   to: string;
   subject: string;
   body: string;
+  body_html: string;
   next_statut: string;
 }
 
