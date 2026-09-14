@@ -441,7 +441,7 @@ function CabinetDetail({
   const sendMutation = useMutation({
     mutationFn: async () => {
       if (!cabinet) throw new Error("Aucun cabinet");
-      if (email.trim() !== cabinet.email || notes !== cabinet.notes || (canValidateEmail && statut !== "pret")) {
+      if (email.trim() !== cabinet.email || notes !== cabinet.notes || canValidateEmail) {
         await adminApi.updateProspectionCabinet(cabinet.id, {
           email: email.trim(),
           notes,
