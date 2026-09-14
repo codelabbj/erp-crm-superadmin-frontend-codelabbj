@@ -40,6 +40,7 @@ export function AppRouter() {
     AIAssistant,
     PaymentTransactionsPage,
     PartnersPage,
+    ProspectionPage,
     ProductFeedbackPage,
     ProductBacklogPage,
     BlogAdminPage,
@@ -67,6 +68,7 @@ export function AppRouter() {
               <Route path="subscriptions" element={<SubscriptionsPage />} />
               <Route path="payment-transactions" element={<PaymentTransactionsPage />} />
               <Route path="partners" element={<PartnersPage />} />
+              <Route path="prospection" element={<ProspectionPage />} />
               <Route path="subscriptions/stats" element={<SubscriptionsStatsRedirect />} />
               <Route path="subscriptions/alerts" element={<SubscriptionsAlertsRedirect />} />
               <Route element={<RequirePerm perm={PERM.PLANS_WRITE} />}>

@@ -1755,6 +1755,20 @@ export const adminApi = {
     (await api.patch<BlogPost>(`/api/admin/blog/posts/${id}/`, payload)).data,
 
   deleteBlogPost: async (id: string) => (await api.delete(`/api/admin/blog/posts/${id}/`)).data,
+
+  prospectionCabinets: async (params?: { statut?: string; pays?: string; q?: string }) =>
+    (await api.get<ProspectionCabinet[]>("/api/prospection/cabinets/", { params })).data,
+
+  prospectionCabinet: async (id: number) =>
+    (await api.get<ProspectionCabinet>(`/api/prospection/cabinets/${id}/`)).data,
+
+  updateProspectionCabinet: async (
+    id: number,
+    payload: Partial<Pick<ProspectionCabinet, "email" | "notes" | "statut" | "telephone">>,
+  ) => (await api.patch<ProspectionCabinet>(`/api/prospection/cabinets/${id}/`, payload)).data,
+
+  prospectionStats: async () =>
+    (await api.get<ProspectionStatRow[]>("/api/prospection/cabinets/stats/")).data,
 };
 
 export interface PartnerProgramSettings {
@@ -1851,6 +1865,40 @@ export interface ProductBacklogItem {
   sort_order: number;
   created_at: string;
   updated_at: string;
+}
+
+export interface ProspectionEmailLog {
+  id: number;
+  type_event: string;
+  date: string;
+  objet: string;
+  extrait: string;
+  message_id: string;
+}
+
+export interface ProspectionCabinet {
+  id: number;
+  pays: string;
+  ville: string;
+  nom_cabinet: string;
+  site_web: string;
+  email: string;
+  telephone: string;
+  statut: string;
+  date_identification: string;
+  date_envoi: string | null;
+  date_relance_1: string | null;
+  date_relance_2: string | null;
+  last_contact: string | null;
+  notes: string;
+  created_at: string;
+  updated_at: string;
+  logs: ProspectionEmailLog[];
+}
+
+export interface ProspectionStatRow {
+  statut: string;
+  total: number;
 }
 
 export interface BlogPost {

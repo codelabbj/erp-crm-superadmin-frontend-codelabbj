@@ -27,6 +27,7 @@ import { Fiscal } from "@/features/fiscal/Fiscal";
 import { AIAssistant } from "@/features/ai/AIAssistant";
 import { PaymentTransactionsPage } from "@/features/paymentTransactions/PaymentTransactionsPage";
 import { PartnersPage } from "@/features/partners/PartnersPage";
+import { ProspectionPage } from "@/features/prospection/ProspectionPage";
 import { ProductFeedbackPage } from "@/features/productFeedback/ProductFeedbackPage";
 import { ProductBacklogPage } from "@/features/productBacklog/ProductBacklogPage";
 import { BlogAdminPage } from "@/features/blog/BlogAdminPage";
@@ -103,6 +104,7 @@ export const adminPages = {
   AIAssistant,
   PaymentTransactionsPage,
   PartnersPage,
+  ProspectionPage,
   ProductFeedbackPage,
   ProductBacklogPage,
   BlogAdminPage,
