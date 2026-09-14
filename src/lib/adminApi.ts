@@ -1767,6 +1767,19 @@ export const adminApi = {
     payload: Partial<Pick<ProspectionCabinet, "email" | "notes" | "statut" | "telephone">>,
   ) => (await api.patch<ProspectionCabinet>(`/api/prospection/cabinets/${id}/`, payload)).data,
 
+  createProspectionCabinet: async (payload: ProspectionCabinetCreate) =>
+    (await api.post<ProspectionCabinet>("/api/prospection/cabinets/", payload)).data,
+
+  sendProspectionCabinetEmail: async (id: number, payload?: { type_event?: string }) =>
+    (await api.post<ProspectionCabinet>(`/api/prospection/cabinets/${id}/send/`, payload ?? {})).data,
+
+  prospectionEmailPreview: async (id: number, typeEvent?: string) =>
+    (
+      await api.get<ProspectionEmailPreview>(`/api/prospection/cabinets/${id}/email-preview/`, {
+        params: typeEvent ? { type_event: typeEvent } : undefined,
+      })
+    ).data,
+
   prospectionStats: async () =>
     (await api.get<ProspectionStatRow[]>("/api/prospection/cabinets/stats/")).data,
 };
@@ -1899,6 +1912,24 @@ export interface ProspectionCabinet {
 export interface ProspectionStatRow {
   statut: string;
   total: number;
+}
+
+export interface ProspectionCabinetCreate {
+  pays: string;
+  ville?: string;
+  nom_cabinet: string;
+  site_web?: string;
+  email?: string;
+  telephone?: string;
+  notes?: string;
+}
+
+export interface ProspectionEmailPreview {
+  type_event: string;
+  to: string;
+  subject: string;
+  body: string;
+  next_statut: string;
 }
 
 export interface BlogPost {

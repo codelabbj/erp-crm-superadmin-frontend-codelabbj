@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Plus, X } from "lucide-react";
 import { FilterBar, FilterSelect, SearchInput } from "@/components/ui/FilterBar";
 import { ListPageShell, PageHeader } from "@/components/ui/PageHeader";
 import {
   adminApi,
   type ProspectionCabinet,
+  type ProspectionCabinetCreate,
 } from "@/lib/adminApi";
+import { getErrorMessage } from "@/lib/ui";
 import { cn } from "@/lib/utils";
 
 const STATUT_OPTIONS = [
@@ -34,6 +37,18 @@ const STATUT_CLASS: Record<string, string> = {
   refuse: "bg-red-100 text-red-800",
 };
 
+const PAYS_CHOICES = [
+  "Bénin",
+  "Côte d'Ivoire",
+  "Togo",
+  "Sénégal",
+  "Mali",
+  "Burkina Faso",
+  "Niger",
+  "Guinée",
+  "Cameroun",
+];
+
 function statutLabel(value: string) {
   return STATUT_OPTIONS.find((item) => item.value === value)?.label ?? value;
 }
@@ -45,12 +60,24 @@ function formatDate(value: string | null | undefined) {
   return date.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" });
 }
 
+function looksLikeEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
+
+function sendButtonLabel(cabinet: ProspectionCabinet) {
+  if (!cabinet.date_envoi) return "Envoyer l’email de partenariat";
+  if (!cabinet.date_relance_1) return "Envoyer la 1re relance";
+  return "Envoyer la 2e relance";
+}
+
 export function ProspectionPage() {
   const queryClient = useQueryClient();
   const [pays, setPays] = useState("");
   const [statut, setStatut] = useState("");
   const [q, setQ] = useState("");
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [pageError, setPageError] = useState("");
 
   const listQuery = useQuery({
     queryKey: ["prospection-cabinets", pays, statut, q],
@@ -71,15 +98,26 @@ export function ProspectionPage() {
   const selected = cabinets.find((item) => item.id === selectedId) ?? null;
   const paysOptions = useMemo(() => {
     const fromList = (listQuery.data ?? []).map((item) => item.pays);
-    const values = [...new Set(["Bénin", "Côte d'Ivoire", "Togo", "Sénégal", ...fromList].filter(Boolean))];
+    const values = [...new Set([...PAYS_CHOICES, ...fromList].filter(Boolean))];
     return values.sort((a, b) => a.localeCompare(b, "fr")).map((value) => ({ value, label: value }));
   }, [listQuery.data]);
+
+  const refresh = async () => {
+    await queryClient.invalidateQueries({ queryKey: ["prospection-cabinets"] });
+    await queryClient.invalidateQueries({ queryKey: ["prospection-stats"] });
+  };
 
   return (
     <ListPageShell>
       <PageHeader
         title="Prospection cabinets comptables"
-        description="Suivi des cabinets contactés pour un partenariat OwoDesk. L’automatisation met à jour les statuts ; vous pouvez compléter un email ou ajuster après un appel."
+        description="Ajoutez un cabinet, complétez l’email s’il manque, puis envoyez le courrier de partenariat depuis la console."
+        actions={
+          <button type="button" className="btn-primary" onClick={() => setIsCreateOpen(true)}>
+            <Plus size={16} />
+            Ajouter un prospect
+          </button>
+        }
       />
 
       <div className="flex flex-wrap gap-2 text-xs text-neutral-6">
@@ -89,6 +127,8 @@ export function ProspectionPage() {
           </span>
         ))}
       </div>
+
+      {pageError ? <p className="text-xs text-red-700">{pageError}</p> : null}
 
       <FilterBar>
         <SearchInput value={q} onChange={setQ} placeholder="Nom, email, ville, notes…" />
@@ -154,13 +194,205 @@ export function ProspectionPage() {
 
         <CabinetDetail
           cabinet={selected}
-          onSaved={async () => {
-            await queryClient.invalidateQueries({ queryKey: ["prospection-cabinets"] });
-            await queryClient.invalidateQueries({ queryKey: ["prospection-stats"] });
+          onSaved={async (updated) => {
+            if (
+              (statut === "email_manquant" || statut === "email_a_verifier" || statut === "pret") &&
+              (updated.statut === "pret" || updated.statut === "contacte")
+            ) {
+              setStatut("");
+            }
+            await refresh();
           }}
         />
       </div>
+
+      {isCreateOpen ? (
+        <AddCabinetDialog
+          onClose={() => setIsCreateOpen(false)}
+          onCreated={async (created, sent) => {
+            setPageError(sent === "failed" ? "Prospect créé, mais l’email n’a pas pu être envoyé. Réessayez depuis le panneau." : "");
+            setPays("");
+            setStatut("");
+            setQ("");
+            setSelectedId(created.id);
+            setIsCreateOpen(false);
+            await refresh();
+          }}
+        />
+      ) : null}
     </ListPageShell>
+  );
+}
+
+function AddCabinetDialog({
+  onClose,
+  onCreated,
+}: {
+  onClose: () => void;
+  onCreated: (cabinet: ProspectionCabinet, sent: "yes" | "no" | "failed") => Promise<void>;
+}) {
+  const [form, setForm] = useState<ProspectionCabinetCreate>({
+    pays: "Bénin",
+    ville: "",
+    nom_cabinet: "",
+    site_web: "",
+    email: "",
+    telephone: "",
+    notes: "",
+  });
+  const [sendNow, setSendNow] = useState(true);
+  const [error, setError] = useState("");
+
+  const canSend = looksLikeEmail(form.email || "");
+
+  const mutation = useMutation({
+    mutationFn: async () => {
+      const created = await adminApi.createProspectionCabinet({
+        ...form,
+        nom_cabinet: form.nom_cabinet.trim(),
+        email: (form.email || "").trim(),
+        ville: (form.ville || "").trim(),
+        telephone: (form.telephone || "").trim(),
+        site_web: (form.site_web || "").trim(),
+        notes: (form.notes || "").trim(),
+      });
+      if (sendNow && looksLikeEmail(created.email)) {
+        try {
+          const sent = await adminApi.sendProspectionCabinetEmail(created.id);
+          return { cabinet: sent, sent: "yes" as const };
+        } catch {
+          return { cabinet: created, sent: "failed" as const };
+        }
+      }
+      return { cabinet: created, sent: "no" as const };
+    },
+    onSuccess: ({ cabinet, sent }) => {
+      void onCreated(cabinet, sent);
+    },
+    onError: (err: unknown) => setError(getErrorMessage(err)),
+  });
+
+  const setField = (key: keyof ProspectionCabinetCreate, value: string) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-slate-900/60 p-4 backdrop-blur-sm">
+      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="text-base font-semibold">Nouveau prospect</h3>
+          <button type="button" className="btn-ghost h-9 w-9 p-0 text-slate-400" onClick={onClose}>
+            <X size={18} />
+          </button>
+        </div>
+        {error ? <p className="mb-3 text-xs text-red-700">{error}</p> : null}
+        <div className="space-y-3">
+          <label className="block text-xs font-medium">
+            Cabinet *
+            <input
+              className="mt-1 h-9 w-full rounded-lg border border-neutral-4 px-2 text-sm"
+              value={form.nom_cabinet}
+              onChange={(e) => setField("nom_cabinet", e.target.value)}
+              placeholder="Nom du cabinet"
+            />
+          </label>
+          <div className="grid grid-cols-2 gap-3">
+            <label className="block text-xs font-medium">
+              Pays *
+              <select
+                className="mt-1 h-9 w-full rounded-lg border border-neutral-4 px-2 text-sm"
+                value={form.pays}
+                onChange={(e) => setField("pays", e.target.value)}
+              >
+                {PAYS_CHOICES.map((value) => (
+                  <option key={value} value={value}>
+                    {value}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block text-xs font-medium">
+              Ville
+              <input
+                className="mt-1 h-9 w-full rounded-lg border border-neutral-4 px-2 text-sm"
+                value={form.ville}
+                onChange={(e) => setField("ville", e.target.value)}
+              />
+            </label>
+          </div>
+          <label className="block text-xs font-medium">
+            Email
+            <input
+              className="mt-1 h-9 w-full rounded-lg border border-neutral-4 px-2 text-sm"
+              type="email"
+              value={form.email}
+              onChange={(e) => setField("email", e.target.value)}
+              placeholder="contact@cabinet.com"
+            />
+          </label>
+          <label className="block text-xs font-medium">
+            Téléphone
+            <input
+              className="mt-1 h-9 w-full rounded-lg border border-neutral-4 px-2 text-sm"
+              value={form.telephone}
+              onChange={(e) => setField("telephone", e.target.value)}
+            />
+          </label>
+          <label className="block text-xs font-medium">
+            Site web
+            <input
+              className="mt-1 h-9 w-full rounded-lg border border-neutral-4 px-2 text-sm"
+              value={form.site_web}
+              onChange={(e) => setField("site_web", e.target.value)}
+              placeholder="https://"
+            />
+          </label>
+          <label className="block text-xs font-medium">
+            Notes
+            <textarea
+              className="mt-1 min-h-20 w-full rounded-lg border border-neutral-4 px-2 py-1 text-sm"
+              value={form.notes}
+              onChange={(e) => setField("notes", e.target.value)}
+            />
+          </label>
+          <label className="flex items-start gap-2 text-xs">
+            <input
+              type="checkbox"
+              className="mt-0.5"
+              checked={sendNow && canSend}
+              disabled={!canSend}
+              onChange={(e) => setSendNow(e.target.checked)}
+            />
+            <span>
+              Envoyer tout de suite l’email de partenariat (IONOS, team@codelab.bj).
+              {!canSend ? " Saisissez un email valide pour activer l’envoi." : ""}
+            </span>
+          </label>
+        </div>
+        <div className="mt-5 flex justify-end gap-2">
+          <button type="button" className="btn-secondary px-4" onClick={onClose}>
+            Annuler
+          </button>
+          <button
+            type="button"
+            className="btn-primary px-4"
+            disabled={mutation.isPending || !form.nom_cabinet.trim()}
+            onClick={() => {
+              setError("");
+              mutation.mutate();
+            }}
+          >
+            {mutation.isPending
+              ? sendNow && canSend
+                ? "Création et envoi…"
+                : "Création…"
+              : sendNow && canSend
+                ? "Créer et envoyer"
+                : "Créer le prospect"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -169,31 +401,68 @@ function CabinetDetail({
   onSaved,
 }: {
   cabinet: ProspectionCabinet | null;
-  onSaved: () => Promise<void>;
+  onSaved: (updated: ProspectionCabinet) => Promise<void>;
 }) {
   const [email, setEmail] = useState("");
   const [notes, setNotes] = useState("");
   const [statut, setStatut] = useState("");
+  const [sendError, setSendError] = useState("");
 
   useEffect(() => {
     if (!cabinet) return;
     setEmail(cabinet.email);
     setNotes(cabinet.notes);
     setStatut(cabinet.statut);
+    setSendError("");
   }, [cabinet]);
 
+  const pendingEmail = statut === "email_manquant" || statut === "email_a_verifier";
+  const canValidateEmail = pendingEmail && looksLikeEmail(email);
+  const canSend = Boolean(cabinet && looksLikeEmail(email) && statut !== "refuse");
+
+  const previewQuery = useQuery({
+    queryKey: ["prospection-email-preview", cabinet?.id, cabinet?.email, cabinet?.date_envoi, cabinet?.date_relance_1],
+    queryFn: () => adminApi.prospectionEmailPreview(cabinet!.id),
+    enabled: Boolean(cabinet?.id && looksLikeEmail(cabinet.email) && cabinet.statut !== "refuse"),
+  });
+
   const mutation = useMutation({
-    mutationFn: () => {
+    mutationFn: (nextStatut: string) => {
       if (!cabinet) throw new Error("Aucun cabinet");
-      return adminApi.updateProspectionCabinet(cabinet.id, { email, notes, statut });
+      return adminApi.updateProspectionCabinet(cabinet.id, { email: email.trim(), notes, statut: nextStatut });
     },
-    onSuccess: () => onSaved(),
+    onSuccess: (updated) => {
+      setStatut(updated.statut);
+      setEmail(updated.email);
+      void onSaved(updated);
+    },
+  });
+
+  const sendMutation = useMutation({
+    mutationFn: async () => {
+      if (!cabinet) throw new Error("Aucun cabinet");
+      if (email.trim() !== cabinet.email || notes !== cabinet.notes || (canValidateEmail && statut !== "pret")) {
+        await adminApi.updateProspectionCabinet(cabinet.id, {
+          email: email.trim(),
+          notes,
+          statut: canValidateEmail ? "pret" : statut,
+        });
+      }
+      return adminApi.sendProspectionCabinetEmail(cabinet.id);
+    },
+    onSuccess: (updated) => {
+      setSendError("");
+      setStatut(updated.statut);
+      setEmail(updated.email);
+      void onSaved(updated);
+    },
+    onError: (err: unknown) => setSendError(getErrorMessage(err)),
   });
 
   if (!cabinet) {
     return (
       <div className="rounded-xl border border-dashed border-neutral-4 p-4 text-sm text-neutral-6">
-        Sélectionnez un cabinet pour voir l’historique et modifier le suivi.
+        Sélectionnez un cabinet, ou ajoutez un prospect pour lui envoyer le mail.
       </div>
     );
   }
@@ -213,10 +482,19 @@ function CabinetDetail({
         ) : null}
       </div>
 
+      {pendingEmail ? (
+        <p className="rounded-lg bg-amber-50 px-2 py-1.5 text-xs text-amber-950">
+          {statut === "email_manquant"
+            ? "Email manquant : saisissez une adresse puis validez ou envoyez le courrier."
+            : "Email à vérifier : confirmez ou corrigez l’adresse puis validez ou envoyez."}
+        </p>
+      ) : null}
+
       <label className="block text-xs font-medium">
         Email
         <input
           className="mt-1 h-9 w-full rounded-lg border border-neutral-4 px-2 text-sm"
+          type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
@@ -243,15 +521,50 @@ function CabinetDetail({
           onChange={(e) => setNotes(e.target.value)}
         />
       </label>
-      <button
-        type="button"
-        className="h-9 rounded-lg bg-primary-1 px-3 text-sm font-medium text-white disabled:opacity-60"
-        disabled={mutation.isPending}
-        onClick={() => mutation.mutate()}
-      >
-        {mutation.isPending ? "Enregistrement…" : "Enregistrer"}
-      </button>
+
+      {previewQuery.data ? (
+        <div className="rounded-lg bg-slate-50 px-2 py-1.5 text-xs dark:bg-slate-800">
+          <div className="font-medium">{previewQuery.data.subject}</div>
+          <div className="mt-1 line-clamp-4 whitespace-pre-wrap text-neutral-6">{previewQuery.data.body}</div>
+        </div>
+      ) : null}
+
+      <div className="flex flex-col gap-2">
+        {canSend ? (
+          <button
+            type="button"
+            className="h-9 rounded-lg bg-indigo-700 px-3 text-sm font-medium text-white disabled:opacity-60"
+            disabled={sendMutation.isPending || mutation.isPending}
+            onClick={() => sendMutation.mutate()}
+          >
+            {sendMutation.isPending ? "Envoi…" : sendButtonLabel(cabinet)}
+          </button>
+        ) : null}
+        {pendingEmail ? (
+          <button
+            type="button"
+            className="h-9 rounded-lg bg-emerald-700 px-3 text-sm font-medium text-white disabled:opacity-60"
+            disabled={mutation.isPending || !canValidateEmail}
+            onClick={() => mutation.mutate("pret")}
+          >
+            {mutation.isPending ? "Validation…" : "Valider l’email → Prêt à envoyer"}
+          </button>
+        ) : null}
+        <button
+          type="button"
+          className="h-9 rounded-lg bg-primary-1 px-3 text-sm font-medium text-white disabled:opacity-60"
+          disabled={mutation.isPending || sendMutation.isPending}
+          onClick={() => mutation.mutate(canValidateEmail ? "pret" : statut)}
+        >
+          {mutation.isPending ? "Enregistrement…" : "Enregistrer"}
+        </button>
+      </div>
+      {pendingEmail && !canValidateEmail ? (
+        <p className="text-xs text-amber-800">Indiquez un email valide (ex. contact@cabinet.com) pour débloquer l’envoi.</p>
+      ) : null}
       {mutation.isError ? <p className="text-xs text-red-700">Impossible d’enregistrer.</p> : null}
+      {sendError ? <p className="text-xs text-red-700">{sendError}</p> : null}
+      {sendMutation.isSuccess ? <p className="text-xs text-emerald-700">Email envoyé. Le statut a été mis à jour.</p> : null}
 
       <div>
         <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-6">Historique</h3>
