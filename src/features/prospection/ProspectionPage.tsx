@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Mail, Plus, X } from "lucide-react";
-import { FilterBar, FilterSelect, SearchInput } from "@/components/ui/FilterBar";
+import { FilterBar, FilterButton, FilterSelect, SearchInput } from "@/components/ui/FilterBar";
 import { ListPageShell, PageHeader } from "@/components/ui/PageHeader";
+import { useConfirmDialog } from "@/hooks/useConfirmDialog";
 import {
   adminApi,
   type ProspectionCabinet,
@@ -64,11 +65,60 @@ function looksLikeEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 }
 
-function sendButtonLabel(cabinet: ProspectionCabinet) {
-  if (!cabinet.date_envoi) return "Envoyer l’email de partenariat";
-  if (!cabinet.date_relance_1) return "Envoyer la 1re relance";
-  return "Envoyer la 2e relance";
+const STOPPED = new Set(["repondu", "refuse", "partenaire"]);
+const EMAIL_PENDING = new Set(["email_manquant", "email_a_verifier"]);
+
+const LOG_LABEL: Record<string, string> = {
+  envoi_initial: "Envoi initial",
+  relance_1: "Relance J+7",
+  relance_2: "Relance J+30",
+  reponse: "Réponse reçue",
+};
+
+function addDays(value: string, days: number) {
+  const date = new Date(value);
+  date.setDate(date.getDate() + days);
+  return date;
 }
+
+function daysUntil(date: Date) {
+  return Math.ceil((date.getTime() - Date.now()) / 86_400_000);
+}
+
+type Cadence = { kind: "email" | "send" | "wait" | "due" | "done"; label: string };
+
+function cabinetCadence(cabinet: ProspectionCabinet): Cadence {
+  if (EMAIL_PENDING.has(cabinet.statut) && !looksLikeEmail(cabinet.email)) {
+    return { kind: "email", label: "Email à compléter" };
+  }
+  if (STOPPED.has(cabinet.statut)) {
+    return { kind: "done", label: statutLabel(cabinet.statut) };
+  }
+  if (!cabinet.date_envoi) {
+    return { kind: "send", label: "Premier envoi à valider" };
+  }
+  if (!cabinet.date_relance_1) {
+    const when = addDays(cabinet.date_envoi, 7);
+    if (when.getTime() <= Date.now()) return { kind: "due", label: "Relance 1 due" };
+    const n = daysUntil(when);
+    return { kind: "wait", label: n <= 1 ? "Relance auto demain" : `Relance auto dans ${n} j` };
+  }
+  if (!cabinet.date_relance_2) {
+    const when = addDays(cabinet.date_envoi, 30);
+    if (when.getTime() <= Date.now()) return { kind: "due", label: "Relance 2 due" };
+    const n = daysUntil(when);
+    return { kind: "wait", label: n <= 1 ? "Relance auto demain" : `Relance auto dans ${n} j` };
+  }
+  return { kind: "done", label: "Cadence terminée" };
+}
+
+const CADENCE_CLASS: Record<Cadence["kind"], string> = {
+  email: "bg-amber-100 text-amber-900",
+  send: "bg-sky-100 text-sky-900",
+  wait: "bg-slate-100 text-slate-700",
+  due: "bg-orange-100 text-orange-900",
+  done: "bg-emerald-50 text-emerald-800",
+};
 
 export function ProspectionPage() {
   const queryClient = useQueryClient();
@@ -124,7 +174,7 @@ export function ProspectionPage() {
     <ListPageShell>
       <PageHeader
         title="Prospection cabinets comptables"
-        description="Ajoutez un cabinet, complétez l’email s’il manque, puis envoyez le courrier de partenariat depuis la console."
+        description="Le premier contact est manuel. Les relances partent ensuite toutes seules : J+7, puis J+30, puis plus rien."
         actions={
           <>
             <button
@@ -147,9 +197,17 @@ export function ProspectionPage() {
 
       <div className="flex flex-wrap gap-2 text-xs text-neutral-6">
         {(statsQuery.data ?? []).map((row) => (
-          <span key={row.statut} className="rounded-full bg-neutral-1 px-2 py-1">
+          <button
+            key={row.statut}
+            type="button"
+            className={cn(
+              "rounded-full px-2 py-1",
+              statut === row.statut ? "bg-primary-1 text-white" : "bg-neutral-1",
+            )}
+            onClick={() => setStatut((current) => (current === row.statut ? "" : row.statut))}
+          >
             {statutLabel(row.statut)} · {row.total}
-          </span>
+          </button>
         ))}
       </div>
 
@@ -160,6 +218,9 @@ export function ProspectionPage() {
         <SearchInput value={q} onChange={setQ} placeholder="Nom, email, ville, notes…" />
         <FilterSelect value={pays} onChange={setPays} options={paysOptions} placeholder="Tous les pays" />
         <FilterSelect value={statut} onChange={setStatut} options={STATUT_OPTIONS} placeholder="Tous les statuts" />
+        <FilterButton active={statut === "pret"} onClick={() => setStatut(statut === "pret" ? "" : "pret")}>
+          Prêts à envoyer
+        </FilterButton>
       </FilterBar>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
@@ -172,24 +233,27 @@ export function ProspectionPage() {
                 <th className="px-3 py-2">Email</th>
                 <th className="px-3 py-2">Téléphone</th>
                 <th className="px-3 py-2">Statut</th>
+                <th className="px-3 py-2">Prochaine étape</th>
                 <th className="px-3 py-2">Dernier contact</th>
               </tr>
             </thead>
             <tbody>
               {listQuery.isLoading ? (
                 <tr>
-                  <td className="px-3 py-6 text-neutral-6" colSpan={6}>
+                  <td className="px-3 py-6 text-neutral-6" colSpan={7}>
                     Chargement…
                   </td>
                 </tr>
               ) : cabinets.length === 0 ? (
                 <tr>
-                  <td className="px-3 py-6 text-neutral-6" colSpan={6}>
+                  <td className="px-3 py-6 text-neutral-6" colSpan={7}>
                     Aucun cabinet.
                   </td>
                 </tr>
               ) : (
-                cabinets.map((cabinet) => (
+                cabinets.map((cabinet) => {
+                  const cadence = cabinetCadence(cabinet);
+                  return (
                   <tr
                     key={cabinet.id}
                     className={cn(
@@ -210,9 +274,15 @@ export function ProspectionPage() {
                         {statutLabel(cabinet.statut)}
                       </span>
                     </td>
+                    <td className="px-3 py-2">
+                      <span className={cn("rounded-full px-2 py-0.5 text-xs font-medium", CADENCE_CLASS[cadence.kind])}>
+                        {cadence.label}
+                      </span>
+                    </td>
                     <td className="px-3 py-2">{formatDate(cabinet.last_contact)}</td>
                   </tr>
-                ))
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -266,7 +336,7 @@ function AddCabinetDialog({
     telephone: "",
     notes: "",
   });
-  const [sendNow, setSendNow] = useState(true);
+  const [sendNow, setSendNow] = useState(false);
   const [error, setError] = useState("");
 
   const canSend = looksLikeEmail(form.email || "");
@@ -390,7 +460,7 @@ function AddCabinetDialog({
               onChange={(e) => setSendNow(e.target.checked)}
             />
             <span>
-              Envoyer tout de suite l’email de partenariat (IONOS, team@codelab.bj).
+              Envoyer le premier contact maintenant. Sinon le cabinet reste en « Prêt à envoyer » pour validation.
               {!canSend ? " Saisissez un email valide pour activer l’envoi." : ""}
             </span>
           </label>
@@ -433,6 +503,7 @@ function CabinetDetail({
   const [notes, setNotes] = useState("");
   const [statut, setStatut] = useState("");
   const [sendError, setSendError] = useState("");
+  const { ask, close, renderDialog } = useConfirmDialog();
 
   useEffect(() => {
     if (!cabinet) return;
@@ -444,7 +515,9 @@ function CabinetDetail({
 
   const pendingEmail = statut === "email_manquant" || statut === "email_a_verifier";
   const canValidateEmail = pendingEmail && looksLikeEmail(email);
-  const canSend = Boolean(cabinet && looksLikeEmail(email) && statut !== "refuse");
+  const canSendFirst = Boolean(cabinet && looksLikeEmail(email) && !cabinet.date_envoi && statut !== "refuse");
+  const cadence = cabinet ? cabinetCadence(cabinet) : null;
+  const canForceRelance = Boolean(cabinet && looksLikeEmail(email) && cadence?.kind === "due" && statut !== "refuse");
 
   const previewQuery = useQuery({
     queryKey: ["prospection-email-preview", cabinet?.id, cabinet?.email, cabinet?.date_envoi, cabinet?.date_relance_1],
@@ -477,6 +550,7 @@ function CabinetDetail({
       return adminApi.sendProspectionCabinetEmail(cabinet.id);
     },
     onSuccess: (updated) => {
+      close();
       setSendError("");
       setStatut(updated.statut);
       setEmail(updated.email);
@@ -488,10 +562,13 @@ function CabinetDetail({
   if (!cabinet) {
     return (
       <div className="rounded-xl border border-dashed border-neutral-4 p-4 text-sm text-neutral-6">
-        Sélectionnez un cabinet, ou ajoutez un prospect pour lui envoyer le mail.
+        Sélectionnez un cabinet. Le premier envoi se fait ici ; les relances J+7 et J+30 partent ensuite automatiquement.
       </div>
     );
   }
+
+  const relance1At = cabinet.date_envoi ? addDays(cabinet.date_envoi, 7) : null;
+  const relance2At = cabinet.date_envoi ? addDays(cabinet.date_envoi, 30) : null;
 
   return (
     <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
@@ -506,6 +583,30 @@ function CabinetDetail({
             {cabinet.site_web}
           </a>
         ) : null}
+      </div>
+
+      <div className="rounded-lg bg-slate-50 px-2 py-2 text-xs dark:bg-slate-800">
+        <p className="mb-1.5 font-semibold uppercase tracking-wide text-neutral-6">Cadence</p>
+        <ul className="space-y-1 text-neutral-7">
+          <li>Envoi initial : {cabinet.date_envoi ? formatDate(cabinet.date_envoi) : "à valider manuellement"}</li>
+          <li>
+            Relance J+7 :{" "}
+            {cabinet.date_relance_1
+              ? formatDate(cabinet.date_relance_1)
+              : relance1At
+                ? `auto le ${formatDate(relance1At.toISOString())}`
+                : "après le premier envoi"}
+          </li>
+          <li>
+            Relance J+30 :{" "}
+            {cabinet.date_relance_2
+              ? formatDate(cabinet.date_relance_2)
+              : relance2At
+                ? `auto le ${formatDate(relance2At.toISOString())}`
+                : "après le premier envoi"}
+          </li>
+        </ul>
+        {cadence ? <p className="mt-1.5 font-medium">{cadence.label}</p> : null}
       </div>
 
       {pendingEmail ? (
@@ -565,15 +666,38 @@ function CabinetDetail({
       ) : null}
 
       <div className="flex flex-col gap-2">
-        {canSend ? (
+        {canSendFirst ? (
           <button
             type="button"
             className="h-9 rounded-lg bg-indigo-700 px-3 text-sm font-medium text-white disabled:opacity-60"
             disabled={sendMutation.isPending || mutation.isPending}
+            onClick={() =>
+              ask({
+                title: "Envoyer le premier contact ?",
+                description: `Un email de partenariat va partir vers ${email.trim()}. Les relances J+7 et J+30 suivront automatiquement.`,
+                confirmText: "Envoyer",
+                action: () => sendMutation.mutate(),
+              })
+            }
+          >
+            {sendMutation.isPending ? "Envoi…" : "Envoyer le premier contact"}
+          </button>
+        ) : null}
+        {canForceRelance ? (
+          <button
+            type="button"
+            className="h-9 rounded-lg border border-indigo-200 px-3 text-sm font-medium text-indigo-800 disabled:opacity-60"
+            disabled={sendMutation.isPending || mutation.isPending}
             onClick={() => sendMutation.mutate()}
           >
-            {sendMutation.isPending ? "Envoi…" : sendButtonLabel(cabinet)}
+            {sendMutation.isPending ? "Envoi…" : "Envoyer la relance maintenant"}
           </button>
+        ) : null}
+        {cabinet.date_envoi && !canForceRelance && !STOPPED.has(statut) && !cabinet.date_relance_2 ? (
+          <p className="text-xs text-neutral-6">Les relances suivantes partiront automatiquement. Rien à faire ici.</p>
+        ) : null}
+        {cabinet.date_relance_2 ? (
+          <p className="text-xs text-neutral-6">Cadence terminée : plus de relance automatique.</p>
         ) : null}
         {pendingEmail ? (
           <button
@@ -610,15 +734,16 @@ function CabinetDetail({
             {cabinet.logs.map((log) => (
               <li key={log.id} className="rounded-lg bg-neutral-1 px-2 py-1.5">
                 <div className="font-medium">
-                  {log.type_event} · {formatDate(log.date)}
+                  {LOG_LABEL[log.type_event] ?? log.type_event} · {formatDate(log.date)}
                 </div>
                 {log.objet ? <div>{log.objet}</div> : null}
-                {log.extrait ? <div className="text-neutral-6">{log.extrait}</div> : null}
+                {log.extrait ? <div className="line-clamp-3 text-neutral-6">{log.extrait}</div> : null}
               </li>
             ))}
           </ul>
         )}
       </div>
+      {renderDialog(sendMutation.isPending)}
     </div>
   );
 }
