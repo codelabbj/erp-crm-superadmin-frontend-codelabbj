@@ -62,4 +62,12 @@ describe("platformPermissions", () => {
     expect(canAccessPath([...owner], "/platform/team")).toBe(true);
     expect(canAccessPath([...owner], "/security/audit-logs")).toBe(true);
   });
+
+  it("announcements: owner and ops can publish, support and viewer cannot", () => {
+    expect(PATH_PERMISSION["/platform/announcements"]).toBe(PERM.ANNOUNCEMENTS_WRITE);
+    expect(canAccessPath([...ROLE_PERMS.owner], "/platform/announcements")).toBe(true);
+    expect(canAccessPath([...ROLE_PERMS.ops], "/platform/announcements")).toBe(true);
+    expect(canAccessPath([...ROLE_PERMS.support], "/platform/announcements")).toBe(false);
+    expect(canAccessPath([...ROLE_PERMS.viewer], "/platform/announcements")).toBe(false);
+  });
 });

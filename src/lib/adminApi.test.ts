@@ -226,4 +226,38 @@ describe("adminApi", () => {
     expect(click).toHaveBeenCalled();
     vi.unstubAllGlobals();
   });
+
+  it("platform announcements", async () => {
+    const payload = {
+      title: "Nouveauté",
+      body_html: "<p>Hello</p>",
+      target_type: "orgs" as const,
+      target_org_ids: ["o1", "o2"],
+      target_plan_ids: [],
+      audience: "owners" as const,
+    };
+
+    await adminApi.announcements({ status: "draft" });
+    expect(get).toHaveBeenCalledWith("/api/admin/announcements/", { params: { status: "draft" } });
+
+    await adminApi.createAnnouncement(payload);
+    expect(post).toHaveBeenCalledWith("/api/admin/announcements/", payload);
+
+    await adminApi.updateAnnouncement("a1", { title: "X" });
+    expect(patch).toHaveBeenCalledWith("/api/admin/announcements/a1/", { title: "X" });
+
+    await adminApi.publishAnnouncement("a1");
+    expect(post).toHaveBeenCalledWith("/api/admin/announcements/a1/publish/");
+
+    await adminApi.unpublishAnnouncement("a1");
+    expect(post).toHaveBeenCalledWith("/api/admin/announcements/a1/unpublish/");
+
+    await adminApi.deleteAnnouncement("a1");
+    expect(del).toHaveBeenCalledWith("/api/admin/announcements/a1/");
+
+    await adminApi.announcementTargetPreview(payload);
+    expect(get).toHaveBeenCalledWith("/api/admin/announcements/target-preview/", {
+      params: { target_type: "orgs", audience: "owners", org_ids: "o1,o2", plan_ids: "" },
+    });
+  });
 });

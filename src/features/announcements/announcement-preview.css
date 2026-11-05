@@ -1,0 +1,235 @@
+.ann-preview-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  padding: 1.25rem;
+  background: rgba(20, 17, 13, 0.55);
+  backdrop-filter: blur(6px);
+  animation: ann-preview-fade 0.18s ease-out;
+}
+
+.ann-preview-card {
+  position: relative;
+  width: min(560px, 100%);
+  max-height: calc(100vh - 2.5rem);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 24px;
+  background: #ffffff;
+  color: #1c1814;
+  box-shadow: 0 24px 64px rgba(20, 17, 13, 0.28);
+  animation: ann-preview-pop 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+
+.dark .ann-preview-card {
+  background: #1c1916;
+  color: #f3efea;
+}
+
+.ann-preview-head {
+  position: relative;
+  overflow: hidden;
+  padding: 1.4rem 1.5rem 1.3rem;
+  background: linear-gradient(135deg, #e8450a 0%, #f96130 60%, #ff8a5c 100%);
+  color: #ffffff;
+}
+
+.ann-preview-head::before,
+.ann-preview-head::after {
+  content: "";
+  position: absolute;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  pointer-events: none;
+}
+
+.ann-preview-head::before {
+  width: 180px;
+  height: 180px;
+  top: -90px;
+  right: -40px;
+}
+
+.ann-preview-head::after {
+  width: 110px;
+  height: 110px;
+  bottom: -60px;
+  right: 90px;
+}
+
+.ann-preview-eyebrow {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.95;
+}
+
+.ann-preview-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.ann-preview-title {
+  position: relative;
+  margin: 0.8rem 2rem 0 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.ann-preview-close {
+  position: absolute;
+  top: 0.9rem;
+  right: 0.9rem;
+  z-index: 1;
+  display: inline-grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.16);
+  transition: background 0.15s;
+}
+
+.ann-preview-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.ann-preview-body {
+  overflow-y: auto;
+  padding: 1.25rem 1.5rem 0.5rem;
+  font-size: 0.95rem;
+  line-height: 1.65;
+}
+
+.ann-preview-body > :first-child {
+  margin-top: 0;
+}
+
+.ann-preview-body p {
+  margin: 0 0 0.75rem;
+}
+
+.ann-preview-body h2 {
+  margin: 1rem 0 0.45rem;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.ann-preview-body h3 {
+  margin: 0.9rem 0 0.4rem;
+  font-size: 1.02rem;
+  font-weight: 650;
+}
+
+.ann-preview-body ul,
+.ann-preview-body ol {
+  margin: 0 0 0.75rem;
+  padding-left: 1.3rem;
+}
+
+.ann-preview-body ul {
+  list-style: disc;
+}
+
+.ann-preview-body ol {
+  list-style: decimal;
+}
+
+.ann-preview-body li {
+  margin: 0.2rem 0;
+}
+
+.ann-preview-body a {
+  color: #c43508;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.dark .ann-preview-body a {
+  color: #f96130;
+}
+
+.ann-preview-body blockquote {
+  margin: 0.8rem 0;
+  padding: 0.5rem 0.9rem;
+  border-left: 3px solid #e8450a;
+  border-radius: 0 0.6rem 0.6rem 0;
+  background: #fff3ee;
+}
+
+.dark .ann-preview-body blockquote {
+  background: rgba(232, 69, 10, 0.12);
+}
+
+.ann-preview-body img,
+.ann-preview-body iframe {
+  max-width: 100%;
+  border-radius: 0.75rem;
+}
+
+.ann-preview-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.9rem 1.5rem 1.3rem;
+}
+
+.ann-preview-date {
+  font-size: 0.75rem;
+  color: #8a8078;
+}
+
+.ann-preview-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.65rem 1.25rem;
+  border-radius: 999px;
+  background: #e8450a;
+  color: #ffffff;
+  font-size: 0.88rem;
+  font-weight: 600;
+  box-shadow: 0 6px 18px rgba(232, 69, 10, 0.35);
+  transition: background 0.15s, transform 0.15s;
+}
+
+.ann-preview-cta:hover {
+  background: #c43508;
+  transform: translateY(-1px);
+}
+
+@keyframes ann-preview-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes ann-preview-pop {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}

@@ -34,6 +34,7 @@ type Props = {
   value: string;
   onChange: (html: string) => void;
   resetKey: string;
+  placeholder?: string;
 };
 
 function ToolbarButton({
@@ -59,7 +60,12 @@ function ToolbarButton({
   );
 }
 
-export function BlogRichEditor({ value, onChange, resetKey }: Props) {
+export function BlogRichEditor({
+  value,
+  onChange,
+  resetKey,
+  placeholder = "Écrivez votre article ici. Utilisez les boutons ci-dessus pour mettre en forme.",
+}: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [htmlOpen, setHtmlOpen] = useState(false);
   const [htmlDraft, setHtmlDraft] = useState("");
@@ -76,9 +82,7 @@ export function BlogRichEditor({ value, onChange, resetKey }: Props) {
         HTMLAttributes: { rel: "noopener noreferrer", target: "_blank" },
       }),
       Image.configure({ inline: false, allowBase64: false }),
-      Placeholder.configure({
-        placeholder: "Écrivez votre article ici. Utilisez les boutons ci-dessus pour mettre en forme.",
-      }),
+      Placeholder.configure({ placeholder }),
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       Youtube.configure({ width: 640, height: 360, nocookie: true, modestBranding: true }),
     ],

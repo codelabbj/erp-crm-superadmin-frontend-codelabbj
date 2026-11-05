@@ -8,6 +8,7 @@ export const PERM = {
   STAFF_MANAGE: "staff.manage",
   AUDIT_READ: "audit.read",
   SETTINGS_SELF: "settings.self",
+  ANNOUNCEMENTS_WRITE: "announcements.write",
 } as const;
 
 export function resolvePlatformPerms(user?: {
@@ -49,6 +50,7 @@ export const PATH_PERMISSION: Record<string, string> = {
   "/billing/business-invoices": PERM.BILLING_WRITE,
   "/billing/dedicated-instances": PERM.BILLING_WRITE,
   "/security/audit-logs": PERM.AUDIT_READ,
+  "/platform/announcements": PERM.ANNOUNCEMENTS_WRITE,
 };
 
 /** Matrice rôles phase 1 (smoke / docs). */
@@ -62,6 +64,7 @@ export const ROLE_PERMS: Record<string, readonly string[]> = {
     PERM.STAFF_MANAGE,
     PERM.AUDIT_READ,
     PERM.SETTINGS_SELF,
+    PERM.ANNOUNCEMENTS_WRITE,
   ],
   ops: [
     PERM.CONSOLE_ACCESS,
@@ -70,6 +73,7 @@ export const ROLE_PERMS: Record<string, readonly string[]> = {
     PERM.BILLING_WRITE,
     PERM.AUDIT_READ,
     PERM.SETTINGS_SELF,
+    PERM.ANNOUNCEMENTS_WRITE,
   ],
   support: [PERM.CONSOLE_ACCESS, PERM.ORGS_READ, PERM.AUDIT_READ, PERM.SETTINGS_SELF],
   viewer: [PERM.CONSOLE_ACCESS, PERM.ORGS_READ, PERM.SETTINGS_SELF],

@@ -746,7 +746,9 @@ export interface AdminPartnerItem {
   name: string;
   email: string;
   code: string;
+  commission_plan?: "oneshot" | "recurring";
   commission_rate: string;
+  oneshot_rate?: string;
   country: string;
   status: string;
   notes: string;
@@ -1670,7 +1672,10 @@ export const adminApi = {
     (await api.patch<PartnerProgramSettings>("/api/admin/partners/program/", payload)).data,
   partners: async (params?: { q?: string }) =>
     (await api.get<PaginatedResponse<AdminPartnerItem>>("/api/admin/partners/", { params })).data,
-  updatePartner: async (id: string, payload: Partial<{ status: string; commission_rate: string; notes: string }>) =>
+  updatePartner: async (
+    id: string,
+    payload: Partial<{ status: string; commission_rate: string; commission_plan: string; notes: string }>,
+  ) =>
     (await api.patch<AdminPartner>(`/api/admin/partners/${id}/`, payload)).data,
   updatePartnerStatus: async (partnerId: string, status: "active" | "suspended") =>
     (await api.patch<AdminPartnerItem>(`/api/admin/partners/${partnerId}/`, { status })).data,
@@ -1790,10 +1795,70 @@ export const adminApi = {
 
   prospectionStats: async () =>
     (await api.get<ProspectionStatRow[]>("/api/prospection/cabinets/stats/")).data,
+
+  announcements: async (params?: { q?: string; status?: string; limit?: number; offset?: number }) =>
+    (await api.get<PaginatedResponse<PlatformAnnouncement>>("/api/admin/announcements/", { params })).data,
+
+  createAnnouncement: async (payload: PlatformAnnouncementWrite) =>
+    (await api.post<PlatformAnnouncement>("/api/admin/announcements/", payload)).data,
+
+  updateAnnouncement: async (id: string, payload: Partial<PlatformAnnouncementWrite>) =>
+    (await api.patch<PlatformAnnouncement>(`/api/admin/announcements/${id}/`, payload)).data,
+
+  deleteAnnouncement: async (id: string) => (await api.delete(`/api/admin/announcements/${id}/`)).data,
+
+  publishAnnouncement: async (id: string) =>
+    (await api.post<PlatformAnnouncement>(`/api/admin/announcements/${id}/publish/`)).data,
+
+  unpublishAnnouncement: async (id: string) =>
+    (await api.post<PlatformAnnouncement>(`/api/admin/announcements/${id}/unpublish/`)).data,
+
+  announcementTargetPreview: async (target: AnnouncementTarget) =>
+    (
+      await api.get<{ orgs_count: number; users_count: number }>("/api/admin/announcements/target-preview/", {
+        params: {
+          target_type: target.target_type,
+          audience: target.audience,
+          org_ids: target.target_org_ids.join(","),
+          plan_ids: target.target_plan_ids.join(","),
+        },
+      })
+    ).data,
 };
+
+export type AnnouncementStatus = "draft" | "published" | "archived";
+export type AnnouncementTargetType = "all" | "orgs" | "plans";
+export type AnnouncementAudience = "members" | "owners";
+
+export interface AnnouncementTarget {
+  target_type: AnnouncementTargetType;
+  target_org_ids: string[];
+  target_plan_ids: string[];
+  audience: AnnouncementAudience;
+}
+
+export interface PlatformAnnouncementWrite extends AnnouncementTarget {
+  title: string;
+  body_html: string;
+}
+
+export interface PlatformAnnouncement extends PlatformAnnouncementWrite {
+  id: string;
+  status: AnnouncementStatus;
+  published_at: string | null;
+  created_by_email: string;
+  dismissed_count: number;
+  target_users_count: number;
+  created_at: string;
+  updated_at: string;
+}
 
 export interface PartnerProgramSettings {
   default_commission_rate: string;
+  oneshot_rate?: string;
+  recurring_rate?: string;
+  recurring_months?: number;
+  business_rate?: string;
   payout_fee: string;
   min_withdrawal_amount: string;
   updated_at?: string;
@@ -1805,7 +1870,9 @@ export interface AdminPartner {
   email: string;
   contact_phone: string;
   code: string;
+  commission_plan?: "oneshot" | "recurring";
   commission_rate: string;
+  oneshot_rate?: string;
   country: string;
   status: string;
   notes: string;

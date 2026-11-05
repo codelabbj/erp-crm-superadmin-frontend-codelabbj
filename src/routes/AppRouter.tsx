@@ -44,6 +44,7 @@ export function AppRouter() {
     ProductFeedbackPage,
     ProductBacklogPage,
     BlogAdminPage,
+    AnnouncementsPage,
     PlatformTeamPage,
     ProfileSecurityPage,
   } = adminPages;
@@ -86,6 +87,9 @@ export function AppRouter() {
               <Route path="platform/product-feedback" element={<ProductFeedbackPage />} />
               <Route path="platform/backlog" element={<ProductBacklogPage />} />
               <Route path="platform/blog" element={<BlogAdminPage />} />
+              <Route element={<RequirePerm perm={PERM.ANNOUNCEMENTS_WRITE} />}>
+                <Route path="platform/announcements" element={<AnnouncementsPage />} />
+              </Route>
               <Route path="platform/modules" element={<Modules />} />
               <Route path="platform/jobs" element={<DataOps />} />
               <Route path="platform/staff" element={<Users />} />
