@@ -343,6 +343,70 @@ export interface BusinessInvoiceItem {
     proof_url?: string;
     bank_reference?: string;
   } | null;
+  fiscal_invoice?: FiscalInvoiceSummary | null;
+}
+
+export interface FiscalInvoiceSummary {
+  id: string;
+  status: "pending" | "generated" | "failed" | "skipped" | string;
+  error?: string;
+  invoice_number?: string | null;
+  fiscal_reference?: string | null;
+  fiscal_uid?: string | null;
+  total?: string | null;
+  currency?: string | null;
+  download_url?: string | null;
+}
+
+export interface SubscriptionFiscalInvoiceItem {
+  id: string;
+  status: "pending" | "generated" | "failed" | "skipped" | string;
+  error: string;
+  org_id: string;
+  org_name: string;
+  org_slug: string;
+  business_invoice_id: string | null;
+  org_payment_id: string | null;
+  billing_invoice_id: string | null;
+  billing_invoice_number: string | null;
+  fiscal_reference: string;
+  fiscal_uid: string;
+  fiscal_certified_at: string | null;
+  total: string | null;
+  currency: string | null;
+  download_url: string | null;
+  commercial_reference: string;
+  generation_started_at: string | null;
+  generated_at: string | null;
+  email_sent_at: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SubscriptionPaymentItem {
+  id: string;
+  plan_code: string | null;
+  plan_name: string | null;
+  billing_cycle: string;
+  amount: string;
+  currency: string;
+  provider: string;
+  provider_ref: string | null;
+  provider_phone: string | null;
+  status: string;
+  initiated_at: string;
+  paid_at: string | null;
+  fiscal_invoice?: FiscalInvoiceSummary | null;
+}
+
+export interface SubscriptionFiscalInvoicesResponse {
+  count: number;
+  results: SubscriptionFiscalInvoiceItem[];
+  eligible?: {
+    business_invoices: BusinessInvoiceItem[];
+    org_payments: SubscriptionPaymentItem[];
+  };
 }
 
 export interface CreateBusinessInvoicePayload {
@@ -1518,6 +1582,49 @@ export const adminApi = {
     (await api.post<BusinessInvoiceItem>(`/api/admin/business-invoices/${id}/send/`)).data,
   cancelBusinessInvoice: async (id: string) =>
     (await api.post<BusinessInvoiceItem>(`/api/admin/business-invoices/${id}/cancel/`)).data,
+
+  // Factures normalisées DGI des abonnements
+  subscriptionFiscalInvoices: async (params?: {
+    org_id?: string;
+    status?: string;
+    limit?: number;
+    offset?: number;
+    include_eligible?: number;
+  }) =>
+    (
+      await api.get<SubscriptionFiscalInvoicesResponse>(
+        "/api/admin/subscription-fiscal-invoices/",
+        { params },
+      )
+    ).data,
+  generateSubscriptionFiscalInvoice: async (payload: {
+    business_invoice_id?: string;
+    org_payment_id?: string;
+    send_email?: boolean;
+    force?: boolean;
+  }) =>
+    (
+      await api.post<SubscriptionFiscalInvoiceItem>(
+        "/api/admin/subscription-fiscal-invoices/",
+        payload,
+        { timeout: 120000 },
+      )
+    ).data,
+  retrySubscriptionFiscalInvoice: async (id: string) =>
+    (
+      await api.post<SubscriptionFiscalInvoiceItem>(
+        `/api/admin/subscription-fiscal-invoices/${id}/retry/`,
+        {},
+        { timeout: 120000 },
+      )
+    ).data,
+  downloadSubscriptionFiscalInvoicePdf: async (id: string) => {
+    const response = await api.get(
+      `/api/admin/subscription-fiscal-invoices/${id}/pdf/`,
+      { responseType: "blob" },
+    );
+    return response.data as Blob;
+  },
 
   confirmBusinessInvoiceBankPayment: async (
     id: string,

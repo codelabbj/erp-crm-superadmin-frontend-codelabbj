@@ -30,6 +30,7 @@ import { KpiCard, DistributionBars } from "@/features/dashboard/components/Dashb
 import { OrgAssignPlanModal } from "@/features/organizations/components/OrgAssignPlanModal";
 import { OrgExtendPlanModal } from "@/features/organizations/components/OrgExtendPlanModal";
 import { OrgBusinessInvoicesPanel } from "@/features/organizations/components/OrgBusinessInvoicesPanel";
+import { OrgSubscriptionFiscalInvoicesPanel } from "@/features/organizations/components/OrgSubscriptionFiscalInvoicesPanel";
 import { OrgBusinessPlanRequestsPanel } from "@/features/organizations/components/OrgBusinessPlanRequestsPanel";
 import { OrgDedicatedInstancePanel } from "@/features/organizations/components/OrgDedicatedInstancePanel";
 import { OrgProductsQuickPanel } from "@/features/organizations/components/OrgProductsQuickPanel";
@@ -321,6 +322,10 @@ export function OrganizationDetail({ orgId, onBack, onOpenAudit }: OrganizationD
               orgId={orgId}
               orgName={org.name}
               defaultRecipientEmail={ownerEmail}
+            />
+            <OrgSubscriptionFiscalInvoicesPanel
+              orgId={orgId}
+              orgName={org.name}
             />
           </>
         ) : (

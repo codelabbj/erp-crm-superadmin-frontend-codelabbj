@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Mail, Plus, Upload, XCircle } from "lucide-react";
+import { Download, Loader2, Mail, Plus, Upload, XCircle } from "lucide-react";
 import { adminApi, type BusinessInvoiceItem } from "@/lib/adminApi";
 import { formatIsoDate, getErrorMessage } from "@/lib/ui";
 import { formatMoneyFromApi } from "@/lib/money";
@@ -73,6 +73,22 @@ export function OrgBusinessInvoicesPanel({ orgId, orgName, defaultRecipientEmail
     onSettled: () => close(),
   });
 
+  const downloadFiscal = async (recordId: string, invoiceNumber: string) => {
+    try {
+      const blob = await adminApi.downloadSubscriptionFiscalInvoicePdf(recordId);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `facture_${invoiceNumber.replace("/", "-")}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setFeedback(getErrorMessage(err));
+    }
+  };
+
   return (
     <section className="rounded-2xl border border-border-soft bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4 dark:border-slate-800">
@@ -138,6 +154,21 @@ export function OrgBusinessInvoicesPanel({ orgId, orgName, defaultRecipientEmail
                   </td>
                   <td className="px-5 py-3">
                     <div className="flex flex-wrap gap-1">
+                      {inv.fiscal_invoice?.status === "generated" &&
+                      inv.fiscal_invoice.id ? (
+                        <button
+                          type="button"
+                          className="btn-secondary px-2 py-1 text-[10px] text-emerald-800"
+                          onClick={() =>
+                            downloadFiscal(
+                              inv.fiscal_invoice!.id,
+                              inv.invoice_number,
+                            )
+                          }
+                        >
+                          <Download size={11} /> Facture DGI
+                        </button>
+                      ) : null}
                       {inv.status !== "paid" && inv.status !== "cancelled" ? (
                         <button
                           type="button"
